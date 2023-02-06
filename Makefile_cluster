@@ -1,0 +1,36 @@
+#-*- mode: makefile; mode: font-lock; vc-back-end: Git -*-
+SHELL = /bin/sh
+
+# Where you want the binary
+prefix     = $(shell pwd)
+bindir     = $(prefix)/bin
+
+# C compiler and flags
+CC=gcc
+CFLAGS=-O3 
+
+# Fortran compiler and flags
+F90=gfortran
+FFLAGS=-O3
+
+# Command to use for linking and executable
+LD=gcc
+LDFLAGS=$(FFLAGS) -lpthread -lgfortran -lrt
+EXE=calculate_cluster
+
+OBJECTS=cluster_search.o calculate_cluster.o
+
+# Default build target
+perc : $(OBJECTS)
+	$(LD) $(LDFLAGS) -o $(bindir)/$(EXE) $(OBJECTS) 
+
+
+# Purge build files and executable
+clean :
+	rm -f *.o *.mod ./calculate_cluster
+
+# Rules for building object files
+%.o: %.f90
+	$(F90) $(FFLAGS) -c -o $@ $<
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $<
