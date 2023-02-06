@@ -2,7 +2,7 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
-#include <float.h>
+#include <double.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -81,7 +81,7 @@ int main (int argc, char *argv[]) {
         }
     }
 
-    // Count number of unique cluster sizes which appear
+    // Count number of unique cluster sizes which are non-zero => gives total number of unique cluster sizes
     for (i = 0; i < L*L; i++) {
         if (cluster_search[i] != 0) {
             //printf("%d %d\n",i,cluster_search[i]);
@@ -91,7 +91,7 @@ int main (int argc, char *argv[]) {
     // Create cluster histogram array
     int *cluster_hist = (int *)malloc(L*L*2*sizeof(int)); // tot_uni_clust multiplied by two to store cluster size and number of occurences of cluster size
     if (cluster_hist==NULL){
-        fprintf(stderr,"Error allocating memory for cluster search!\n");
+        fprintf(stderr,"Error allocating memory for cluster histogram!\n");
         exit(EXIT_FAILURE);
     }
 
@@ -100,17 +100,14 @@ int main (int argc, char *argv[]) {
 
     // Populate cluster histogram array
     j = 0;
-    //printf("%d\n", tot_uni_clust);
     for (i = 0; i < L*L*2; i += 2) {
         cluster_hist[i] = i/2+1;
         cluster_hist[i+1] = cluster_search[i/2];
     }
     /*======================================================================================================*/
 
-    //printf("Histogram successfully created \n");
-
     // Create rejection sampling probability array
-    float *reject_prob = (float *)malloc(L*L*2*sizeof(float)); // tot_uni_clust multiplied by two to store cluster size and probability
+    double *reject_prob = (double *)malloc(L*L*2*sizeof(double)); // tot_uni_clust multiplied by two to store cluster size and probability
     if (reject_prob==NULL){
         fprintf(stderr,"Error allocating memory for rejection probability!\n");
         exit(EXIT_FAILURE);
@@ -118,20 +115,16 @@ int main (int argc, char *argv[]) {
 
     for (i = 0; i < L*L*2; i++) {reject_prob[i] = 0.0;} // Initialise probabilities to zero
 
-    float inv_sum = 0.0;
+    double inv_sum = 0.0;
     for (i = 0; i < L*L*2; i += 2) {
-        if (cluster_hist[i+1] != 0) {inv_sum += 1.0/(float)cluster_hist[i+1];} // Summing inverse of all cluster occurences
+        if (cluster_hist[i+1] != 0) {inv_sum += 1.0/(double)cluster_hist[i+1];} // Summing inverse of all cluster occurences
     }
-
-    //printf("Inverse of cluster occurences summed\n");
 
     // Allocating values to reject_prob array
     for (i = 0; i < L*L*2; i += 2) {
         reject_prob[i] = cluster_hist[i];
-        if ( cluster_hist[i+1] != 0) {reject_prob[i+1] = (1.0/(float)cluster_hist[i+1])/inv_sum;}
+        if ( cluster_hist[i+1] != 0) {reject_prob[i+1] = (1.0/(double)cluster_hist[i+1])/inv_sum;}
     }
-
-    //printf("Rejection probability array filled\n");
 
     // Create rejection sampling probability array
     int *sample_selection = (int *)malloc(n_tot*sizeof(int)); // stores how many of each cluster size are chosen to be sampled
@@ -144,24 +137,21 @@ int main (int argc, char *argv[]) {
 
     // Sampling loop, gives how many of each cluster size is to be sampled
     j = 0;
-    float random;
-    //printf("Sampling loop begins. Tot sample = %d\n", tot_sample);
+    double random;
+    int cutoff = 0;
     while (j < tot_sample) {
+        if (cutoff = 2*tot_sample) {break;} // Prevents from loop endelssly running
         for (i = start; i < n_tot*step+start; i += step) {
             if ( j == tot_sample ) {break;}
-            //printf("%d\n",i);
-            random = (float)rand()/(float)(RAND_MAX);
-            //printf("random = %f reject_prob = %f\n", random, reject_prob[i+1]);
-            //printf("Before if %d\n",i);
-            if ( random < reject_prob[i+1] && sample_selection[(i-start)/step] < cluster_hist[(i-1)*2+1]) { // If r is less than rejection probability then select cluster for sampling
-                                                                                                      // Second part of if ensure that you aren't trying to sample more clusters than exist of that size
+            random = (double)rand()/(double)(RAND_MAX);
+            if ( random < reject_prob[i+1] && sample_selection[(i-start)/step] < cluster_hist[(i-1)*2+1]) { // If random is less than rejection probability then select cluster for sampling
+                                                                                                            // Second part of if ensure that you aren't trying to sample more clusters than exist of that size
                 sample_selection[(i-start)/step] += 1; // Fancy index simply turns for loop index into a index that starts at 0 and increments by 1 (i = 0; i++)
                 j += 1;
-                //printf("Random cluster sampled. j = %d ss ind = %d\n", j, (i-start)/step);
             }
         }
+        cutoff += 1;
     }
-    //printf("Clusters to sample found \n");
     // Use sample selection to get ngrids and nsweep from the index_cluster.bin, this will then be used to get ising snapshots for commitor calculation
     // Input the data into write array
 
@@ -180,15 +170,13 @@ int main (int argc, char *argv[]) {
     }
 
     for ( i = 0; i < n_grids*2; i++ ) {temp_select[i] = 0; temp_store[i] = 0;} // Initialise temp_select and temp_store array to zero
-    
-    //printf("Choosing clusters to write\n");
 
     int k = 0, r = 0, sample_value = 0, progress = 0;
 
     for (j = start; j < step*n_tot+start; j += step) {
         fseek(ptr1, 0, SEEK_SET); // Seek to start of file
         sample_value = sample_selection[(j-start)/step];
-        if ( sample_value == 0 ) {continue;}
+        if ( sample_value == 0 ) {continue;} // if cluster size is zero, skip
         k = 0;
         for (i = 0; i < n_grids*n_sweeps/100; i++) { // Divide by 100 due to snapshots being every 100 sweeps
             fseek(ptr1, 8, SEEK_CUR); // Move forward two integers
@@ -209,18 +197,15 @@ int main (int argc, char *argv[]) {
                 progress += 1;
                 printf("\rNumber of clusters written: %d/%d", progress, tot_sample); // Print progress
                 fflush(stdout);
-                //printf("%d %d %d\n", temp_store[r*2], temp_store[r*2+1], j);
                 fwrite(&temp_store[r*2], sizeof(int), 1, ptr2); // Write sweep
                 fwrite(&temp_store[r*2+1], sizeof(int), 1, ptr2); // Write grid
                 fwrite(&j, sizeof(int), 1, ptr2); // Write cluster size
                 i += 1;
             }
         }
-        //printf("Finished sampling cluster: %d\n", j);
         for (i = 0; i < n_grids*2; i++) {temp_select[i] = 0; temp_store[i] = 0;} // Reset temp_select to zero
     }
     printf("\n");
-    //printf("\nClusters to sample successfully written to file \n");
 
     free(cluster_search); free(cluster_hist); free(reject_prob); free(sample_selection); free(temp_store); free(temp_select);
     fclose(ptr1); fclose(ptr2); fclose(ptr3);
