@@ -17,8 +17,16 @@ void main( int argc, char *argv[]) {
         printf("Usage: %s [filename] \n", argv[0]);
         exit(1);
     }
-    ising_model_config** params_array = read_input_file(filename);
-    printf("Number of models: %d", sizeof(params_array));
+    int models;
+    get_number_of_models(filename, &models);
+    // Allocate memory for the array of pointers to structs
+    ising_model_config* params_array[models];
+    if (params_array == NULL) {
+        fprintf(stderr, "Error: Could not allocate memory\n");
+        exit(1);
+    }
+    read_input_file(filename, params_array, models);
+    fprintf(stderr, "Number of models: %d\n", sizeof(params_array)/sizeof(params_array[0]));
     
     // Rest of the program...
     

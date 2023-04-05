@@ -46,13 +46,13 @@ RELDIR = bin
 RELOBJS = $(addprefix $(RELDIR)/, $(OBJS))
 RELEXE = $(DIR)/$(EXE)
 
-.PHONY:  clean
-.PRECIOUS: $(RELDIR)/%.o
+.PHONY :  clean
+.PRECIOUS : $(RELDIR)/%.o
 all : prep release
 
 # Release Rules
 
-release: $(RELEXE)
+release : $(RELEXE)
 $(RELEXE) : $(RELOBJS) main.cu
 	$(LD) -o $(RELEXE) $(RELOBJS) main.cu $(NVFLAGS)
 
@@ -64,7 +64,7 @@ $(RELDIR)/%.o: %.cu %.h
 
 # Debug Rules
 
-debug: $(DBGEXE)
+debug : $(DBGEXE)
 $(DBGEXE) : $(DBGOBJS) main.cu
 	$(LD) -o $(DBGEXE) $(DBGOBJS) main.cu $(NVFLAGS) $(DBGNVFLAGS)
 
@@ -76,42 +76,53 @@ $(DBGDIR)/%.o: %.cu %.h
 
 
 # Extra Rules
-debug_clean:
+debug_clean :
 	rm -f $(DBGDIR)/*.o $(DBGEXE)
 	mkdir -p $(DBGDIR)
 	make debug
 
-prep:
+prep :
 	@mkdir -p $(RELDIR)
 	@mkdir -p $(DBGDIR)
 
-clean:
+clean :
 	rm -f $(RELDIR)/*.o $(RELEXE)
 	rm -f $(DBGDIR)/*.o $(DBGEXE)
 
-print:
+print :
 	@echo $(SRCS)
 	@echo $(OBJS)
 	@echo $(DBGOBJS)
 	@echo $(RELOBJS)
 
-test: $(DBGDIR)/test
-	@rm -f $(DBGDIR)/*.o
-	@rm -f $(DBGDIR)/test
-	
-	TESTSRC = input_reader.c
-	TESTOBJS_C = $(TESTSRC:.c=.o)
-	TESTOBJS = $(addprefix $(DBGDIR)/, $(TESTOBJS_C))
 
-	# Build the test executable
-	$(DBGDIR)/test : $(TESTOBJS) test.c
-		gcc -o $(DBGDIR)/test $(DBGDIR)/input_reader.o test.c $(CFLAGS) $(DBGCFLAGS)
 
-	# Rules to build object files for testing
-	$(DBGDIR)/%: %.o
-	$(DBGDIR)/%.o: %.c %.h
-		$(CC) $(CFLAGS) $(DBGCFLAGS) -c -o $@ $<
-	$(DBGDIR)/%.o: %.cu %.h
-		$(NVCC) $(NVFLAGS) $(DBGNVFLAGS) -c -o $@ $<
+
+# 
+# Test build settings, edit to test individual files use test.c as entry point
+# Use DBDIR for build directory
+#
+TESTSRCS = input_reader.c
+TESTOBJS_C = $(TESTSRCS:.c=.o)
+
+TESTEXE = $(DBGDIR)/$(EXE)
+TESTOBJS = $(addprefix $(DBGDIR)/, $(TESTOBJS_C))
+TESTEXE = $(DBGDIR)/test
+
+print_test :
+	@echo $(TESTEXE)
+	@echo $(TESTOBJS_C)
+	@echo $(TESTSRCS)
+
+test : $(TESTEXE)
+$(TESTEXE) : $(TESTOBJS) test.c
+	gcc -o $(TESTEXE) $(TESTOBJS) test.c $(CFLAGS) $(DBGCFLAGS)
+
+# Rules to build object files for testing
+$(DBGDIR)/%: %.o
+$(DBGDIR)/%.o: %.c %.h
+	$(CC) $(CFLAGS) $(DBGCFLAGS) -c -o $@ $<
+$(DBGDIR)/%.o: %.cu %.h
+	$(NVCC) $(NVFLAGS) $(DBGNVFLAGS) -c -o $@ $<
 
 	
