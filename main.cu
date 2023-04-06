@@ -1,15 +1,14 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include <cuda.h>
 
 #include "input_reader.h"
+#include "model_wrappers.h"
 
-#define N_STATES (N_THREADS * N_BLOCKS)
-
-int main() {
+int main(int argc, char *argv[]) {
 
     // Read the configuration file ===============================================
-
-    //default filename
-    char* filename = "input.txt";
+    char* filename;
     // Check if command line arguments were provided
     if (argc > 1) {
         filename = argv[1];
@@ -19,7 +18,7 @@ int main() {
     //     count = atoi(argv[2]);
     // } 
     if (argc > 2) {
-        printf("Usage: %s [filename] \n", argv[0]);
+        fprintf(stderr, "Usage: %s [filename] \n", argv[0]);
         exit(1);
     }
 
@@ -52,18 +51,29 @@ int main() {
     cudaSetDevice(0);
     curandState *dev_states;
 
-    // This should map to the number of models
-    cudaMalloc((void **)&dev_states, N_STATES * sizeof(curandState));
-
-    init_rng<<<N_BLOCKS, N_THREADS>>>(dev_states, time(NULL), N_STATES);
-    cudaDeviceSynchronize();
-    // ============================================================================
-
-    // Run compatibility checks between selected device and model configurations ==
+    // Run compatibility checks between selected device and model configurations
 
     // TODO: Write those checks
 
+    // use the checks to set the number of blocks and threads
+
+    // set to 1 for now, in the future this should be set to the number of of blocks needed to run the model
+    int n_blocks = 1;
+    int n_threads;
+    for (int i = 0; i < num_streams; i++) {
+        // for now this is just the number of concurrent threads, in the future this should be the number of threads needed to run the model
+        n_threads += params_array[i] -> num_concurrent;
+    }
+    
+
+    // This should map to the number of models
+    cudaMalloc((void **)&dev_states, n_blocks * n_threads * sizeof(curandState));
+
+    init_rng<<<n_blocks, n_threads>>>(dev_states, time(NULL), num_streams);
+    cudaDeviceSynchronize();
     // ============================================================================
+
+
 
     // Create streams and allocate memory for grids on device =====================
 
@@ -74,9 +84,12 @@ int main() {
     }
 
     // Allocate memory on the CUDA device
+    int stream_size; 
+    float h_data[num_streams];
     float *d_data[num_streams];
     for (int i = 0; i < num_streams; i++) {
-        cudaMalloc(&d_data[i], stream_size * sizeof(float));
+        stream_size = params_array[0] -> size[0] * params_array[0] -> size[0];
+        cudaMalloc(&d_data[i], stream_size * sizeof(int));
     }
 
     // Pin memory on the host if required
@@ -89,24 +102,24 @@ int main() {
         // Copy the model configuration to the device
         // TODO: Write this
         // Copy the grid to the device, TODO: add switch for different grid types
-        cudaMemcpyAsync(&d_data[i][0], &stream_size, sizeof(float), cudaMemcpyHostToDevice, stream[i]);
+        cudaMemcpyAsync(d_data[i], &h_data[i], sizeof(float) * sizeof(int), cudaMemcpyHostToDevice, stream[i]);
         // Launch the CUDA kernel
-        switch(model_in) {
+        switch(params_array[i] -> model_id) {
             case 1:
-                launchModel1(stream[i], dev_states, launch_struct_ptr);
+                launchModel1(stream[i], dev_states, *params_array[i]);
                 break;
             case 2:
-                launchModel2(stream[i], dev_states, launch_struct_ptr);
+                launchModel2(stream[i], dev_states, *params_array[i]);
                 break;
             case 3:
-                launchModel3(stream[i], dev_states, launch_struct_ptr);
+                launchModel3(stream[i], dev_states, *params_array[i]);
                 break;
             default:
-                printf("Invalid model selection.\n");
+                fprintf(stderr, "Invalid model selection.\n");
                 break;
         }
         // Copy the grid back to the host TODO: add switch for different grid types?
-        cudaMemcpyAsync(&h_data[i][0], &d_data[i][0], stream_size * sizeof(float), cudaMemcpyDeviceToHost, stream[i]);
+        cudaMemcpyAsync(&h_data[i], d_data[i], stream_size * sizeof(int), cudaMemcpyDeviceToHost, stream[i]);
     }
     // ============================================================================
 

@@ -1,11 +1,12 @@
-#include kernels.h
+#ifndef MODEL_WRAPPERS_H
+#define MODEL_WRAPPERS_H
 
-// include definitions of model parameters created by make file
-#include boilerplate.h
-#include model_parameters.h
+#include <cuda.h>
+#include "kernels.h"
+#include "input_reader.h"
 
-void launchModel1(cudaStream_t stream, curandState *state, *isng_model_config launch_struct);
+void launchModel1(cudaStream_t stream, curandState *state, ising_model_config launch_struct);
+void launchModel2(cudaStream_t stream, curandState *state, ising_model_config launch_struct);
+void launchModel3(cudaStream_t stream, curandState *state, ising_model_config launch_struct);
 
-void launchModel2(cudaStream_t stream, curandState *state, *isng_model_config launch_struct);
-
-void launchModel3(cudaStream_t stream, curandState *state, *isng_model_config launch_struct);
+#endif // MODEL_WRAPPERS_H

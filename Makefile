@@ -4,7 +4,7 @@ SHELL = /bin/sh
 # Compiler Flags
 CC     = gcc
 CFLAGS = -O3
-
+LD    = nvcc
 NVCC   = nvcc
 # Targeting Compute 5.X to 9.0, disable as required
 NVFLAGS = -O3 -gencode arch=compute_50,code=sm_50 \
@@ -19,16 +19,13 @@ NVFLAGS = -O3 -gencode arch=compute_50,code=sm_50 \
 			  -gencode arch=compute_90,code=sm_90 \
 			  -rdc=true
 
-LD    = nvcc
-
-# Define objects in dependency order
 
 
 # Define objects in dependency order
-SRCS = mt19937ar.c kernals.cu d_main.cu
+SRCS = kernels.cu input_reader.c model_wrappers.cu
 OBJS_C = $(SRCS:.c=.o)
 OBJS = $(OBJS_C:.cu=.o)
-EXE  = gpu_arch_test
+EXE  = arch_test
 
 #
 # Debug build settings
@@ -64,13 +61,16 @@ $(RELDIR)/%.o: %.cu %.h
 
 # Debug Rules
 
-debug : $(DBGEXE)
-$(DBGEXE) : $(DBGOBJS) main.cu
+debug: $(DBGEXE)
+
+$(DBGEXE): $(DBGOBJS) main.cu
 	$(LD) -o $(DBGEXE) $(DBGOBJS) main.cu $(NVFLAGS) $(DBGNVFLAGS)
 
 $(DBGDIR)/%: %.o
+
 $(DBGDIR)/%.o: %.c %.h
 	$(CC) $(CFLAGS) $(DBGCFLAGS) -c -o $@ $<
+
 $(DBGDIR)/%.o: %.cu %.h
 	$(NVCC) $(NVFLAGS) $(DBGNVFLAGS) -c -o $@ $<
 
@@ -94,6 +94,7 @@ print :
 	@echo $(OBJS)
 	@echo $(DBGOBJS)
 	@echo $(RELOBJS)
+	@echo $(PATH)
 
 
 

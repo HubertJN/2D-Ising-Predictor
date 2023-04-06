@@ -1,4 +1,4 @@
-#include <kernels.h>
+#include "kernels.h"
 
 __global__ void init_rng(curandState *state, unsigned int seed, int n)
 {

@@ -14,8 +14,7 @@ void get_number_of_models(const char* filename, int* models) {
 
     char* line;
     size_t len = 0;
-    ssize_t read;
-    while ((read = getline(&line, &len, input_file)) != -1) {
+    while ((getline(&line, &len, input_file)) != -1) {
         if (strcmp(line, "## New model ##\n") == 0) {
             *models = *models + 1;
         }
@@ -33,7 +32,7 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
 
     // Creater a struct for each model
     for (int i = 0; i < models; i++) {
-        params_array[i] = malloc(sizeof(ising_model_config));
+        params_array[i] = (ising_model_config*)malloc(sizeof(ising_model_config));
         if (params_array[i] == NULL) {
             fprintf(stderr, "Error: Could not allocate memory\n");
             exit(1);
@@ -43,7 +42,6 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
     // Read the file line by line and fill the array of pointers to structs
     char* line;
     size_t len = 0;
-    ssize_t read;
     int model_num = 0;
     char *ptr;
     char *ret_str;
@@ -51,8 +49,7 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
 
     ising_model_config* params;
 
-    int *result;
-    while ((read = getline(&line, &len, input_file)) != -1) {
+    while ((getline(&line, &len, input_file)) != -1) {
         // Check line for new model keyword
         if (strcmp(line, "## New model ##\n") == 0) {
             // use the model_num to get the pointer to the struct
@@ -71,22 +68,22 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
             ret_int = strtol(ret_str+1, &ptr, 10);
             
             // test the line for a parameter keyword if found fill the struct
-            if (strstr(line, "size_x") > 0) {
+            if (strstr(line, "size_x") != NULL) {
                 params -> size[0] = ret_int;
             }
-            else if (strstr(line, "size_y") > 0) {
+            else if (strstr(line, "size_y") != NULL) {
                 params -> size[1] = ret_int;
             }
-            else if (strstr(line, "temperature") > 0) {
+            else if (strstr(line, "temperature") != NULL) {
                 params -> temperature = ret_int;
             }
-            else if (strstr(line, "iterations") > 0) {
+            else if (strstr(line, "iterations") != NULL) {
                 params -> iterations = ret_int;
             }
-            else if (strstr(line, "iter_per_step") > 0) {
+            else if (strstr(line, "iter_per_step") != NULL) {
                 params -> iter_per_step = ret_int;
             }
-            else if (strstr(line, "num_concurrent") > 0) {
+            else if (strstr(line, "num_concurrent") != NULL) {
                 params -> num_concurrent = ret_int;
             }
             else {
