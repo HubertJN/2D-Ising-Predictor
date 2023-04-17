@@ -41,7 +41,7 @@ DBGNVFLAGS = -g -G
 #
 RELDIR = bin
 RELOBJS = $(addprefix $(RELDIR)/, $(OBJS))
-RELEXE = $(DIR)/$(EXE)
+RELEXE = $(RELDIR)/$(EXE)
 
 .PHONY :  clean
 .PRECIOUS : $(RELDIR)/%.o
