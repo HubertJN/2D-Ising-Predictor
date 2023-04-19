@@ -25,6 +25,8 @@
 #define KVP_ISSEPARATOR(x) (x=='=')
 #define KVP_ISQUOTE(x) (x=='\"')
 
+#include <stddef.h>
+
 /*Struct for registered key*/
 typedef struct {
   char name[KVP_MAX_KEY];

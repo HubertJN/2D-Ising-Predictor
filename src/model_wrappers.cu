@@ -1,4 +1,4 @@
-#include "model_wrappers.h"
+#include "../include/model_wrappers.h"
 
 void launchModel1(cudaStream_t stream, curandState *state, ising_model_config launch_struct) {
     // This model launches a kernel that is fully initilised on host working in shared memory. 

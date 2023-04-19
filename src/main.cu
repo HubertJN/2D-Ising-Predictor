@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <cuda.h>
 
-#include "input_reader.h"
-#include "model_wrappers.h"
+#include "../include/input_reader.h"
+#include "../include/model_wrappers.h"
 
 int main(int argc, char *argv[]) {
 
