@@ -16,9 +16,8 @@ typedef struct ising_model_config {
     float temperature;  // temperature of the system
 } ising_model_config;
 
-// register inputs with kvp library
 
-void register_inputs(ising_model_config* params);
+
 
 void read_lines(FILE* input_file, int start_line, int end_line);
 

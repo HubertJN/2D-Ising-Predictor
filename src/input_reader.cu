@@ -2,22 +2,13 @@
 #include "../include/input_reader.h"
 
 
-void register_inputs(ising_model_config* params) {
-    // For each new model config update the kvp pointers
-    kvp_register_i("model_id", &params -> model_id);
-    kvp_register_i("num_concurrent", &params -> num_concurrent);
-    kvp_register_i("size_x", &params -> size[0]);
-    kvp_register_i("size_y", &params -> size[1]);
-    kvp_register_i("iterations", &params -> iterations);
-    kvp_register_i("iter_per_step", &params -> iter_per_step);
-    kvp_register_i("seed", &params -> seed);
-    kvp_register_f("temperature", &params -> temperature);
-}
 
 void read_lines(FILE* input_file, int start_line, int end_line) {
     char* line;
     size_t len = 0;
     int line_num = 0;
+    //reset the file to begining
+    fseek(input_file, 0, SEEK_SET);
     while ((getline(&line, &len, input_file)) != -1) {
         if (line_num >= start_line && line_num < end_line) {
             kvp_from_text(line);
@@ -52,7 +43,7 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
         exit(1);
     }
 
-    // Creater a struct for each model
+    // Create a struct for each model
     for (int i = 0; i < models; i++) {
         params_array[i] = (ising_model_config*)malloc(sizeof(ising_model_config));
         if (params_array[i] == NULL) {
@@ -67,30 +58,57 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
     // Get the linenumbers for each new model
     int line_numbers[models];
     int model_num = 0;
+    int line_num = 0;
     while ((getline(&line, &len, input_file)) != -1) {
         if (strcmp(line, "## New model ##\n") == 0) {
-            line_numbers[model_num] = ftell(input_file);
+            fprintf(stderr, "Found new model at line %d\n", line_num);
+            line_numbers[model_num] = line_num;
             model_num++;
         }
+        line_num++;
     }
 
-    
-    ising_model_config* params;
+    // throwaway variables for kvp, match the struct
+    int model_id;     // model id
+    int num_concurrent; // number of concurrent simulations
+    int size[2];         // size of each grid, 2D
+    int iterations;   // number of iterations in the simulation
+    int iter_per_step; // number of iterations per step
+    int seed;         // seed for the random number generator
+    float temperature; 
+    kvp_register_i("model_id", &model_id);
+    kvp_register_i("num_concurrent", &num_concurrent);
+    kvp_register_i("size_x", &size[0]);
+    kvp_register_i("size_y", &size[1]);
+    kvp_register_i("iterations", &iterations);
+    kvp_register_i("iter_per_step", &iter_per_step);
+    kvp_register_i("seed", &seed);
+    kvp_register_f("temperature", &temperature);
+
     // Modify this loop to go over the line numbers instead of parsing the file line by line
     for (int i = 0; i < models; i++) {
-        params = params_array[models];
-        // ReRegister the inputs to update the pointers
-        register_inputs(params);
-        
         // get the line number pairs
         if (i == models - 1) {
             // read from line_numbers[i] to eof
+            fprintf(stderr, "Reading from line %d to eof\n", line_numbers[i]);
             read_lines(input_file, line_numbers[i], -1);
         }
         else {
             // read from line_numbers[i] to line_numbers[i+1]
+            fprintf(stderr, "Reading from line %d to line %d\n", line_numbers[i], line_numbers[i+1]);
             read_lines(input_file, line_numbers[i], line_numbers[i+1]);
+
         }
+
+        *params_array[i] = ising_model_config{
+            .model_id = model_id,
+            .num_concurrent = num_concurrent,
+            .size = {size[0], size[1]},
+            .iterations = iterations,
+            .iter_per_step = iter_per_step,
+            .seed = seed,
+            .temperature = temperature
+        };
         
     }
 

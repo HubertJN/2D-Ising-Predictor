@@ -265,8 +265,8 @@ KVP_ERROR_TYPE kvp_handle(char *key, char *value){
 
 /*Function to act on raw character text*/
 void kvp_from_text(char *text){
-	unsigned char comment=0, lock=0, inquotes=0;
 
+	unsigned char comment=0, lock=0, inquotes=0;
 	char **part;
 	char *keystart=NULL, *valstart=NULL;
 	int len, linect;
@@ -275,10 +275,9 @@ void kvp_from_text(char *text){
 	part = &keystart;
 	len = strlen(text);
 	linect = 1;
-	int i;
-
-	for (i = 0;i<=len;++i){
-		/*Toggle comment on*/
+	
+	for (int i=0;i<=len;i++){
+		// Toggle comment on
 		if (text[i]=='#') comment = 1;
 
 		/*Deal with end of line*/
@@ -310,7 +309,7 @@ void kvp_from_text(char *text){
 			if (!lock) (*part)++;
 			continue;
 		}
-
+		
 		/*Note that there is no escaping of quotes - you cannot have quotes
 		 *inside strings*/
 		if (KVP_ISQUOTE(text[i])) {
@@ -331,6 +330,7 @@ void kvp_from_text(char *text){
 			lock = 0;
 			continue;
 		}
+		
 	}
 }
 
