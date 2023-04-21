@@ -18,7 +18,6 @@ typedef struct ising_model_config {
 
 
 
-
 void read_lines(FILE* input_file, int start_line, int end_line);
 
 void get_number_of_models(const char* filename, int* models);

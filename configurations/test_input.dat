@@ -16,8 +16,8 @@ num_concurrent=1
 
 ## New model ##
 size_x=20
-size_y=5
-temperature=2
-iterations=10000
-iter_per_step=10
-num_concurrent=1
+size_y=20
+temperature=-1
+iterations=100000
+iter_per_step=100
+num_concurrent=2

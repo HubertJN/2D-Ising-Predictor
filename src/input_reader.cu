@@ -67,6 +67,7 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
         }
         line_num++;
     }
+    // Preserve line num to use as end line later
 
     // throwaway variables for kvp, match the struct
     int model_id;     // model id
@@ -91,13 +92,14 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
         if (i == models - 1) {
             // read from line_numbers[i] to eof
             fprintf(stderr, "Reading from line %d to eof\n", line_numbers[i]);
-            read_lines(input_file, line_numbers[i], -1);
+            read_lines(input_file, line_numbers[i], line_num);
+            printf("beep\n");
         }
         else {
             // read from line_numbers[i] to line_numbers[i+1]
             fprintf(stderr, "Reading from line %d to line %d\n", line_numbers[i], line_numbers[i+1]);
             read_lines(input_file, line_numbers[i], line_numbers[i+1]);
-
+            printf("boop\n");
         }
 
         *params_array[i] = ising_model_config{
