@@ -1,8 +1,6 @@
 
 #include "../include/input_reader.h"
 
-
-
 void read_lines(FILE* input_file, int start_line, int end_line) {
     char* line;
     size_t len = 0;
@@ -85,6 +83,7 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
     kvp_register_i("iter_per_step", &iter_per_step);
     kvp_register_i("seed", &seed);
     kvp_register_f("temperature", &temperature);
+    
 
     // Modify this loop to go over the line numbers instead of parsing the file line by line
     for (int i = 0; i < models; i++) {
