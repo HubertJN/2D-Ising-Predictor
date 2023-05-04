@@ -1,5 +1,31 @@
 #include "../include/model_wrappers.h"
 
+// 
+void testModel1(cudaStream_t stream, curandState *state, ising_model_config launch_struct) {
+    // This tests the kernal that uses one thread to fill its grid sequentially.
+    // Create pointers to device memory
+    float *device_array;
+    // Allocate device memory
+    cudaMalloc((void **) &device_array, sizeof(float) * launch_struct.size_x * launch_struct.size_y * launch_struct.num_concurrent);
+
+    // Launch kernel
+    test_kernel<<<launch_struct.num_concurrent, 1, 0, stream>>>(state, device_array, launch_struct.size_x, launch_struct.size_y, launch_struct.num_concurrent);
+
+    // Collect result
+    float *array;
+    cudaMemcpy((void**)&array, (void**)&device_array, sizeof(float) * launch_struct.size_x * launch_struct.size_y * launch_struct.num_concurrent, cudaMemcpyDeviceToHost);
+    
+    // Print result to file
+    //TODO
+}
+
+void testModel2(cudaStream_t stream, curandState *state, ising_model_config launch_struct) {
+    // This tests the kernal tht uses mutiple threads to fill its grid concurrently.
+    
+
+}
+
+
 void launchModel1(cudaStream_t stream, curandState *state, ising_model_config launch_struct) {
     // This model launches a kernel that is fully initilised on host working in shared memory. 
     // This function initilises the device memory and launches the kernel, then collects the result and frees the device memory.

@@ -50,10 +50,24 @@ int main(int argc, char *argv[]) {
     // Initialize CUDA ===========================================================
 
     // Get device information
-    // TODO: Put in the getinfo command
+    int deviceCount;
+    cudaGetDeviceCount(&deviceCount);
+    if (deviceCount == 0) {
+        fprintf(stderr, "No CUDA capable devices found\n");
+        exit(EXIT_FAILURE);
+    }
+    cudaDeviceProp deviceProp;
+    cudaGetDeviceProperties(&deviceProp, 0);
 
     // Set the device to use
     cudaSetDevice(0);
+
+    // get specs of the device
+    int max_threads_per_block = deviceProp.maxThreadsPerBlock;
+    int max_shared_memory_per_block = deviceProp.sharedMemPerBlock;
+    int max_blocks_per_multiprocessor = deviceProp.maxThreadsPerMultiProcessor / max_threads_per_block;
+    int max_threads_per_multiprocessor = max_blocks_per_multiprocessor * max_threads_per_block;
+
 
     // Run compatibility checks between selected device and model configurations
 
@@ -121,26 +135,47 @@ int main(int argc, char *argv[]) {
         total_threads += n_threads
     END LOOP
     */
+    int nBlocks;
+    int nThreads;
+    int total_blocks = 0;
+    int total_threads = 0;
+    // Loop over all concurrent models
+    for (int i = 0; i < models; i++) {
+        nBlocks = 0;
+        nThreads = 0;
+        // Concurrency style 1: Many models fit in a single block's shared memory
+        if params_array[i]->model_id == 1 {
+            int nThreads = params_array[i]->num_concurrent;
+            int nBlocks = (nThreads + max_threads_per_block - 1) / max_threads_per_block;
+        }
+
+        if params_array[i]->model_id == 2 {
+            // Concurrency style 2: Each model fills a block's shared memory
+            nBlocks = params_array[i]->num_concurrent;
+            nThreads = nBlocks * params_array[i]->n_threads;
+        }
+
+        // Apply the computed values to the model parameters for kernel launch
+        params_array[i]->n_blocks = nBlocks;
+        params_array[i]->n_threads = nThreads;
+
+        // Update the total number of blocks and threads
+        totalBlocks += nBlocks;
+        totalThreads += nThreads;
+    }
 
     // Check the number of threads and blocks are supported by the device
         // Check if there is a sensible stream queue that can be used to make 
         // the most of the device
 
-
-
-    // set to 1 for now, in the future this should be set to the number of of blocks needed to run the model
-    int n_blocks = 1;
-    int n_threads;
-    for (int i = 0; i < models; i++) {
-        // for now this is just the number of concurrent threads, in the future this should be the number of threads needed to run the model
-        n_threads += params_array[i] -> num_concurrent;
-    }
+    random_threads = total_threads;
+    random_blocks = (random_threads + max_threads_per_block - 1) / max_threads_per_block;
     
     curandState *dev_states;
     // Give each potential thread a random state
     cudaMalloc((void **)&dev_states, n_threads * sizeof(curandState));
     
-    init_rng<<<total_threads/max_threads_per_bloxk, max_threads_per_block>>>(dev_states, time(NULL), n_threads);
+    init_rng<<<random_blocks, random_threads>>>(dev_states, time(NULL), totalThreads);
     cudaDeviceSynchronize();
     // ============================================================================
 
