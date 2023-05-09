@@ -8,7 +8,7 @@
 int main(int argc, char *argv[]) {
 
     // Read the configuration file ===============================================
-    char* filename = "input.txt";
+    char* filename;// = "input.txt";
     // Check if command line arguments were provided
     if (argc > 1) {
         filename = argv[1];
@@ -137,6 +137,7 @@ int main(int argc, char *argv[]) {
     */
     int nBlocks;
     int nThreads;
+    int nStreams = 0;
     int total_blocks = 0;
     int total_threads = 0;
     // Loop over all concurrent models
@@ -144,38 +145,39 @@ int main(int argc, char *argv[]) {
         nBlocks = 0;
         nThreads = 0;
         // Concurrency style 1: Many models fit in a single block's shared memory
-        if params_array[i]->model_id == 1 {
-            int nThreads = params_array[i]->num_concurrent;
-            int nBlocks = (nThreads + max_threads_per_block - 1) / max_threads_per_block;
+        if (params_array[i]->model_id == 1) {
+            nThreads = params_array[i]->num_concurrent;
+            nBlocks = (nThreads + max_threads_per_block - 1) / max_threads_per_block;
         }
 
-        if params_array[i]->model_id == 2 {
+        if (params_array[i]->model_id == 2) {
             // Concurrency style 2: Each model fills a block's shared memory
             nBlocks = params_array[i]->num_concurrent;
-            nThreads = nBlocks * params_array[i]->n_threads;
+            nThreads = nBlocks * params_array[i]->num_threads;
         }
 
         // Apply the computed values to the model parameters for kernel launch
-        params_array[i]->n_blocks = nBlocks;
-        params_array[i]->n_threads = nThreads;
+        params_array[i]->num_blocks = nBlocks;
+        params_array[i]->num_threads = nThreads;
 
         // Update the total number of blocks and threads
-        totalBlocks += nBlocks;
-        totalThreads += nThreads;
+        total_blocks += nBlocks;
+        total_threads += nThreads;
+        nStreams++;
     }
 
     // Check the number of threads and blocks are supported by the device
         // Check if there is a sensible stream queue that can be used to make 
         // the most of the device
 
-    random_threads = total_threads;
-    random_blocks = (random_threads + max_threads_per_block - 1) / max_threads_per_block;
+    int random_threads = total_threads;
+    int random_blocks = (random_threads + max_threads_per_block - 1) / max_threads_per_block;
     
     curandState *dev_states;
     // Give each potential thread a random state
-    cudaMalloc((void **)&dev_states, n_threads * sizeof(curandState));
+    cudaMalloc((void **)&dev_states, random_threads * sizeof(curandState));
     
-    init_rng<<<random_blocks, random_threads>>>(dev_states, time(NULL), totalThreads);
+    init_rng<<<random_blocks, random_threads>>>(dev_states, time(NULL), random_threads);
     cudaDeviceSynchronize();
     // ============================================================================
 
@@ -184,18 +186,18 @@ int main(int argc, char *argv[]) {
     // Create streams and allocate memory for grids on device =====================
 
     // Create CUDA streams based on the model configurations
-    cudaStream_t stream[n_streams];
-    for (int i = 0; i < n_streams; i++) {
+    cudaStream_t stream[nStreams];
+    for (int i = 0; i < nStreams; i++) {
         cudaStreamCreate(&stream[i]);
     }
 
     // Loop over the models, load grids where required, and allocate memory for the grids on the device
     int stream_size; 
-    float h_data[num_streams];
-    float *d_data[num_streams];
+    float h_data[nStreams];
+    float *d_data[nStreams];
     // LOOP
         // Allocate memory on the CUDA device
-        for (int i = 0; i < num_streams; i++) {
+        for (int i = 0; i < nStreams; i++) {
             stream_size = params_array[0] -> size[0] * params_array[0] -> size[0];
             cudaMalloc(&d_data[i], stream_size * sizeof(int));
         }
@@ -205,7 +207,7 @@ int main(int argc, char *argv[]) {
     // ============================================================================
 
     // Queue memcopys and CUDA kernels on multiple streams ========================
-    for (int i = 0; i < num_streams; i++) {
+    for (int i = 0; i < nStreams; i++) {
         // Copy the model configuration to the device
         // TODO: Write this
         // Copy the grid to the device, TODO: add switch for different grid types
@@ -213,13 +215,10 @@ int main(int argc, char *argv[]) {
         // Launch the CUDA kernel
         switch(params_array[i] -> model_id) {
             case 1:
-                launchModel1(stream[i], dev_states, *params_array[i]);
+                testModel1(stream[i], dev_states, *params_array[i]);
                 break;
             case 2:
-                launchModel2(stream[i], dev_states, *params_array[i]);
-                break;
-            case 3:
-                launchModel3(stream[i], dev_states, *params_array[i]);
+                testModel2(stream[i], dev_states, *params_array[i]);
                 break;
             default:
                 fprintf(stderr, "Invalid model selection.\n");
@@ -233,17 +232,17 @@ int main(int argc, char *argv[]) {
 
     // Run cleanup ================================================================
     // Wait for CUDA streams to finish
-    for (int i = 0; i < num_streams; i++) {
+    for (int i = 0; i < nStreams; i++) {
         cudaStreamSynchronize(stream[i]);
     }
 
     // Destroy CUDA streams
-    for (int i = 0; i < num_streams; i++) {
+    for (int i = 0; i < nStreams; i++) {
         cudaStreamDestroy(stream[i]);
     }
 
     // Free allocated memory on the CUDA device
-    for (int i = 0; i < num_streams; i++) {
+    for (int i = 0; i < nStreams; i++) {
         cudaFree(d_data[i]);
     }
 

@@ -32,7 +32,7 @@ __global__ void compute_magnetisation(const int L, const int ngrids, int *d_isin
 }
 
 // Concurrancy Style
-__global__ void test_1(int *d_test_array, curandState *state, int size_x, int size_y) {
+__global__ void test_1(curandState *state, int *d_test_array, int size_x, int size_y, int concurrency) {
   // Allocate shared memory, potential crash/massive slowdown if not enough shared memory is available, this should be configured by the main program
   //extern __shared__ int shared_mem[];
 
@@ -44,7 +44,7 @@ __global__ void test_1(int *d_test_array, curandState *state, int size_x, int si
   int start_idx = idx*size_x*size_y;
   // Set the values
   for (int i=0;i<size_x*size_y;i+=3) {
-    if i < size_x*size_y {
+    if (i < size_x*size_y) {
       d_test_array[start_idx+i] = idx;
       d_test_array[start_idx+i+1] = blockIdx.x;
       d_test_array[start_idx+i+2] = (int)(curand_uniform(state)*100);
@@ -54,7 +54,7 @@ __global__ void test_1(int *d_test_array, curandState *state, int size_x, int si
 }
 
 // Block style
-__global__ void test_2(int *d_test_array, curandState *state, int nthreads, int size_x, int size_y) {
+__global__ void test_2(curandState *state, int *d_test_array, int nthreads, int size_x, int size_y, int concurrency) {
   // Allocate shared memory, potential crash/massive slowdown if not enough shared memory is available, this should be configured to use the whole block
   // extern __shared__ int shared_mem[];
 
@@ -64,7 +64,7 @@ __global__ void test_2(int *d_test_array, curandState *state, int nthreads, int 
 
   // Set the values
   for (int i=idx*3; i<size_x*size_y; i+=nthreads*3) {
-    if i < size_x*size_y {
+    if (i < size_x*size_y) {
       d_test_array[i] = idx;
       d_test_array[i+1] = blockIdx.x;
       d_test_array[i+2] = (int)(curand_uniform(state)*100);

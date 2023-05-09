@@ -75,6 +75,7 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
     int iter_per_step; // number of iterations per step
     int seed;         // seed for the random number generator
     float temperature; 
+    int num_threads;
     kvp_register_i("model_id", &model_id);
     kvp_register_i("num_concurrent", &num_concurrent);
     kvp_register_i("size_x", &size[0]);
@@ -83,6 +84,7 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
     kvp_register_i("iter_per_step", &iter_per_step);
     kvp_register_i("seed", &seed);
     kvp_register_f("temperature", &temperature);
+    kvp_register_i("num_threads", &num_threads);
     
 
     // Modify this loop to go over the line numbers instead of parsing the file line by line

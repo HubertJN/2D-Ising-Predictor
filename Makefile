@@ -3,7 +3,7 @@ DEBUG_EXEC := gpu_arch_test_debug
 
 BUILD_DIR = ./bin
 SRC_DIRS := ./src
-DBG_DIRS := ./test
+DBG_DIRS := ./debug
 
 # Compiler Flags
 CC     	:= gcc
@@ -64,10 +64,10 @@ clean_debug:
 	rm -r ./debug
 
 release: $(OBJS)
-	$(NVCC) $(DEP_FLAGS) $(OBJS) -o $@ $(LDFLAGS)
+	$(LD) $(OBJS) -o $@ $(NVFLAGS) $(DEP_FLAGS) 
 
 debug: $(DBG_OBJS)
-	$(NVCC) $(NVFLAGS) $(DBG_DEPFLAGS) $(DBG_OBJS) -o $(BUILD_DIR)/$(DEBUG_EXEC) $(LDFLAGS)	
+	$(LD) -o $(BUILD_DIR)/$(DEBUG_EXEC) $(DBG_OBJS) ./src/main.cu $(NVFLAGS) -g -G -O0 -DDEBUG $(DBG_DEPFLAGS) 
 
 
 # Generic build patterns
@@ -80,7 +80,7 @@ $(BUILD_DIR)/%.c.o: %.c
 # Build step for Cuda source
 $(BUILD_DIR)/%.cu.o: %.cu
 	mkdir -p $(dir $@)
-	$(NVCC) $(NVFLAGS) -c $< -o $@
+	$(NVCC) $(NVFLAGS) -c $< -o $@ -diag-suppress 2464
 
 
 # Include the .d makefiles. The - at the front suppresses the errors of missing
