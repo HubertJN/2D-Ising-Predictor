@@ -39,6 +39,7 @@ __global__ void test_1(curandState *state, int *d_test_array, int size_x, int si
   // Todo: copy loaded data into shared memory
 
   // Test kernal should set the values of its array to the thread index, block index and a random number
+
   int idx = threadIdx.x+blockIdx.x*blockDim.x;
   // Calculate the array start point
   int start_idx = idx*size_x*size_y;

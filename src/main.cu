@@ -193,12 +193,12 @@ int main(int argc, char *argv[]) {
 
     // Loop over the models, load grids where required, and allocate memory for the grids on the device
     int stream_size; 
-    float h_data[nStreams];
-    float *d_data[nStreams];
+    int h_data[nStreams];
+    int *d_data[nStreams];
     // LOOP
         // Allocate memory on the CUDA device
-        for (int i = 0; i < nStreams; i++) {
-            stream_size = params_array[0] -> size[0] * params_array[0] -> size[0];
+        for (int i=0; i < nStreams; i++) {
+            stream_size = params_array[i] -> size[0] * params_array[i] -> size[1];
             cudaMalloc(&d_data[i], stream_size * sizeof(int));
         }
         // Pin memory on the host if required
@@ -207,11 +207,11 @@ int main(int argc, char *argv[]) {
     // ============================================================================
 
     // Queue memcopys and CUDA kernels on multiple streams ========================
-    for (int i = 0; i < nStreams; i++) {
+    for (int i=0; i < nStreams; i++) {
         // Copy the model configuration to the device
         // TODO: Write this
         // Copy the grid to the device, TODO: add switch for different grid types
-        cudaMemcpyAsync(d_data[i], &h_data[i], sizeof(float) * sizeof(int), cudaMemcpyHostToDevice, stream[i]);
+        //cudaMemcpyAsync(d_data[i], &h_data[i], sizeof(float) * sizeof(int), cudaMemcpyHostToDevice, stream[i]);
         // Launch the CUDA kernel
         switch(params_array[i] -> model_id) {
             case 1:

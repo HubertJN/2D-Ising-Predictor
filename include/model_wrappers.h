@@ -11,7 +11,7 @@ void launchModel1(cudaStream_t stream, curandState *state, ising_model_config la
 void launchModel2(cudaStream_t stream, curandState *state, ising_model_config launch_struct);
 void launchModel3(cudaStream_t stream, curandState *state, ising_model_config launch_struct);
 
-void testModel1(cudaStream_t stream, curandState *state, ising_model_config launch_struct);
-void testModel2(cudaStream_t stream, curandState *state, ising_model_config launch_struct);
+int testModel1(cudaStream_t stream, curandState *state, ising_model_config launch_struct);
+int testModel2(cudaStream_t stream, curandState *state, ising_model_config launch_struct);
 
 #endif // MODEL_WRAPPERS_H

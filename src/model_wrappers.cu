@@ -1,7 +1,7 @@
 #include "../include/model_wrappers.h"
 
 // 
-void testModel1(cudaStream_t stream, curandState *state, ising_model_config launch_struct) {
+int testModel1(cudaStream_t stream, curandState *state, ising_model_config launch_struct) {
     // This tests the kernal that uses one thread to fill its grid sequentially.
     // Create pointers to device memory
     int *device_array;
@@ -26,9 +26,10 @@ void testModel1(cudaStream_t stream, curandState *state, ising_model_config laun
         }
         fprintf(stdout, "%f ", array[i]);
     }
+    return 0;
 }
 
-void testModel2(cudaStream_t stream, curandState *state, ising_model_config launch_struct) {
+int testModel2(cudaStream_t stream, curandState *state, ising_model_config launch_struct) {
     // This tests the kernal tht uses mutiple threads to fill its grid concurrently.
     int *device_array;
     // Allocate device memory
@@ -53,8 +54,7 @@ void testModel2(cudaStream_t stream, curandState *state, ising_model_config laun
         }
         fprintf(stdout, "%f ", array[i]);
     } 
-    
-
+   return 0; 
 }
 
 
