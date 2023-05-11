@@ -1,0 +1,7 @@
+To do:
+- Python wrap write_input_variables
+- Create python code that allows to write variables then runs c executables
+- Rewrite recursive cluster search into c
+- Python wrap calculate cluster code
+- (Optional) Only have one updating binary file: igrid, isweep, cluster, commitor, commitor variance, grid ...
+    - simply delete previous file after each step of caclulations

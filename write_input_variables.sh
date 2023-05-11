@@ -1,4 +1,4 @@
 #!/bin/bash
 
-gcc write_input_variables.c -o write_input_variables
-./write_input_variables
+gcc write_input_variables.c -o bin/write_input_variables
+(cd bin; ./write_input_variables)
