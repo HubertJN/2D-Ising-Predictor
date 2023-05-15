@@ -120,7 +120,7 @@ contains
       ! D. Quigley - University of Warwick                                !
       !===================================================================!
       implicit none
-      integer(kind=it),intent(in) :: i,iclusters
+      integer(kind=it),intent(in) :: i,icluster
       integer(kind=it)            :: j,jlist
 
       if (Ncon(i)==0) return ! exit if no connections
