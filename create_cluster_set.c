@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include "functions/functions.h"
 
 #define MOD(a,b) ((((a)%(b))+(b))%(b))
 
@@ -27,10 +28,10 @@ int main (int argc, char *argv[]) {
     n_tot = atoi(argv[3]); // Number of steps to made/number of clusters to be sampled
     tot_sample = atoi(argv[4]); // Total number of samples
 
-    // Create Ising variables
-    int L = 64;
-    int n_grids = 1248;
-    int n_sweeps = 50000;
+    // Define and read input variables
+    int L, nreplicas, nsweeps, mag_output_int, grid_output_int, threadsPerBlock, gpu_device, gpu_method;
+    double beta, h;
+    read_input_variables(&L, &nreplicas, &nsweeps, &mag_output_int, &grid_output_int, &threadsPerBlock, &gpu_device, &gpu_method, &beta, &h);
 
     // Set filenames
     const char *filename1 = "index.bin";

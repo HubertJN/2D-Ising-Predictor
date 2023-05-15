@@ -21,6 +21,7 @@ for gathering rare event statistics on nucleation during magnetisation reversal.
 #include <time.h>  
 #include <float.h>
 #include <stdbool.h>
+#include "functions/functions.h"
 
 extern "C" {
   #include "mc_cpu.h"
@@ -39,17 +40,18 @@ int main (int argc, char *argv[]) {
    Constants and variables
   =================================*/ 
   
-  int L       = 64;            // Size of 2D Ising grid. LxL grid squares.
-  int ngrids  = 1;             // Number of replicas of 2D grid to simulate
-  int tot_nsweeps = 100;       // Total number of MC sweeps to simulate on each grid
+  int L;                  // Size of 2D Ising grid. LxL grid squares.
+  int ngrids;             // Number of replicas of 2D grid to simulate
+  int tot_nsweeps;        // Total number of MC sweeps to simulate on each grid
 
-  int itask = 0;               // 0 = count samples which nucleate, 1 = compute committor
+  int itask;              // 0 = count samples which nucleate, 1 = compute committor
 
-  int mag_output_int  = 100;   // Number of MC sweeps between calculation of magnetisation
-  int grid_output_int = 1000;  // Number of MC sweeps between dumps of grid to file
+  int mag_output_int ;    // Number of MC sweeps between calculation of magnetisation
+  int grid_output_int;    // Number of MC sweeps between dumps of grid to file
 
-  double beta = 0.54;       // Inverse temperature
-  double h = 0.07;          // External field
+  double beta;            // Inverse temperature
+  double h;               // External field
+
 
   double dn_threshold = -0.90;         // Magnetisation at which we consider the system to have reached spin up state
   double up_threshold =  0.90;         // Magnetisation at which we consider the system to have reached spin down state
@@ -57,41 +59,32 @@ int main (int argc, char *argv[]) {
   //unsigned long rngseed = 2894203475;  // RNG seed (fixed for development/testing)
   unsigned long rngseed = (long)time(NULL);
 
-  int threadsPerBlock = 32;            // Number of threads/replicas to run in each threadBlock
-  int blocksPerGrid   = 1;             // Total number of threadBlocks
-  int gpu_device = -1;                 // GPU device to use
-  int gpu_method = 0;                  // Which MC sweep kernel to use
+  int threadsPerBlock;            // Number of threads/replicas to run in each threadBlock
+  int blocksPerGrid = 1;          // Total number of threadBlocks
+  int gpu_device;                 // GPU device to use
+  int gpu_method;                 // Which MC sweep kernel to use
 
 /*=================================
-   Process command line arguments 
+   Read input file 
   =================================*/ 
-  if (argc != 11) {
-    printf("Usage : GPU_2DIsing nsweeps nreplicas mag_output_int grid_output_int threadsPerBlock gpu_device gpu_method beta h itask \n");
+  if (argc != 2) {
+    printf("Usage : 0 = count samples which nucleate, 1 = compute committor \n");
     exit(EXIT_FAILURE);
   }
 
-  tot_nsweeps     = atoi(argv[1]);  // Number of MC sweeps to simulate
-  ngrids          = atoi(argv[2]);  // Number of replicas (grids) to simulate
-  mag_output_int  = atoi(argv[3]);  // Sweeps between printing magnetisation
-  grid_output_int = atoi(argv[4]);  // Sweeps between dumps of grid
-  threadsPerBlock = atoi(argv[5]);  // Number of thread per block (multiple of 32)
-  gpu_device      = atoi(argv[6]);  // Which GPU device to use (normally 0) 
-  gpu_method      = atoi(argv[7]);  // Which kernel to use for MC sweeps
-  beta            = atof(argv[8]);  // Inverse temperature
-  h               = atof(argv[9]);  // Magnetic field
-  itask           = atof(argv[10]); // Calculation task
+  read_input_variables(&L, &nreplicas, &nsweeps, &mag_output_int, &grid_output_int, &threadsPerBlock, &gpu_device, &gpu_method, &beta, &h);
+  itask = atof(argv[1]); // Calculation task
 
 /*=================================
    Delete old output 
   ================================*/
   remove("gridstates.bin");
 
-
 /*=================================
    Write output header 
   ================================*/
   if (itask==0) {
-    printf("# isweep    nucleated fraction\n");
+    printf("# isweep nucleated fraction\n");
   }
 
 /*=================================
@@ -133,8 +126,6 @@ int main (int argc, char *argv[]) {
 
   }
 
-
-  // TODO - replace with configuration read from file
 
   // Initialise host RNG
   init_genrand(rngseed);

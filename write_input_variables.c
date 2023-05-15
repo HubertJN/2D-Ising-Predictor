@@ -25,7 +25,7 @@ int main () {
     */
     /**************Change Variables Here****************/
     int L=64;
-    int nreplicas=1248;
+    int nreplicas=1;
     int nsweeps=50000;
     int mag_output_int=100;
     int grid_output_int=100;

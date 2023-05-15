@@ -86,12 +86,6 @@ void write_ising_grids(int L, int ngrids, int *ising_grids, int isweep){
     fwrite(&ngrids,sizeof(int),1,ptr);
     fwrite(&isweep,sizeof(int),1,ptr);
 
-    // write additional data to binary file to create space for future addition
-    int temp_int = -1;
-    double temp_double = -1.0;
-    fwrite(&temp_int,sizeof(int),1,ptr);
-    fwrite(&temp_double,sizeof(double),1,ptr);
-
     // pack everything into as few bits as possible
     int nbytes = L*L*ngrids/8;
     if ( (L*L*ngrids)%8 !=0 ) { nbytes++; }
