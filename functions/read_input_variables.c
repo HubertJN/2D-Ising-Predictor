@@ -29,5 +29,5 @@ void read_input_variables(int *L, int *nreplicas, int *nsweeps, int *mag_output_
     fclose(input_variables);
 
     // Print success
-    printf("Input variables succesfully read and input variable file successfully closed.\n");
+    //printf("Input variables succesfully read and input variable file successfully closed.\n");
 }

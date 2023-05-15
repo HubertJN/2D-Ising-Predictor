@@ -120,7 +120,7 @@ int find_clusters_recursive(int Nvert, int Maxcon, int *Ncon, int *Lcon) {
 
     // Free memory
     free(lvisited); free(cluster_size);
-    printf("\n%d\n", lmax);
+    //printf("\n%d\n", lmax);
     return lmax;
 }
 

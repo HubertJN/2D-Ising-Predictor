@@ -85,25 +85,24 @@ int main (int argc, char *argv[]) {
     }
     for (idiv=0;idiv<divisions;idiv++) {division_samples[idiv] = 0;}
 
-    fseek(index_file, 0, SEEK_SET); // Skip first two doubles
-
-    for (islice=0;islice<120;islice++) {
-        if (islice%4 == 0) {printf("\n");}
-        fread(&cluster_size_db, sizeof(double), 1, index_file);
-        cluster_size_int = (int)cluster_size_db;
-        printf("%d ", cluster_size_int);
-        
+    // Create cluster histogram array
+    int *cluster_hist = (int *)malloc(L*L*sizeof(int)); // tot_uni_clust multiplied by two to store cluster size and number of occurences of cluster size
+    if (cluster_hist==NULL){
+        fprintf(stderr,"Error allocating memory for cluster histogram!\n");
+        exit(EXIT_FAILURE);
     }
-    printf("\n");
 
-/*
+    // Initialise cluster_hist
+    for (i = 0; i < L*L; i++) {cluster_hist[i] = 0;}
+
+    fseek(index_file, 16, SEEK_CUR);
     for (islice=0;islice<nsweeps/100;islice++) {
         // Loops over grids of each sweep snapshot  
         for (igrid=0;igrid<nreplicas;igrid++) {
-            fread(&cluster_size_int, sizeof(int), 1, index_file);
-            fseek(index_file, 0, SEEK_CUR); // Skip to next cluster size entry
+            fread(&cluster_size_db, sizeof(double), 1, index_file);
+            fseek(index_file, 24, SEEK_CUR); // Skip to next cluster size entry
             cluster_size_int = (int)cluster_size_db;
-            if (igrid==0) {printf("%d ", cluster_size_int);}
+            cluster_hist[cluster_size_int] += 1;
             // Loop to check if cluster size fits in divisions, +1 to stop variables plays a role here in order to include stop within sampling
             // When "cluster_size_int < start+(idiv+1)*division_range" is checked, stop is included since start+(idiv+1)*division_range is 1 higher than stop cluster size
             for (idiv=0;idiv<divisions;idiv++) {
@@ -121,7 +120,7 @@ int main (int argc, char *argv[]) {
             minimum_div_samples = division_samples[idiv];
         }
     }
-    printf("\n");
+
     // Check if samples exist, if not end program
     if (minimum_div_samples == 0) {
         printf("Number of minimum samples is zero. Input different range executing program.\n");
@@ -133,6 +132,24 @@ int main (int argc, char *argv[]) {
     fflush(stdout); 
     scanf("%d", samples_per_division);
 
-    */
+    // Create rejection sampling probability array
+    double *reject_prob = (double *)malloc(L*L*sizeof(double)); // tot_uni_clust multiplied by two to store cluster size and probability
+    if (reject_prob==NULL){
+        fprintf(stderr,"Error allocating memory for rejection probability!\n");
+        exit(EXIT_FAILURE);
+    }
+
+    for (i = 0; i < L*L; i++) {reject_prob[i] = 0.0;} // Initialise probabilities to zero
+
+    double inv_sum = 0.0;
+    for (i = 0; i < L*L; i++) {
+        if (cluster_hist[i] != 0) {inv_sum += 1.0/(double)cluster_hist[i];} // Summing inverse of all cluster occurences
+    }
+
+    // Allocating values to reject_prob array
+    for (i = 0; i < L*L; i++) {
+        if ( cluster_hist[i] != 0) {reject_prob[i] = (1.0/(double)cluster_hist[i])/inv_sum;}
+    }
+
     return EXIT_SUCCESS;
 }  
