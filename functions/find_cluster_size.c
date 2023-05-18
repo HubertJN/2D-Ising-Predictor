@@ -64,8 +64,8 @@ int find_cluster_size(int L, int Maxcon, int *grid, int* Lcon, int* Ncon) {
 
     if (con_exist == 1) {
         //printf("Begin recursive \n");
-        //lclus = find_clusters_recursive(Nvert, Maxcon, Ncon, Lcon);
-        lclus = find_clusters_eqclass(Nvert, Maxcon, Ncon, Lcon);
+        lclus = find_clusters_recursive(Nvert, Maxcon, Ncon, Lcon);
+        //lclus = find_clusters_eqclass(Nvert, Maxcon, Ncon, Lcon);
         avlclus = lclus; 
     }
     else {
