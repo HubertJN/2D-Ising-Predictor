@@ -64,8 +64,8 @@ int find_cluster_size(int L, int Maxcon, int *grid, int* Lcon, int* Ncon) {
 
     if (con_exist == 1) {
         //printf("Begin recursive \n");
-        lclus = find_clusters_recursive(Nvert, Maxcon, Ncon, Lcon);
-        //find_clusters_eq(Nvert,Maxcon,Ncon,Lcon,&lclus,&nclus);
+        //lclus = find_clusters_recursive(Nvert, Maxcon, Ncon, Lcon);
+        lclus = find_clusters_eqclass(Nvert, Maxcon, Ncon, Lcon);
         avlclus = lclus; 
     }
     else {
@@ -146,5 +146,56 @@ void vertex_search(int i, int icluster, int Maxcon, int *Ncon, int *Lcon, int *l
     }
 }
 
+// Function to build a list of connected vertex clusters, and
+// report the size of the largest cluster. Identifies connected
+// vertices as equivalent and assigns each to an equivalence class
+// See Numerical Recipes by Press et al for details.
 
+int find_clusters_eqclass(int Nvert, int Maxcon, int *Ncon, int *Lcon) {
+    /* Define indices */
+    int iv, jv, ic;
 
+    int nvcluster = 0; int lmax = 0;
+
+    int *lcl = (int *)malloc(Nvert*sizeof(int));
+    int *cluster_size = (int *)malloc(Nvert*sizeof(int));
+
+    for (iv=0;iv<Nvert;iv++) {lcl[iv] = -1;}
+    for (iv=0;iv<Nvert;iv++) {cluster_size[iv] = 0;}
+
+    for (iv=0;iv<Nvert;iv++) {
+        lcl[iv] = iv;
+        for (jv=0;jv<iv-1;jv++) {
+            lcl[jv] = lcl[lcl[jv]];
+            for (ic=0;ic<Ncon[iv];ic++) {
+                if (Lcon[iv*Maxcon+ic]==jv) {
+                    lcl[lcl[lcl[jv]]] = iv;
+                }
+            }
+        }
+    }
+
+    for (iv=0;iv<Nvert;iv++) {
+        if (lcl[iv] != -1) {
+            if (lcl[iv] == lcl[lcl[iv]]) {
+                cluster_size[lcl[iv]] += 1;
+            }
+        }
+    }
+
+    for (iv=0;iv<Nvert;iv++) {
+        if (cluster_size[iv]>0) {
+            nvcluster += 1;
+        }
+    }
+
+    // Analysis complete. Output number of cluster and size of cluster
+    // Compare elements of array with max
+    for (iv=0;iv<Nvert;iv++) {if(cluster_size[iv]>lmax) {lmax=cluster_size[iv];}}
+    //for (iv=0;iv<Nvert;iv++) {printf("%d ", cluster_size[iv]);}
+
+    // Free memory
+    free(lcl); free(cluster_size);
+    //printf("\n%d\n", lmax);
+    return lmax;
+}
