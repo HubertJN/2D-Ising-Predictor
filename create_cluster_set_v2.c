@@ -94,7 +94,8 @@ int main (int argc, char *argv[]) {
 
     // Initialise cluster_hist
     for (i = 0; i < L*L; i++) {cluster_hist[i] = 0;}
-
+    
+    printf("\n");
     fseek(index_file, 16, SEEK_CUR);
     for (islice=0;islice<nsweeps/100;islice++) {
         // Loops over grids of each sweep snapshot  
@@ -102,6 +103,7 @@ int main (int argc, char *argv[]) {
             fread(&cluster_size_db, sizeof(double), 1, index_file);
             fseek(index_file, 24, SEEK_CUR); // Skip to next cluster size entry
             cluster_size_int = (int)cluster_size_db;
+            printf("%d ", cluster_size_int);
             cluster_hist[cluster_size_int] += 1;
             // Loop to check if cluster size fits in divisions, +1 to stop variables plays a role here in order to include stop within sampling
             // When "cluster_size_int < start+(idiv+1)*division_range" is checked, stop is included since start+(idiv+1)*division_range is 1 higher than stop cluster size
@@ -112,7 +114,7 @@ int main (int argc, char *argv[]) {
             }
         } // igrid
     } // isweep
-    
+    printf("\n");
     // Find minimum number of sample across divisions
     int minimum_div_samples = division_samples[0];
     for (idiv=0;idiv<divisions;idiv++) {
@@ -149,6 +151,12 @@ int main (int argc, char *argv[]) {
     // Allocating values to reject_prob array
     for (i = 0; i < L*L; i++) {
         if ( cluster_hist[i] != 0) {reject_prob[i] = (1.0/(double)cluster_hist[i])/inv_sum;}
+    }
+
+    int *sample_selection = (int *)malloc(divisions*samples_per_division*sizeof(int)); // stores how many of each cluster size are chosen to be sampled
+    if (sample_selection==NULL){
+        fprintf(stderr,"Error allocating memory for sample selection!\n");
+        exit(EXIT_FAILURE);
     }
 
     return EXIT_SUCCESS;
