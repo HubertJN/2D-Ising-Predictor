@@ -42,10 +42,10 @@ __global__ void test_1(curandState *state, int *d_test_array, int size_x, int si
 
   int idx = threadIdx.x+blockIdx.x*blockDim.x;
   // Calculate the array start point
-  int start_idx = idx*size_x*size_y;
+  int start_idx = idx*size_x*3*size_y;
   // Set the values
-  for (int i=0;i<size_x*size_y;i+=3) {
-    if (i < size_x*size_y) {
+  for (int i=0;i<size_x*size_y*3;i+=3) {
+    if (i < size_x*size_y*3) {
       d_test_array[start_idx+i] = idx;
       d_test_array[start_idx+i+1] = blockIdx.x;
       d_test_array[start_idx+i+2] = (int)(curand_uniform(state)*100);

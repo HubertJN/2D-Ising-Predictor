@@ -8,16 +8,12 @@
 int main(int argc, char *argv[]) {
 
     // Read the configuration file ===============================================
-    char* filename;// = "input.txt";
+    char* filename;
     // Check if command line arguments were provided
-    if (argc > 1) {
+    if (argc == 1) {
         filename = argv[1];
     }
-    // pattern for further arguments
-    // if (argc > 2) {
-    //     count = atoi(argv[2]);
-    // } 
-    if (argc > 2) {
+    else {
         printf("Usage: %s [filename] \n", argv[0]);
         exit(1);
     }
@@ -34,6 +30,7 @@ int main(int argc, char *argv[]) {
     
     // Print the models we are going to run
     for (int i = 0; i < models; i++) {
+        init_model(params_array[i])
         // Print the parameters of the model
         fprintf(stderr, "Model #: %d, ModelID: %d\n", i, params_array[i]->model_id);
         fprintf(stderr, "Grid x,y, %d, %d\n", params_array[i]->size[0], params_array[i]->size[1]);
@@ -144,16 +141,22 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < models; i++) {
         nBlocks = 0;
         nThreads = 0;
-        // Concurrency style 1: Many models fit in a single block's shared memory
-        if (params_array[i]->model_id == 1) {
+        // Check the concurrency style of the model and set the number of blocks and threads
+        switch (params_array[i]->model_id)
+        {
+        case 1:
+            //Concurrency style 1: Many models fit in a single block's shared memory
             nThreads = params_array[i]->num_concurrent;
             nBlocks = (nThreads + max_threads_per_block - 1) / max_threads_per_block;
-        }
-
-        if (params_array[i]->model_id == 2) {
+            break;
+        case 2:
             // Concurrency style 2: Each model fills a block's shared memory
             nBlocks = params_array[i]->num_concurrent;
             nThreads = nBlocks * params_array[i]->num_threads;
+            break;
+        
+        default:
+            break;
         }
 
         // Apply the computed values to the model parameters for kernel launch
@@ -163,6 +166,7 @@ int main(int argc, char *argv[]) {
         // Update the total number of blocks and threads
         total_blocks += nBlocks;
         total_threads += nThreads;
+        // for each model launch add a stream
         nStreams++;
     }
 
@@ -192,17 +196,17 @@ int main(int argc, char *argv[]) {
     }
 
     // Loop over the models, load grids where required, and allocate memory for the grids on the device
-    int stream_size; 
+    int mem_size; 
     int h_data[nStreams];
     int *d_data[nStreams];
     // LOOP
-        // Allocate memory on the CUDA device
         for (int i=0; i < nStreams; i++) {
-            stream_size = params_array[i] -> size[0] * params_array[i] -> size[1];
-            cudaMalloc(&d_data[i], stream_size * sizeof(int));
+            mem_size = params_array[i] -> size[0] * params_array[i] -> size[1] * params_array[i] -> data_type_size * params_array[i] -> num_concurrent;
+            params_array[i] -> mem_size = mem_size;
+            // Allocate required space on host and device
+            cudaMalloc(&d_data[i], mem_size);
+            h_data[i] = (int *)malloc(mem_size);
         }
-        // Pin memory on the host if required
-        // TODO: Write this
     //LOOP END
     // ============================================================================
 
@@ -215,19 +219,42 @@ int main(int argc, char *argv[]) {
         // Launch the CUDA kernel
         switch(params_array[i] -> model_id) {
             case 1:
-                testModel1(stream[i], dev_states, *params_array[i]);
+                testModel1(stream[i], dev_states, *params_array[i], d_data[i]);
                 break;
             case 2:
-                testModel2(stream[i], dev_states, *params_array[i]);
+                testModel2(stream[i], dev_states, *params_array[i], d_data[i]);
                 break;
             default:
                 fprintf(stderr, "Invalid model selection.\n");
                 break;
         }
-        // Copy the grid back to the host TODO: add switch for different grid types?
-        cudaMemcpyAsync(&h_data[i], d_data[i], stream_size * sizeof(int), cudaMemcpyDeviceToHost, stream[i]);
     }
     // ============================================================================
+
+
+    // Copy results back to host ==================================================
+    for (int i; i < nStreams; i++) {
+        // TODO: make this async
+        switch (params_array[i] -> model_id)
+        {
+            case 1:
+                cudaMemcpy(h_data[i], d_data[i], params_array[i] -> mem_size, cudaMemcpyDeviceToHost);
+                break;
+            case 2:
+                cudaMemcpy(h_data[i], d_data[i], params_array[i] -> mem_size, cudaMemcpyDeviceToHost);
+                break;
+            default:
+                fprintf(stderr, "Invalid model selection.\n");
+                break;
+        }
+    }
+
+    // ============================================================================
+
+    // Print results ==============================================================
+    for (int i; i < nStreams; i++) {
+        
+    }
 
 
     // Run cleanup ================================================================

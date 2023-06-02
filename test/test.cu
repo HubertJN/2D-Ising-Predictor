@@ -4,6 +4,7 @@
 #include <curand.h>
 
 #include "../include/kernels.h"
+#include "../include/input_reader.h"
 #include "../include/model_wrappers.h"
 
 int main( int argc, char *argv[]) {
@@ -12,8 +13,13 @@ int main( int argc, char *argv[]) {
 
     printf("Single Kernel Test\n");
 
+    ising_model_config config;
+
     //Misc Vars
     int test_threads = 5;
+
+    config.model_id = 1;
+    config.num_concurrent = test_threads;
 
     // Initialize RNG
     curandState_t *d_rng_state;
@@ -23,38 +29,23 @@ int main( int argc, char *argv[]) {
     init_rng<<<1, test_threads>>>(d_rng_state, time(NULL), test_threads);
 
     // run the test kernel
-    int datasize = 3;
-    int x = 10;
-    int y = 10;
-    int x_dim = x*datasize;
-    int y_dim = y;
-    fprintf(stdout, "%d, %d", x_dim, y_dim);
-    int *array;
-    cudaMalloc((void **)&array, x_dim*y_dim*test_threads * sizeof(int));
+    int datasize = 3*sizeof(int);
+    int x_dim = 10;
+    int y_dim = 10;
+    
+    config.size[0] = x_dim;
+    config.size[1] = y_dim;
+    config.element_size = datasize;
 
-    test_1<<<1, test_threads>>>(d_rng_state, array, x_dim, y_dim, test_threads);
+    config.num_threads = test_threads;
+    config.num_blocks = 1;
 
-    cudaDeviceSynchronize();
+    cudaStream_t stream;
+    cudaStreamCreate(&stream);
 
-    int *host_array = (int *)malloc(x_dim*y_dim*test_threads * sizeof(int));
-    cudaMemcpy(host_array, array, x_dim*y_dim*test_threads * sizeof(int), cudaMemcpyDeviceToHost);
+    
+    testModel1(stream, d_rng_state, config); // Tested and working
+    
 
-    cudaDeviceSynchronize();
-
-    for(int i=0; i<x_dim * y_dim * test_threads; i++) 
-    {
-        if(i % datasize == 0) {
-            fprintf(stdout, ",");
-        }
-        if(i % x_dim == 0) {
-            fprintf(stdout, "\n");
-            if (i % (x_dim * y_dim) == 0)
-            {
-                fprintf(stdout, "\n");
-            }
-        }
-        fprintf(stdout, "%d", host_array[i]);
-    } 
-    fprintf(stdout, "\n");
     return 0;
 }

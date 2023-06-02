@@ -1,31 +1,47 @@
 #include "../include/model_wrappers.h"
 
+int init_model(ising_model_config launch_struct) {
+    // Add model specific launch parameters
+    switch(launch_struct -> model_id) {
+        case 1:
+            launch_struct.element_size = 3*sizeof(int);
+            break;
+        case 2:
+            launch_struct.element_size = 3*sizeof(int);
+            break;
+        default:
+            fprintf(stderr, "Invalid model selection.\n");
+            break;
+    }
+}
+
+
 // 
-int testModel1(cudaStream_t stream, curandState *state, ising_model_config launch_struct) {
+int testModel1(cudaStream_t stream, curandState *state, ising_model_config launch_struct, int *device_array) {
     // This tests the kernal that uses one thread to fill its grid sequentially.
-    // Create pointers to device memory
-    int *device_array;
-    // Allocate device memory
-    cudaMalloc((void **) &device_array, sizeof(float) * launch_struct.size[0] * launch_struct.size[1] * launch_struct.num_concurrent);
 
     // Launch kernel
-    test_1<<<launch_struct.num_concurrent, 1, 0, stream>>>(state, device_array, launch_struct.size[0], launch_struct.size[1], launch_struct.num_concurrent);
+    test_1<<<launch_struct.num_blocks, launch_struct.num_concurrent, 0, stream>>>(state, device_array, launch_struct.size[0], launch_struct.size[1], launch_struct.num_concurrent);
 
     // Collect result
-    float *array;
-    cudaMemcpy((void**)&array, (void**)&device_array, sizeof(float) * launch_struct.size[0] * launch_struct.size[1] * launch_struct.num_concurrent, cudaMemcpyDeviceToHost);
+    int *array = (int *)malloc(launch_struct.size[0]*launch_struct.size[1] * launch_struct.element_size);
+    cudaMemcpy(array, device_array, launch_struct.element_size * launch_struct.size[0] * launch_struct.size[1] * launch_struct.num_concurrent, cudaMemcpyDeviceToHost);
     
-    // Print result (TODO: to file)
-    for(int i=0; i<launch_struct.size[0] * launch_struct.size[1] * launch_struct.num_concurrent; i++) {
-        if(i % launch_struct.size[0] == 0) {
-            fprintf(stdout, "\n");
+    // Each element is 3 ints so we multiply by 3 and add commas and newlines appropiately
+    for(int i=0; i<launch_struct.size[0] * launch_struct.size[1] * launch_struct.num_concurrent * 3; i++) {
+        if (i % 3 == 0) {
+            fprintf(stdout, ", ");
         }
-        if (i % (launch_struct.size[0] * launch_struct.size[1]) == 0)
-        {
+        if(i % (launch_struct.size[0] * 3) == 0) {
             fprintf(stdout, "\n");
+            if (i % (launch_struct.size[0] * 3 * launch_struct.size[1]) == 0)
+            {
+                fprintf(stdout, "\n");
+            }
         }
-        fprintf(stdout, "%f ", array[i]);
+        fprintf(stdout, "%d", array[i]);
     }
+    fprintf(stdout, "\n");
     return 0;
 }
 

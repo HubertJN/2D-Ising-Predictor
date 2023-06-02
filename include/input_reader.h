@@ -6,6 +6,7 @@
 #include "../include/kvp.h"
 
 // structure to hold the configuration of the ising model, not all parameters are used in all models
+// NOTE: when adding new user set parameters update the read_input_file function in input_reader.cu
 typedef struct ising_model_config {
     // User set parameters in config file
     int model_id;     // model id
@@ -19,6 +20,8 @@ typedef struct ising_model_config {
     int num_threads;  // number of threads per block
     // System set parameters
     int num_blocks;   // number of blocks
+    int element_size; // size of the grid elements in bytes
+    int mem_size;     // size of all grids required in bytes
 } ising_model_config;
 
 
