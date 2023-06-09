@@ -6,7 +6,10 @@
 #include <float.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include "functions/functions.h" // Includes all function definitions
+// Includes function definitions
+#include "functions/read_input_variables.h" 
+#include "functions/read_input_grid.h"
+#include "functions/find_cluster_size.h" 
 
 #define MOD(a,b) ((((a)%(b))+(b))%(b))
 
@@ -54,12 +57,15 @@ int main() {
     // Define loop indices
     int islice,igrid;
 
-    // Create output array for ngrid, islice, cluster and spare for commitor
-    double *output = (double *)malloc(nreplicas*4*sizeof(double));
-    if (output==NULL){
-        fprintf(stderr,"Error allocating memory for output array!\n");
-        exit(EXIT_FAILURE);
-    } 
+    // Create output array for ngrid, islice, cluster and spare for commitor        
+    int *output_ngrid = (int *)malloc(nreplicas*sizeof(int));
+    if (output_ngrid==NULL){fprintf(stderr,"Error allocating memory for output_ngrid array!\n"); exit(EXIT_FAILURE);} 
+    int *output_slice = (int *)malloc(nreplicas*sizeof(int));
+    if (output_slice==NULL){fprintf(stderr,"Error allocating memory for output_slice array!\n"); exit(EXIT_FAILURE);} 
+    int *output_cluster = (int *)malloc(nreplicas*sizeof(int));
+    if (output_cluster==NULL){fprintf(stderr,"Error allocating memory for output_cluster array!\n"); exit(EXIT_FAILURE);} 
+    double *output_commitor = (double *)malloc(nreplicas*sizeof(double));
+    if (output_commitor==NULL){fprintf(stderr,"Error allocating memory for output_commitor array!\n"); exit(EXIT_FAILURE);} 
 
     // Allocate space to read a single grid as bits
     int nbytes = L*L/8;
@@ -73,14 +79,12 @@ int main() {
     /*--------------------------------------------/
     / Allocate memory to hold graph connectivity  /
     /--------------------------------------------*/
-    int temp_cluster_size = 0; int temp_number_of_clusters = 0;
+    int temp_cluster_size = 0;
     int *Ncon = (int *)malloc(Nvert*sizeof(int));
     if (Ncon==NULL) { printf("Error allocating Ncon array\n") ; exit(EXIT_FAILURE); }
 
     int *Lcon = (int *)malloc(Nvert*Maxcon*sizeof(int));
     if (Lcon==NULL) { printf("Error allocating Lcon array\n") ; exit(EXIT_FAILURE); }
-    int i,j,k;
-    j=0;k=0;
 
     // Main loop which finds cluster size and writes it to file
     // Loops over slices i.e. sweep snapshots
@@ -95,12 +99,18 @@ int main() {
             //for (i=0;i<L*L;i++) {printf("%d ", ising_grids[i]);}}
             // Saves grid number, slice, cluster size and spare data entry for commitor
             temp_cluster_size = find_cluster_size(L, Maxcon, ising_grids, Lcon, Ncon);
-            output[igrid*4] = (double)igrid;
-            output[igrid*4+1] = (double)islice*100;
-            output[igrid*4+2] = (double)temp_cluster_size;
-            output[igrid*4+3] = (double)-1;
+            output_ngrid[igrid] = igrid;
+            output_slice[igrid] = islice*100;
+            output_cluster[igrid] = temp_cluster_size;
+            output_commitor[igrid] = (double)-1;
         } // igrid
-        fwrite(output, sizeof(double), nreplicas*4, write_file);
+        for (igrid=0;igrid<nreplicas;igrid++) {
+            fwrite(&output_ngrid[igrid], sizeof(int), 1, write_file);
+            fwrite(&output_slice[igrid], sizeof(int), 1, write_file);
+            fwrite(&output_cluster[igrid], sizeof(int), 1, write_file);
+            fwrite(&output_commitor[igrid], sizeof(double), 1, write_file);
+        }
+        
         
     } // isweep
 /*
@@ -110,7 +120,7 @@ int main() {
     printf("\n%d\n", k);
 */
     // Free memory
-    free(bitgrid); free(output); free(ising_grids); free(Lcon); free(Ncon);
+    free(bitgrid); free(output_ngrid); free(output_slice); free(output_cluster); free(output_commitor); free(ising_grids); free(Lcon); free(Ncon);
 
     // Close files
     fclose(write_file); fclose(read_file);

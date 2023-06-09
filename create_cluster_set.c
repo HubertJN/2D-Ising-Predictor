@@ -2,10 +2,8 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
-#include <stdbool.h>
-#include <stdint.h>
 #include <stdio.h>
-#include "functions/functions.h"
+#include "functions/read_input_variables.h" 
 
 #define MOD(a,b) ((((a)%(b))+(b))%(b))
 
@@ -61,11 +59,9 @@ int main (int argc, char *argv[]) {
     }
 
     // Create loop variables
-    int i = 0, j = 0;
+    int i = 0, j = 0, k = 0;
     int islice, igrid, idiv;
-    double cluster_size_db = 0.0;
-    int cluster_size_int = 0;
-    int tot_uni_clust = 0;
+    int cluster_size = 0;
 
     // Create cluster search array
     int *cluster_search = (int *)malloc((L*L)*sizeof(int));
@@ -93,21 +89,40 @@ int main (int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    // Initialise cluster_hist
-    for (i = 0; i < L*L; i++) {cluster_hist[i] = 0;}
-    
-    fseek(index_file, 16, SEEK_CUR);
+    // Create arrays for storing for ngrid, islice, cluster and spare for commitor        
+    int *store_ngrid = (int *)malloc(nreplicas*nsweeps/100*sizeof(int));
+    if (store_ngrid==NULL){fprintf(stderr,"Error allocating memory for store_ngrid array!\n"); exit(EXIT_FAILURE);} 
+    int *store_slice = (int *)malloc(nreplicas*nsweeps/100*sizeof(int));
+    if (store_slice==NULL){fprintf(stderr,"Error allocating memory for store_slice array!\n"); exit(EXIT_FAILURE);} 
+    int *store_cluster = (int *)malloc(nreplicas*nsweeps/100*sizeof(int));
+    if (store_cluster==NULL){fprintf(stderr,"Error allocating memory for store_cluster array!\n"); exit(EXIT_FAILURE);} 
+    double *store_commitor = (double *)malloc(nreplicas*nsweeps/100*sizeof(double));
+    if (store_commitor==NULL){fprintf(stderr,"Error allocating memory for store_commitor array!\n"); exit(EXIT_FAILURE);} 
+
+    // Read and sotre data from index file
+    // Loops over slices
     for (islice=0;islice<nsweeps/100;islice++) {
         // Loops over grids of each sweep snapshot  
         for (igrid=0;igrid<nreplicas;igrid++) {
-            fread(&cluster_size_db, sizeof(double), 1, index_file);
-            fseek(index_file, 24, SEEK_CUR); // Skip to next cluster size entry
-            cluster_size_int = (int)cluster_size_db;
-            cluster_hist[cluster_size_int] += 1;
+            fread(&store_ngrid[igrid+nreplicas*islice], sizeof(int), 1, index_file);
+            fread(&store_slice[igrid+nreplicas*islice], sizeof(int), 1, index_file);
+            fread(&store_cluster[igrid+nreplicas*islice], sizeof(int), 1, index_file);
+            fread(&store_commitor[igrid+nreplicas*islice], sizeof(double), 1, index_file);
+        }
+    }
+
+    // Initialise cluster_hist
+    for (i = 0; i < L*L; i++) {cluster_hist[i] = 0;}
+    // Loops over slices
+    for (islice=0;islice<nsweeps/100;islice++) {
+        // Loops over grids of each sweep snapshot  
+        for (igrid=0;igrid<nreplicas;igrid++) {
+            cluster_size = store_cluster[igrid+nreplicas*islice];
+            cluster_hist[cluster_size] += 1;
             // Loop to check if cluster size fits in divisions, +1 to stop variables plays a role here in order to include stop within sampling
             // When "cluster_size_int < start+(idiv+1)*division_range" is checked, stop is included since start+(idiv+1)*division_range is 1 higher than stop cluster size
             for (idiv=0;idiv<divisions;idiv++) {
-                if  (cluster_size_int > start+idiv*division_range-1 && cluster_size_int < start+(idiv+1)*division_range) {
+                if  (cluster_size > start+idiv*division_range-1 && cluster_size < start+(idiv+1)*division_range) {
                     division_samples[idiv] += 1;
                 }
             }
@@ -123,7 +138,7 @@ int main (int argc, char *argv[]) {
 
     // Check if samples exist, if not end program
     if (minimum_div_samples == 0) {
-        printf("Number of minimum samples is zero. Input different range executing program.\n");
+        printf("Number of minimum samples is zero. Input different range when executing program.\n");
         exit(0);
     }
 
@@ -135,7 +150,7 @@ int main (int argc, char *argv[]) {
     // Create rejection sampling probability array
     double *reject_prob = (double *)malloc(L*L*sizeof(double)); // tot_uni_clust multiplied by two to store cluster size and probability
     if (reject_prob==NULL){
-        fprintf(stderr,"Error allocating memory for rejection probability!\n");
+        fprintf(stderr,"Error allocating memory for rejection probability array!\n");
         exit(EXIT_FAILURE);
     }
 
@@ -151,6 +166,55 @@ int main (int argc, char *argv[]) {
         if ( cluster_hist[i] != 0) {reject_prob[i] = (1.0/(double)cluster_hist[i])/inv_sum;}
     }
 
+    // Create an array of binned statistics
+    int bins = 50;
+    int bin_remainder = 0;
+    int bin_size = 0;
+    double bin_sum = 0.0;
+    double *binned_prob = (double *)malloc(bins*sizeof(double)); // tot_uni_clust multiplied by two to store cluster size and probability
+    if (binned_prob==NULL){
+        fprintf(stderr,"Error allocating memory for binned probability array!\n");
+        exit(EXIT_FAILURE);
+    }
+
+    bin_remainder = MOD(L*L, bins);
+    bin_size = (L*L-bin_remainder)/bins;
+
+    k = 0;
+
+    // Loop through first bins up to the remainder after dividing by bins. Each bin size is increased by size 1
+    for (i = 0; i < bin_remainder; i++) {
+        bin_sum = 0.0;
+        for (j = 0; j < bin_size+1; j++) {
+            bin_sum += reject_prob[j+k];
+        }
+        binned_prob[i] = bin_sum;
+        k += bin_size+1;
+    }
+    // Loop through last bins with bin size as normal
+    for (i = bin_remainder; i < bins; i++) {
+        bin_sum = 0.0;
+        for (j = 0; j < bin_size; j++) {
+            bin_sum += reject_prob[j+k];
+        }
+        binned_prob[i] = bin_sum;
+        k += bin_size;
+    }
+
+    // Set the rejection probability array to use the binned values for ease of calculation later
+    k = 0;
+    for (i = 0; i < bin_remainder; i++) {
+        for (j = 0; j < bin_size+1; j++) {
+            reject_prob[j+k] = binned_prob[i];
+        }
+        k += bin_size+1;
+    }
+    for (i = bin_remainder; i < bins; i++) {
+        for (j = 0; j < bin_size; j++) {
+            reject_prob[j+k] = binned_prob[i];
+        }
+        k += bin_size;
+    }
     int *sample_selection = (int *)malloc(divisions*samples_per_division*sizeof(int)); // stores how many of each cluster size are chosen to be sampled
     if (sample_selection==NULL){
         fprintf(stderr,"Error allocating memory for sample selection!\n");
@@ -160,37 +224,26 @@ int main (int argc, char *argv[]) {
     int maximum_random = nsweeps/100*nreplicas; // Number of rows within index.bin file i.e. number of individual grid entries
     int random_selection = 0; // Used to randomly select grid from index.bin file
     double random_percentage = 0.0; // Used to generate a number between 0 and 1 for sample acceptance
-    int bytes_per_row = 4*8; // 4 entries per row times 8 bytes per entry (doubles)
-    int bytes_to_cluster_size = 2*8; // Cluster size entry is third entry, hence skip 2 entries of size 8 bytes (double)
-    double selected_cluster_size = 0.0;
-
-    // Create output array for ngrid, islice, cluster and spare for commitor
-    double *output = (double *)malloc(4*sizeof(double));
-    if (output==NULL){
-        fprintf(stderr,"Error allocating memory for output array!\n");
-        exit(EXIT_FAILURE);
-    } 
+    int selected_cluster_size = 0;
 
     i = 0;
     while(i < divisions*samples_per_division) {
         random_selection = rand()%maximum_random;
         random_percentage = (double)rand()/(double)(RAND_MAX);
-        fseek(index_file, random_selection*bytes_per_row+bytes_to_cluster_size, SEEK_SET); // Seek from start of index file to currently selected grid cluster size
-        fread(&selected_cluster_size, sizeof(double), 1, index_file);
-        if (random_percentage < reject_prob[(int)selected_cluster_size]) {
-            fseek(index_file, -24, SEEK_CUR); // Seek back 24 bytes (3 doubles) to the start of the index.bin row
-            fread(&output[0], sizeof(double), 1, index_file);
-            fread(&output[1], sizeof(double), 1, index_file);
-            fread(&output[2], sizeof(double), 1, index_file);
-            fread(&output[3], sizeof(double), 1, index_file);
-            fwrite(output, sizeof(double), 4, commitor_file);
+        selected_cluster_size = store_cluster[random_selection];
+        if (random_percentage < reject_prob[selected_cluster_size]) {
+            fwrite(&store_ngrid[random_selection], sizeof(int), 1, commitor_file);
+            fwrite(&store_slice[random_selection], sizeof(int), 1, commitor_file);
+            fwrite(&selected_cluster_size, sizeof(int), 1, commitor_file);
+            fwrite(&store_commitor[random_selection], sizeof(double), 1, commitor_file);
             i += 1;
         }
     }  
 
     //printf("\n"); // Newline for command prompt
 
-    free(cluster_search); free(cluster_hist); free(reject_prob); free(sample_selection); free(output); free(division_samples);
+    free(cluster_search); free(cluster_hist); free(reject_prob); free(sample_selection); 
+    free(store_ngrid); free(store_slice); free(store_slice); free(store_commitor); free(division_samples); free(binned_prob);
     fclose(index_file); fclose(commitor_file); fclose(gridstates_file);
 
     /*
