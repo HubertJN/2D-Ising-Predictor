@@ -47,7 +47,10 @@ int launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config 
 
     //TODO: Create d_Pacc and d_neighbour list here and refactor precomputations to be flexible
     // Allocate memory for d_Pacc and d_neighbour_list
-    __consatant__ float d_Pacc[20];
+    int prob_size = 10;
+    launch_struct.prob_size = prob_size;
+
+    __consatant__ float d_Pacc[prob_size];
     __consatant__ int d_neighbour_list[launch_struct.size[0] * launch_struct.size[1] * 4];
 
     // Precompute

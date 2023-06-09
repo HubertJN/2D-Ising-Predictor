@@ -14,7 +14,7 @@ void preComputeProbs_gpu(ising_model_config *config, float* d_Pacc) {
     int s, nsum, index;  
     for (s=-1;s<2;s=s+2){
       for (nsum=-4;nsum<5;nsum=nsum+2){
-        index = 5*(s+1) + nsum + 4;
+        index = 5*((s+1) / 2) + ((nsum + 4) / 2);
         h_Pacc[index] = expf(-(float)beta*2.0f*(float)s*((float)nsum+(float)h));
       }
     }

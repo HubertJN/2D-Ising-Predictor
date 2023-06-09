@@ -36,7 +36,6 @@ __global__ void mc_sweep(curandState *state, const int L, const int ngrids, int 
   /* 
     * Default version of the sweep kernel, uses a neighbour list to avoid branching.
     *
-    * This version works in shared memory, the grid is copied into shared memory and copied back post nsweeps.
     * 
     * Parameters:
     * state: pointer to the RNG state array
