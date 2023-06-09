@@ -20,7 +20,7 @@ void get_number_of_models(const char* filename, int* models) {
     if (input_file == NULL) {
         fprintf(stderr, "Error: Could not open file '%s'\n", filename);
         exit(1);
-    } 
+    }
 
     char* line;
     size_t len = 0;
@@ -67,24 +67,29 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
     }
     // Preserve line num to use as end line later
 
-    // throwaway variables for kvp, match the struct
+    // throwaway variables for kvp
     int model_id;     // model id
     int num_concurrent; // number of concurrent simulations
-    int size[2];         // size of each grid, 2D
+    int size[2];         // size of each grid dimension
+    int L = 0;              // size of grid L == size[0] = size[1])
     int iterations;   // number of iterations in the simulation
     int iter_per_step; // number of iterations per step
     int seed;         // seed for the random number generator
+    float beta;       // inverse temperature
     float temperature; 
     int num_threads;
+    char input_file;
     kvp_register_i("model_id", &model_id);
     kvp_register_i("num_concurrent", &num_concurrent);
     kvp_register_i("size_x", &size[0]);
     kvp_register_i("size_y", &size[1]);
+    kvp_register_i("L", &L); // Not in the struct will be mapped to size[0] and size[1]
     kvp_register_i("iterations", &iterations);
     kvp_register_i("iter_per_step", &iter_per_step);
     kvp_register_i("seed", &seed);
     kvp_register_f("temperature", &temperature);
     kvp_register_i("num_threads", &num_threads);
+    kvp_register_s("input_file", &input_file);
     
 
     // Modify this loop to go over the line numbers instead of parsing the file line by line
@@ -94,13 +99,16 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
             // read from line_numbers[i] to eof
             fprintf(stderr, "Reading from line %d to eof\n", line_numbers[i]);
             read_lines(input_file, line_numbers[i], line_num);
-            printf("beep\n");
         }
         else {
             // read from line_numbers[i] to line_numbers[i+1]
             fprintf(stderr, "Reading from line %d to line %d\n", line_numbers[i], line_numbers[i+1]);
             read_lines(input_file, line_numbers[i], line_numbers[i+1]);
-            printf("boop\n");
+        }
+
+        if L > 0; {
+            size[0] = L;
+            size[1] = L;
         }
 
         *params_array[i] = ising_model_config{
@@ -117,4 +125,41 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
 
     // Close the file and free the memory
     fclose(input_file);
+}
+
+void load_grid(ising_model_config launch_struct, int* pinned_mem, int* dev_grid) {
+    // Load the grid from the input file
+    FILE* input_file = fopen(launch_struct.input_file, "r");
+    if (input_file == NULL) {
+        fprintf(stderr, "Error: Could not open file '%s'\n", launch_struct.input_file);
+        exit(1);
+    }
+
+    // Needs to read into the correct bit of the grid array the dev_grid must be converted to a pointer to a subsection
+
+    char* line;
+    size_t len = 0;
+    int line_num = 0;
+    int grid_size = launch_struct.size[0] * launch_struct.size[1];
+    int* grid = (int*)malloc(grid_size * sizeof(int));
+    if (grid == NULL) {
+        fprintf(stderr, "Error: Could not allocate memory\n");
+        exit(1);
+    }
+
+    //reset the file to begining
+    fseek(input_file, 0, SEEK_SET);
+    while ((getline(&line, &len, input_file)) != -1) {
+        if (line_num >= 1 && line_num < grid_size + 1) {
+            grid[line_num - 1] = atoi(line);
+        }
+        line_num++;
+    }
+
+    // Copy the grid to the pinned memory
+    cudaMemcpyAsync(pinned_mem, dev_grid, grid_size * sizeof(int));
+
+    // Close the file and free the memory
+    fclose(input_file);
+    free(grid);
 }

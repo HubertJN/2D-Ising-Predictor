@@ -28,14 +28,13 @@ __global__ void compute_magnetisation(const int L, const int ngrids, int *d_isin
   }
 
   return;
-
 }
 
 
 // sweep on the gpu - default version
-__global__ void mc_sweep_gpu(curandState *state, const int L, const int ngrids, int *d_ising_grids, int *d_neighbour_list, const float beta, const float h, int nsweeps) {
-  /* Default version of the sweep kernel, uses a neighbour list to avoid
-    * branching.
+__global__ void mc_sweep(curandState *state, const int L, const int ngrids, int *d_ising_grids, int *d_neighbour_list, const float beta, const float h, int nsweeps) {
+  /* 
+    * Default version of the sweep kernel, uses a neighbour list to avoid branching.
     *
     * This version works in shared memory, the grid is copied into shared memory and copied back post nsweeps.
     * 
@@ -45,10 +44,8 @@ __global__ void mc_sweep_gpu(curandState *state, const int L, const int ngrids, 
     * ngrids: number of grids
     * d_ising_grids: pointer to the array of grids
     * d_neighbour_list: pointer to the array of neighbour lists
-    * beta: inverse temperature
-    * h: magnetic field
     * nsweeps: number of sweeps to perform
-    */
+  */
 
   int idx = threadIdx.x+blockIdx.x*blockDim.x;
   int index;

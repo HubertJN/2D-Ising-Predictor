@@ -212,14 +212,10 @@ int main(int argc, char *argv[]) {
 
     // Queue memcopys and CUDA kernels on multiple streams ========================
     for (int i=0; i < nStreams; i++) {
-        // Copy the model configuration to the device
-        // TODO: Write this
-        // Copy the grid to the device, TODO: add switch for different grid types
-        //cudaMemcpyAsync(d_data[i], &h_data[i], sizeof(float) * sizeof(int), cudaMemcpyHostToDevice, stream[i]);
-        // Launch the CUDA kernel
+        // Switch to select the correct launch wrapper
         switch(params_array[i] -> model_id) {
             case 1:
-                testModel1(stream[i], dev_states, *params_array[i], d_data[i]);
+                launch_mc_sweep(stream[i], dev_states, *params_array[i], d_data[i]);
                 break;
             case 2:
                 testModel2(stream[i], dev_states, *params_array[i], d_data[i]);

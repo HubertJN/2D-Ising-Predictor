@@ -15,6 +15,48 @@ int init_model(ising_model_config launch_struct) {
     }
 }
 
+int launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config launch_struct, int *device_array) {
+    /*
+      * This launches the original model. Single thread per grid stored in shared memory.
+      *
+      * Updates to this should not let the function block it should add tasks to the stream.
+      *
+      * Firstly transfer any initial grid configuration to the device.
+      * Then launch the kernel.
+      * Then transfer the result back to the host.
+      * 
+      * Parameters:
+      *    stream: cuda stream to use
+      *    state: curandState array to use
+      *    launch_struct: struct containing launch parameters
+    */
+
+    // Transfer initial grid configuration to device
+    if (launch_struct.initial_grid != NULL) {
+        // create pinned host memory
+        int *host_array;
+        gpuErrchk( cudaMallocHost((void **)&host_array, launch_struct.element_size * launch_struct.size[0] * launch_struct.size[1]) );
+        // If we have initial grid(s) to load, load them, and transfer it to the device 
+        load_grid(launch_struct, host_array) 
+    } 
+    else {
+        // If we don't have an initial grid to load, generate one
+        
+        // TODO: Implement this via a kernal launch
+    }
+
+    //TODO: Create d_Pacc and d_neighbour list here and refactor precomputations to be flexible
+    // Allocate memory for d_Pacc and d_neighbour_list
+    __consatant__ float d_Pacc[20];
+    __consatant__ int d_neighbour_list[launch_struct.size[0] * launch_struct.size[1] * 4];
+
+    // Precompute
+    preComputeProbs(launch_struct, d_Pacc);
+    preComputeNeighbours(launch_struct, d_neighbour_list);
+    // Launch kernel
+    mc_sweep<<<launch_struct.num_blocks, launch_struct.num_concurrent, 0, stream>>>(state, device_array, launch_struct.size[0], launch_struct.num_concurrent);
+}
+
 
 // 
 int testModel1(cudaStream_t stream, curandState *state, ising_model_config launch_struct, int *device_array) {
@@ -45,127 +87,3 @@ int testModel1(cudaStream_t stream, curandState *state, ising_model_config launc
     return 0;
 }
 
-int testModel2(cudaStream_t stream, curandState *state, ising_model_config launch_struct) {
-    // This tests the kernal tht uses mutiple threads to fill its grid concurrently.
-    int *device_array;
-    // Allocate device memory
-    cudaMalloc((void **) &device_array, sizeof(float) * launch_struct.size[0] * launch_struct.size[1] * launch_struct.num_concurrent);
-
-    // Launch kernel
-    test_2<<<launch_struct.num_threads, launch_struct.num_concurrent, 0, stream>>>(state, device_array, launch_struct.num_threads, launch_struct.size[0], launch_struct.size[1], launch_struct.num_concurrent);
-
-    // Collect result
-    float *array;
-    cudaMemcpy((void**)&array, (void**)&device_array, sizeof(float) * launch_struct.size[0] * launch_struct.size[1] * launch_struct.num_concurrent, cudaMemcpyDeviceToHost);
-
-    // Print result (TODO: to file)
-    for(int i=0; i<launch_struct.size[0] * launch_struct.size[1] * launch_struct.num_concurrent; i++) 
-    {
-        if(i % launch_struct.size[0] == 0) {
-            fprintf(stdout, "\n");
-            if (i % (launch_struct.size[0] * launch_struct.size[1]) == 0)
-            {
-                fprintf(stdout, "\n");
-            }
-        }
-        fprintf(stdout, "%f ", array[i]);
-    } 
-   return 0; 
-}
-
-
-void launchModel1(cudaStream_t stream, curandState *state, ising_model_config launch_struct) {
-    // This model launches a kernel that is fully initilised on host working in shared memory. 
-    // This function initilises the device memory and launches the kernel, then collects the result and frees the device memory.
-    // The kernel is defined in kernels.h
-    // The kernel is launched on the stream passed as argument.
-
-    // Create pointers to device memory
-    float *device_grid;
-    // Allocate device memory
-    cudaMalloc((void **) &device_grid, sizeof(int) * launch_struct.size[0] * launch_struct.size[1] * launch_struct.num_concurrent);
-    // Allocate pinned host memory
-    int *grid;
-    cudaMallocHost((void **) &grid, sizeof(int) * launch_struct.size[0] * launch_struct.size[1] * launch_struct.num_concurrent);
-    int *magnetisation;
-    cudaMallocHost((void **) &magnetisation, sizeof(int) * launch_struct.num_concurrent);
-
-    for(int i=0; i<launch_struct.iterations; i+=launch_struct.iter_per_step) {
-        // Launch kernel
-        // ising_kernel_many<<<launch_struct.num_concurrent, 1, 0, stream>>>(state, device_grid, launch_struct.size[0], launch_struct.size[1], launch_struct.iter_per_step, launch_struct.temperature);
-        // compute_magnetisation<<<launch_struct.num_concurrent, 1, 0, stream>>>(device_grid, launch_struct.size[0], launch_struct.size[1], magnetisation);
-        
-        // Collect result
-        cudaMemcpyAsync(grid, device_grid, sizeof(int) * launch_struct.size[0] * launch_struct.size[1], cudaMemcpyDeviceToHost, stream);
-    }
-
-    // Free device memory
-    cudaFree(device_grid);
-    // Free pinned host memory
-    cudaFreeHost(grid);
-    cudaFreeHost(magnetisation);
-}
-
-void launchModel2(cudaStream_t stream, curandState *state, ising_model_config launch_struct) {
-    // This model launches a kernel that is fully initilised on host working in shared memory. 
-    // This function initilises the device memory and launches the kernel, then collects the result and frees the device memory.
-    // The kernel is defined in kernels.h
-    // The kernel is launched on the stream passed as argument.
-
-    // Create pointers to device memory
-    float *device_grid;
-    // Allocate device memory
-    cudaMalloc((void **) &device_grid, sizeof(int) * launch_struct.size[0] * launch_struct.size[1] * launch_struct.num_concurrent);
-    // Allocate pinned host memory
-    int *grid;
-    cudaMallocHost((void **) &grid, sizeof(int) * launch_struct.size[0] * launch_struct.size[1] * launch_struct.num_concurrent);
-    int *magnetisation;
-    cudaMallocHost((void **) &magnetisation, sizeof(int) * launch_struct.num_concurrent);
-
-    for(int i=0; i<launch_struct.iterations; i+=launch_struct.iter_per_step) {
-        // Launch kernel
-        // ising_kernel_many<<<launch_struct.num_concurrent, 1, 0, stream>>>(state, device_grid, launch_struct.size[0], launch_struct.size[1], launch_struct.iter_per_step, launch_struct.temperature);
-        // compute_magnetisation<<<launch_struct.num_concurrent, 1, 0, stream>>>(device_grid, launch_struct.size[0], launch_struct.size[1], magnetisation);
-        
-        // Collect result
-        cudaMemcpyAsync(grid, device_grid, sizeof(int) * launch_struct.size[0] * launch_struct.size[1], cudaMemcpyDeviceToHost, stream);
-    }
-
-    // Free device memory
-    cudaFree(device_grid);
-    // Free pinned host memory
-    cudaFreeHost(grid);
-    cudaFreeHost(magnetisation);
-}
-
-void launchModel3(cudaStream_t stream, curandState *state, ising_model_config launch_struct) {
-    // This model launches a kernel that is fully initilised on host working in shared memory. 
-    // This function initilises the device memory and launches the kernel, then collects the result and frees the device memory.
-    // The kernel is defined in kernels.h
-    // The kernel is launched on the stream passed as argument.
-
-    // Create pointers to device memory
-    float *device_grid;
-    // Allocate device memory
-    cudaMalloc((void **) &device_grid, sizeof(int) * launch_struct.size[0] * launch_struct.size[1] * launch_struct.num_concurrent);
-    // Allocate pinned host memory
-    int *grid;
-    cudaMallocHost((void **) &grid, sizeof(int) * launch_struct.size[0] * launch_struct.size[1] * launch_struct.num_concurrent);
-    int *magnetisation;
-    cudaMallocHost((void **) &magnetisation, sizeof(int) * launch_struct.num_concurrent);
-
-    for(int i=0; i<launch_struct.iterations; i+=launch_struct.iter_per_step) {
-        // Launch kernel
-        // ising_kernel_many<<<launch_struct.num_concurrent, 1, 0, stream>>>(state, device_grid, launch_struct.size[0], launch_struct.size[1], launch_struct.iter_per_step, launch_struct.temperature);
-        // compute_magnetisation<<<launch_struct.num_concurrent, 1, 0, stream>>>(device_grid, launch_struct.size[0], launch_struct.size[1], magnetisation);
-        
-        // Collect result
-        cudaMemcpyAsync(grid, device_grid, sizeof(int) * launch_struct.size[0] * launch_struct.size[1], cudaMemcpyDeviceToHost, stream);
-    }
-
-    // Free device memory
-    cudaFree(device_grid);
-    // Free pinned host memory
-    cudaFreeHost(grid);
-    cudaFreeHost(magnetisation);
-}
