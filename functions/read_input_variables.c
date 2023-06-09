@@ -1,6 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include "functions.h" // Includes all function definitions
+#include "read_input_variables.h"
 
 // Function which takes variable storage and a file name, then opens the file with given file name and reads input variables into provided storage. Closes file once finished.
 void read_input_variables(int *L, int *nreplicas, int *nsweeps, int *mag_output_int, int *grid_output_int, int *threadsPerBlock, int *gpu_device, int *gpu_method, double *beta, double *h) {

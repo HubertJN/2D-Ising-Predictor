@@ -1,6 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include "functions.h" // Includes all function definitions
+#include "find_cluster_size.h" // Includes all function definitions
 
 #define MOD(a,b) ((((a)%(b))+(b))%(b))
 
