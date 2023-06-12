@@ -120,7 +120,7 @@ int main (int argc, char *argv[]) {
     }
 
     // Create an array of binned statistics
-    int bins = 100;
+    int bins = 500;
     int bin_remainder = 0;
     int bin_size = 0;
     double bin_sum = 0.0;
@@ -184,7 +184,7 @@ int main (int argc, char *argv[]) {
         random_selection = rand()%maximum_random;
         random_percentage = (double)rand()/(double)(RAND_MAX);
         selected_cluster_size = store_cluster[random_selection];
-        if (random_percentage < reject_prob[selected_cluster_size]) {
+        if (random_percentage < reject_prob[selected_cluster_size] && selected_cluster_size != 0) {
             fwrite(&store_ngrid[random_selection], sizeof(int), 1, commitor_file);
             fwrite(&store_slice[random_selection], sizeof(int), 1, commitor_file);
             fwrite(&selected_cluster_size, sizeof(int), 1, commitor_file);
