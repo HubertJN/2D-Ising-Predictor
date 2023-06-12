@@ -80,7 +80,8 @@ __global__ void mc_sweep(curandState *state, const int L, const int ngrids, int 
       n4 = loc_grid[L*row + (col+L-1)%L];
 
       //n_sum = 4;
-      index = 5*(spin+1) + n1+n2+n3+n4 + 4;
+      // index = 5*(spin+1) + n1+n2+n3+n4 + 4;
+      index = ((spin+1) >> 1) + (n1+n2+n3+n4) + 4;
 
       // The store back to global memory, not the branch or the RNG generation
       // seems to be the killer here.
