@@ -1,21 +1,35 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import struct
+from scipy.stats import binned_statistic
 
 file = open('bin/index.bin', 'rb')
 
-histogram = np.zeros(64*64)
-
-one_index = np.fromfile(file, dtype=np.float64, count=4, sep='')
+histogram = np.zeros([64*64,2])
 
 while True:
-    one_index = np.fromfile(file, dtype=np.float64, count=4, sep='')
+    first = np.fromfile(file, dtype=np.int32, count=3, sep='')
+    last = np.fromfile(file, dtype=np.float64, count=1)
+    
     # check
-    if one_index.size < 4:
+    if first.size < 3:
         break
     # proccess data
-    histogram[int(one_index[3])] += 1
+    histogram[first[2],1] += 1
+
+inv_sum = 0
+for i in range(64*64):
+    histogram[i,0] = i
+    if (histogram[i,1] != 0):
+        histogram[i,1] = 1/histogram[i,1]
+        inv_sum += histogram[i,1]
+
+histogram[:,1] = histogram[:,1]/inv_sum
 
 file.close()
 
-plt.hist(histogram)
+bin_sum, bin_edges, binnumber = binned_statistic(histogram[:,0], histogram[:,1], statistic='sum', bins=50)
+bin_width = (bin_edges[1] - bin_edges[0])
+bin_centers = bin_edges[1:] - bin_width/2
+
+plt.stairs(bin_sum, bin_edges)
+plt.show()
