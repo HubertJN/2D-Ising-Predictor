@@ -5,7 +5,7 @@
 int find_cluster_size(int L, int Maxcon, int *grid, int* Lcon, int* Ncon) {
 
     /* Size of largest cluster, and number of clusters */
-    int lclus,nclus,avlclus;
+    int lclus,avlclus;
     /* Define indices */
     int i=0; int j=0;
     /* Number of vertices */
@@ -14,7 +14,6 @@ int find_cluster_size(int L, int Maxcon, int *grid, int* Lcon, int* Ncon) {
     / Initialise averages   /
     /----------------------*/
     lclus = 0;
-    nclus = 0;
     avlclus = 0;
 
     for (i=0;i<Nvert;i++)        { Ncon[i] =  0; } /* Initialise num. connections */

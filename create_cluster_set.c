@@ -13,17 +13,14 @@ int main (int argc, char *argv[]) {
     srand(time(NULL));
 
     // Process commandline input
-    if (argc != 5) {
-        printf("Usage : start stop divisions samples_per_division\n");
+    if (argc != 2) {
+        printf("Usage : samples\n");
         exit(EXIT_FAILURE);
     }
     
-    int start, stop, divisions, samples_per_division;
+    int samples;
 
-    start = atoi(argv[1]); // Cluster size to start from
-    stop = atoi(argv[2])+1; // Cluster size to end at, +1 in order to make range inclusive
-    divisions = atoi(argv[3]); // How sample range is split i.e. 2 means sample range is divided in half
-    samples_per_division = atoi(argv[4]); // Samples to be chosen per division
+    samples = atoi(argv[1]); // Samples to be chosen per division
 
     // Define and read input variables
     int L, nreplicas, nsweeps, mag_output_int, grid_output_int, threadsPerBlock, gpu_device, gpu_method;
@@ -33,7 +30,6 @@ int main (int argc, char *argv[]) {
     // Set filenames
     const char *index_filename = "index.bin";
     const char *commitor_filename = "commitor_calc_index.bin";
-    const char *gridstates_filename = "gridstates.bin";
 
     // Open file to read
     FILE *index_file = fopen(index_filename,"rb");
@@ -51,16 +47,10 @@ int main (int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    // Open file to read
-    FILE *gridstates_file = fopen(gridstates_filename,"rb");
-    if (gridstates_file==NULL){
-        fprintf(stderr, "Error opening %s for input!\n", gridstates_filename);
-        exit(EXIT_FAILURE);
-    }
 
     // Create loop variables
     int i = 0, j = 0, k = 0;
-    int islice, igrid, idiv;
+    int islice, igrid;
     int cluster_size = 0;
 
     // Create cluster search array
@@ -69,18 +59,6 @@ int main (int argc, char *argv[]) {
         fprintf(stderr,"Error allocating memory for cluster search!\n");
         exit(EXIT_FAILURE);
     }
-    
-    // Create divisions
-    double division_range = (stop - start)/divisions;
-
-    // Check minimum number of available samples per division
-    // Create sample number per division array and initialise
-    int *division_samples = (int *)malloc(divisions*sizeof(int));
-    if (division_samples==NULL){
-        fprintf(stderr,"Error allocating memory for division samples!\n");
-        exit(EXIT_FAILURE);
-    }
-    for (idiv=0;idiv<divisions;idiv++) {division_samples[idiv] = 0;}
 
     // Create cluster histogram array
     int *cluster_hist = (int *)malloc(L*L*sizeof(int)); // tot_uni_clust multiplied by two to store cluster size and number of occurences of cluster size
@@ -119,33 +97,8 @@ int main (int argc, char *argv[]) {
         for (igrid=0;igrid<nreplicas;igrid++) {
             cluster_size = store_cluster[igrid+nreplicas*islice];
             cluster_hist[cluster_size] += 1;
-            // Loop to check if cluster size fits in divisions, +1 to stop variables plays a role here in order to include stop within sampling
-            // When "cluster_size_int < start+(idiv+1)*division_range" is checked, stop is included since start+(idiv+1)*division_range is 1 higher than stop cluster size
-            for (idiv=0;idiv<divisions;idiv++) {
-                if  (cluster_size > start+idiv*division_range-1 && cluster_size < start+(idiv+1)*division_range) {
-                    division_samples[idiv] += 1;
-                }
-            }
         } // igrid
     } // isweep
-    // Find minimum number of sample across divisions
-    int minimum_div_samples = division_samples[0];
-    for (idiv=0;idiv<divisions;idiv++) {
-        if (minimum_div_samples < division_samples[idiv]) {
-            minimum_div_samples = division_samples[idiv];
-        }
-    }
-
-    // Check if samples exist, if not end program
-    if (minimum_div_samples == 0) {
-        printf("Number of minimum samples is zero. Input different range when executing program.\n");
-        exit(0);
-    }
-
-    // Process commandline input for number of samples per division
-    //printf("Minimum number of samples across divisions: %d.\nInput number of samples per divisons, number must be smaller or equal to minimum:\n", minimum_div_samples);
-    //fflush(stdout);
-    //scanf("%d", &samples_per_division);
 
     // Create rejection sampling probability array
     double *reject_prob = (double *)malloc(L*L*sizeof(double)); // tot_uni_clust multiplied by two to store cluster size and probability
@@ -167,7 +120,7 @@ int main (int argc, char *argv[]) {
     }
 
     // Create an array of binned statistics
-    int bins = 50;
+    int bins = 100;
     int bin_remainder = 0;
     int bin_size = 0;
     double bin_sum = 0.0;
@@ -215,7 +168,7 @@ int main (int argc, char *argv[]) {
         }
         k += bin_size;
     }
-    int *sample_selection = (int *)malloc(divisions*samples_per_division*sizeof(int)); // stores how many of each cluster size are chosen to be sampled
+    int *sample_selection = (int *)malloc(samples*sizeof(int)); // stores how many of each cluster size are chosen to be sampled
     if (sample_selection==NULL){
         fprintf(stderr,"Error allocating memory for sample selection!\n");
         exit(EXIT_FAILURE);
@@ -227,7 +180,7 @@ int main (int argc, char *argv[]) {
     int selected_cluster_size = 0;
 
     i = 0;
-    while(i < divisions*samples_per_division) {
+    while(i < samples) {
         random_selection = rand()%maximum_random;
         random_percentage = (double)rand()/(double)(RAND_MAX);
         selected_cluster_size = store_cluster[random_selection];
@@ -243,8 +196,8 @@ int main (int argc, char *argv[]) {
     //printf("\n"); // Newline for command prompt
 
     free(cluster_search); free(cluster_hist); free(reject_prob); free(sample_selection); 
-    free(store_ngrid); free(store_slice); free(store_slice); free(store_commitor); free(division_samples); free(binned_prob);
-    fclose(index_file); fclose(commitor_file); fclose(gridstates_file);
+    free(store_ngrid); free(store_slice); free(store_cluster); free(store_commitor); free(binned_prob);
+    fclose(index_file); fclose(commitor_file);
 
     /*
     FILE *commitor_file1 = fopen(commitor_filename,"rb");
@@ -254,7 +207,7 @@ int main (int argc, char *argv[]) {
     }
 
     fseek(commitor_file1, 0, SEEK_SET);
-    for (i=0;i<samples_per_division*4;i++) {
+    for (i=0;i<samples*4;i++) {
         if (i%4==0) {printf("\n");}
         fread(&random_percentage, sizeof(double), 1, commitor_file1);
         printf("%f ", random_percentage);
