@@ -4,6 +4,7 @@
 #include <time.h>
 #include <stdio.h>
 #include "functions/read_input_variables.h" 
+#include "functions/comparison.h" 
 
 #define MOD(a,b) ((((a)%(b))+(b))%(b))
 
@@ -53,13 +54,6 @@ int main (int argc, char *argv[]) {
     int islice, igrid;
     int cluster_size = 0;
 
-    // Create cluster search array
-    int *cluster_search = (int *)malloc((L*L)*sizeof(int));
-    if (cluster_search==NULL){
-        fprintf(stderr,"Error allocating memory for cluster search!\n");
-        exit(EXIT_FAILURE);
-    }
-
     // Create cluster histogram array
     int *cluster_hist = (int *)malloc(L*L*sizeof(int)); // tot_uni_clust multiplied by two to store cluster size and number of occurences of cluster size
     if (cluster_hist==NULL){
@@ -86,6 +80,62 @@ int main (int argc, char *argv[]) {
             fread(&store_slice[igrid+nreplicas*islice], sizeof(int), 1, index_file);
             fread(&store_cluster[igrid+nreplicas*islice], sizeof(int), 1, index_file);
             fread(&store_commitor[igrid+nreplicas*islice], sizeof(double), 1, index_file);
+        }
+    }
+
+    // Sort the loaded arrays based on the cluster size
+    int **p_store_cluster = malloc(nreplicas*nsweeps/100*sizeof(long));;
+    int ta, tb, tc, td;
+
+    // create array of pointers to store_cluster
+    for (i = 0; i < nreplicas*nsweeps/100; i++) {
+        p_store_cluster[i] = &store_cluster[i];
+    }
+
+    // sort array of pointers
+    qsort(p_store_cluster, nreplicas*nsweeps/100, sizeof(p_store_cluster[0]), compare);
+
+    // reorder loaded arrays according to the array of pointers
+    for(i=0;i<nreplicas*nsweeps/100;i++){
+        if(i != p_store_cluster[i]-store_cluster){
+            ta = store_ngrid[i];
+            tb = store_slice[i];
+            tc = store_cluster[i];
+            td = store_commitor[i];
+            k = i;
+            while(i != (j = p_store_cluster[k]-store_cluster)){
+                store_ngrid[k] = store_ngrid[j];
+                store_slice[k] = store_slice[j];
+                store_cluster[k] = store_cluster[j];
+                store_commitor[k] = store_commitor[k];
+                p_store_cluster[k] = &store_cluster[k];
+                k = j;
+            }
+            store_ngrid[k] = ta;
+            store_slice[k] = tb;
+            store_cluster[k] = tc;
+            store_commitor[k] = td;
+            p_store_cluster[k] = &store_cluster[k];
+        }
+    }
+
+    for(i = 0; i < 50; i++)
+        printf("%d ", store_cluster[i]);
+    printf("\n");
+
+    // Find indices of start cluster and final cluster size to go to
+    int start_index = 0;
+    int end_index = 0;
+    for (i=0;i<nreplicas*nsweeps/100;i++) {
+        if (store_cluster[i] == (int) 0.025*L*L) {
+            start_index = i;
+            break;
+        }
+    }
+    for (i=0;i<nreplicas*nsweeps/100;i++) {
+        if (store_cluster[i] == (int) 0.975*L*L) {
+            end_index = i;
+            break;
         }
     }
 
@@ -120,7 +170,7 @@ int main (int argc, char *argv[]) {
     }
 
     // Create an array of binned statistics
-    int bins = 500;
+    int bins = 250;
     int bin_remainder = 0;
     int bin_size = 0;
     double bin_sum = 0.0;
@@ -174,29 +224,29 @@ int main (int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    int maximum_random = nsweeps/100*nreplicas; // Number of rows within index.bin file i.e. number of individual grid entries
+    int maximum_random = nsweeps/100*nreplicas-start_index-end_index; // Number of rows within index.bin file i.e. number of individual grid entries
     int random_selection = 0; // Used to randomly select grid from index.bin file
     double random_percentage = 0.0; // Used to generate a number between 0 and 1 for sample acceptance
     int selected_cluster_size = 0;
 
     i = 0;
     while(i < samples) {
-        random_selection = rand()%maximum_random;
+        random_selection = rand()%maximum_random+start_index;
         random_percentage = (double)rand()/(double)(RAND_MAX);
         selected_cluster_size = store_cluster[random_selection];
-        if (random_percentage < reject_prob[selected_cluster_size] && selected_cluster_size != 0) {
+        if (random_percentage < reject_prob[selected_cluster_size]) {
             fwrite(&store_ngrid[random_selection], sizeof(int), 1, commitor_file);
             fwrite(&store_slice[random_selection], sizeof(int), 1, commitor_file);
             fwrite(&selected_cluster_size, sizeof(int), 1, commitor_file);
             fwrite(&store_commitor[random_selection], sizeof(double), 1, commitor_file);
             i += 1;
-        }
+        } 
     }  
 
     //printf("\n"); // Newline for command prompt
 
-    free(cluster_search); free(cluster_hist); free(reject_prob); free(sample_selection); 
-    free(store_ngrid); free(store_slice); free(store_cluster); free(store_commitor); free(binned_prob);
+    free(cluster_hist); free(reject_prob); free(sample_selection); 
+    free(store_ngrid); free(store_slice); free(store_cluster); free(store_commitor); free(binned_prob); free(p_store_cluster);
     fclose(index_file); fclose(commitor_file);
 
     /*
