@@ -32,17 +32,17 @@ __global__ void compute_magnetisation(const int L, const int ngrids, int *d_isin
 
 
 // sweep on the gpu - default version
-__global__ void mc_sweep(curandState *state, const int L, const int ngrids, int *d_ising_grids, int *d_neighbour_list, const float beta, const float h, int nsweeps) {
+__global__ void mc_sweep(curandState *state, const int L_x, const int L_y, const int ngrids, int *d_ising_grids, const float beta, const float h, int nsweeps) {
   /* 
     * Default version of the sweep kernel, uses a neighbour list to avoid branching.
     *
     * 
     * Parameters:
     * state: pointer to the RNG state array
-    * L: linear size of the grid
+    * L_x: linear size of the grid (x dimension)
+    * L_y: linear size of the grid (y dimension)
     * ngrids: number of grids
     * d_ising_grids: pointer to the array of grids
-    * d_neighbour_list: pointer to the array of neighbour lists
     * nsweeps: number of sweeps to perform
   */
 

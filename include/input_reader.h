@@ -17,6 +17,7 @@ typedef struct ising_model_config {
     int seed;         // seed for the random number generator
     float temperature;  // temperature of the system
     char* input_file; // input file name
+    int starting_config; // starting configuration
     // User or System set parameters
     int num_threads;  // number of threads per block
     // System set parameters

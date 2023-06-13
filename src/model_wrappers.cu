@@ -17,7 +17,7 @@ int init_model(ising_model_config launch_struct) {
 
 int launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config launch_struct, int *device_array) {
     /*
-      * This launches the original model. Single thread per grid stored in shared memory.
+      * This launches the original model. Single thread per grid.
       *
       * Updates to this should not let the function block it should add tasks to the stream.
       *
@@ -31,18 +31,35 @@ int launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config 
       *    launch_struct: struct containing launch parameters
     */
 
-    // Transfer initial grid configuration to device
-    if (launch_struct.initial_grid != NULL) {
-        // create pinned host memory
-        int *host_array;
-        gpuErrchk( cudaMallocHost((void **)&host_array, launch_struct.element_size * launch_struct.size[0] * launch_struct.size[1]) );
-        // If we have initial grid(s) to load, load them, and transfer it to the device 
-        load_grid(launch_struct, host_array) 
-    } 
-    else {
-        // If we don't have an initial grid to load, generate one
-        
-        // TODO: Implement this via a kernal launch
+    // Allocate memory for device array
+    gpuErrchk( cudaMalloc((void **)&device_array, launch_struct.element_size * launch_struct.size[0] * launch_struct.size[1]) );
+
+    switch(launch_struct.starting_config) {
+        case 0:
+            // Load Grid from file
+            if (launch_struct.initial_grid != NULL) {
+                // create pinned host memory
+                int *host_array;
+                gpuErrchk( cudaMallocHost((void **)&host_array, launch_struct.element_size * launch_struct.size[0] * launch_struct.size[1]) );
+                // If we have initial grid(s) to load, load them, and transfer it to the device 
+                load_grid(launch_struct, host_array, device_array);
+            } 
+            else {
+                fprintf(stderr, "No initial grid to load.\n");
+            }
+            break;
+        case 1:
+            // Random
+            break;
+        case 2:
+            // All up
+            break;
+        case 3:
+            // All down
+            break;
+        default:
+            fprintf(stderr, "Invalid starting configuration.\n");
+            break;
     }
 
     //TODO: Create d_Pacc and d_neighbour list here and refactor precomputations to be flexible
@@ -57,7 +74,7 @@ int launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config 
     preComputeProbs(launch_struct, d_Pacc);
     preComputeNeighbours(launch_struct, d_neighbour_list);
     // Launch kernel
-    mc_sweep<<<launch_struct.num_blocks, launch_struct.num_concurrent, 0, stream>>>(state, device_array, launch_struct.size[0], launch_struct.num_concurrent);
+    mc_sweep<<<launch_struct.num_blocks, launch_struct.num_concurrent, 0, stream>>>(state, launch_struct.size[0], launch_struct.size[1], device_array, launch_struct.num_concurrent);
 }
 
 

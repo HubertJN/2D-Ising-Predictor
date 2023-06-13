@@ -127,39 +127,39 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
     fclose(input_file);
 }
 
-void load_grid(ising_model_config launch_struct, int* pinned_mem, int* dev_grid) {
-    // Load the grid from the input file
+void load_grid(ising_model_config launch_struct, int* host_grid, int* dev_grid) {
+    /* Load the grid from the input file, this function reads a file line by line into host_grid
+    then does an async copy to dev_grid
+    Parameters:
+        launch_struct: struct containing the launch parameters
+        host_grid: pointer to the host grid, Pinned memory
+        dev_grid: pointer to the device grid
+    */
+
     FILE* input_file = fopen(launch_struct.input_file, "r");
     if (input_file == NULL) {
         fprintf(stderr, "Error: Could not open file '%s'\n", launch_struct.input_file);
         exit(1);
     }
 
-    // Needs to read into the correct bit of the grid array the dev_grid must be converted to a pointer to a subsection
-
     char* line;
     size_t len = 0;
     int line_num = 0;
     int grid_size = launch_struct.size[0] * launch_struct.size[1];
-    int* grid = (int*)malloc(grid_size * sizeof(int));
-    if (grid == NULL) {
-        fprintf(stderr, "Error: Could not allocate memory\n");
-        exit(1);
-    }
 
     //reset the file to begining
     fseek(input_file, 0, SEEK_SET);
+    // Each grid element is on a new line.
+    // TODO: Be smarter about this
+    // MAYBE: Precalculte the bits required to store each element then read directly into the host grid
     while ((getline(&line, &len, input_file)) != -1) {
-        if (line_num >= 1 && line_num < grid_size + 1) {
-            grid[line_num - 1] = atoi(line);
-        }
+        host_grid[line_num] = atoi(line);
         line_num++;
     }
 
-    // Copy the grid to the pinned memory
-    cudaMemcpyAsync(pinned_mem, dev_grid, grid_size * sizeof(int));
+    // Copy to the device grid from the pinned memory
+    cudaMemcpyAsync(host_grid, dev_grid, grid_size * sizeof(int));
 
     // Close the file and free the memory
     fclose(input_file);
-    free(grid);
 }
