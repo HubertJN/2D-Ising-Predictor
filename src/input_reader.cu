@@ -79,7 +79,7 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
     float inv_temperature; // inverse temperature
     int starting_config; // starting configuration
     int num_threads;
-    char input_file;
+    char* grid_file;
     kvp_register_i("model_id", &model_id);
     kvp_register_i("num_concurrent", &num_concurrent);
     kvp_register_i("size_x", &size[0]);
@@ -89,9 +89,9 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
     kvp_register_i("iter_per_step", &iter_per_step);
     kvp_register_i("seed", &seed);
     kvp_register_f("inv_temperature", &inv_temperature);
-    kvp_register_f("field", &field)
+    kvp_register_f("field", &field);
     kvp_register_i("num_threads", &num_threads);
-    kvp_register_s("input_file", &input_file);
+    kvp_register_c("input_file", grid_file);
     kvp_register_i("starting_config", &starting_config);
     
 
@@ -109,7 +109,7 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
             read_lines(input_file, line_numbers[i], line_numbers[i+1]);
         }
 
-        if L > 0; {
+        if (L > 0) {
             size[0] = L;
             size[1] = L;
         }
@@ -123,12 +123,10 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
             .seed = seed,
             .inv_temperature = inv_temperature,
             .field = field,
-            .input_file = input_file,
+            .input_file = grid_file,
             .starting_config = starting_config
         };
-        
     }
-
     // Close the file and free the memory
     fclose(input_file);
 }
@@ -164,7 +162,7 @@ void load_grid(ising_model_config launch_struct, int* host_grid, int* dev_grid) 
     }
 
     // Copy to the device grid from the pinned memory
-    cudaMemcpyAsync(host_grid, dev_grid, grid_size * sizeof(int));
+    cudaMemcpyAsync(dev_grid, host_grid, grid_size * sizeof(int), cudaMemcpyHostToDevice);
 
     // Close the file and free the memory
     fclose(input_file);
