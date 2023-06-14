@@ -1,26 +1,11 @@
 ## New model ##
 model_id=1
+num_concurrent=5
 size_x=10
 size_y=10
-temperature=1.0
 iterations=1000
 iter_per_step=100
-num_concurrent=5
-
-## New model ##
-model_id=2
-size_x=20
-size_y=5
-temperature=2
-iterations=10000
-iter_per_step=10
-num_concurrent=1
-
-## New model ##
-model_id=3
-size_x=20
-size_y=20
-temperature=-1
-iterations=100000
-iter_per_step=100
-num_concurrent=2
+seed=1
+inv_temperature=1.0
+field=1.0
+starting_config=1

@@ -4,10 +4,7 @@ int init_model(ising_model_config launch_struct) {
     // Add model specific launch parameters
     switch(launch_struct -> model_id) {
         case 1:
-            launch_struct.element_size = 3*sizeof(int);
-            break;
-        case 2:
-            launch_struct.element_size = 3*sizeof(int);
+            launch_struct.element_size = sizeof(int);
             break;
         default:
             fprintf(stderr, "Invalid model selection.\n");
@@ -50,12 +47,15 @@ int launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config 
             break;
         case 1:
             // Random
+            init_random<<<launch_struct.num_blocks, launch_struct.num_concurrent, 0, stream>>>(state, device_array, launch_struct.size[0], launch_struct.size[1], launch_struct.num_concurrent);
             break;
         case 2:
             // All up
+            init_ud_grids<<<launch_struct.num_blocks, launch_struct.num_concurrent, 0, stream>>>(device_array, launch_struct.size[0], launch_struct.size[1], launch_struct.num_concurrent, 1);
             break;
         case 3:
             // All down
+            init_ud_grids<<<launch_struct.num_blocks, launch_struct.num_concurrent, 0, stream>>>(device_array, launch_struct.size[0], launch_struct.size[1], launch_struct.num_concurrent, -1);
             break;
         default:
             fprintf(stderr, "Invalid starting configuration.\n");
@@ -74,36 +74,5 @@ int launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config 
     preComputeProbs(launch_struct, d_Pacc);
     preComputeNeighbours(launch_struct, d_neighbour_list);
     // Launch kernel
-    mc_sweep<<<launch_struct.num_blocks, launch_struct.num_concurrent, 0, stream>>>(state, launch_struct.size[0], launch_struct.size[1], device_array, launch_struct.num_concurrent);
+    mc_sweep<<<launch_struct.num_blocks, launch_struct.num_concurrent, 0, stream>>>(state, launch_struct.size[0], launch_struct.size[1], launch_struct.num_concurrent, device_array, launch_struct.inv_temperature, launch_struct.field, launch_struct.iter_per_step);
 }
-
-
-// 
-int testModel1(cudaStream_t stream, curandState *state, ising_model_config launch_struct, int *device_array) {
-    // This tests the kernal that uses one thread to fill its grid sequentially.
-
-    // Launch kernel
-    test_1<<<launch_struct.num_blocks, launch_struct.num_concurrent, 0, stream>>>(state, device_array, launch_struct.size[0], launch_struct.size[1], launch_struct.num_concurrent);
-
-    // Collect result
-    int *array = (int *)malloc(launch_struct.size[0]*launch_struct.size[1] * launch_struct.element_size);
-    cudaMemcpy(array, device_array, launch_struct.element_size * launch_struct.size[0] * launch_struct.size[1] * launch_struct.num_concurrent, cudaMemcpyDeviceToHost);
-    
-    // Each element is 3 ints so we multiply by 3 and add commas and newlines appropiately
-    for(int i=0; i<launch_struct.size[0] * launch_struct.size[1] * launch_struct.num_concurrent * 3; i++) {
-        if (i % 3 == 0) {
-            fprintf(stdout, ", ");
-        }
-        if(i % (launch_struct.size[0] * 3) == 0) {
-            fprintf(stdout, "\n");
-            if (i % (launch_struct.size[0] * 3 * launch_struct.size[1]) == 0)
-            {
-                fprintf(stdout, "\n");
-            }
-        }
-        fprintf(stdout, "%d", array[i]);
-    }
-    fprintf(stdout, "\n");
-    return 0;
-}
-

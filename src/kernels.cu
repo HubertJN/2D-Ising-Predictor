@@ -30,12 +30,57 @@ __global__ void compute_magnetisation(const int L, const int ngrids, int *d_isin
   return;
 }
 
+// initialise the ising grids on the gpu
+__global__ void init_rand_grids(curandState *state, const int L_x, const int L_y, const int ngrids, int *device_grids) {
+
+  int idx = threadIdx.x+blockIdx.x*blockDim.x;
+
+  if (idx < ngrids) {
+
+    // local copy of RNG state for current threads
+    curandState localState = state[idx];
+
+    int N = L_x*L_y;
+    // Avoid rounding errors after creating random numbers by ensuring out max
+    // is upto 1.0f not up to 1.0f + FLT_EPSILON
+    float shrink = (1.0f - FLT_EPSILON)*(float)N;
+
+    for (int i=0;i<N;i++) {
+      if (curand_uniform(&localState) < 0.5f) {
+        device_grids[idx*N + i] = 1;
+      } else {
+        device_grids[idx*N + i] = -1;
+      }
+    }
+
+  }
+
+  return;
+}
+
+// initialise the ising grids on the gpu
+__global__ void init_ud_grids(const int L_x, const int L_y, const int ngrids, int *device_grids, const int u_d) {
+
+  int idx = threadIdx.x+blockIdx.x*blockDim.x;
+
+  if (idx < ngrids) {
+
+    int N = L_x*L_y;
+
+    for (int i=0;i<N;i++) {
+      device_grids[idx*N + i] = u_d;
+    }
+
+  }
+
+  return;
+}
+
 
 // sweep on the gpu - default version
 __global__ void mc_sweep(curandState *state, const int L_x, const int L_y, const int ngrids, int *d_ising_grids, const float beta, const float h, int nsweeps) {
   /* 
     * Default version of the sweep kernel, uses a neighbour list to avoid branching.
-    *
     * 
     * Parameters:
     * state: pointer to the RNG state array
@@ -51,10 +96,10 @@ __global__ void mc_sweep(curandState *state, const int L_x, const int L_y, const
 
   if (idx < ngrids) {
 
-    // local copy of RNG state for current threads 
+    // local copy of RNG state for current threads
     curandState localState = state[idx];
 
-    int N = L*L;
+    int N = L_x*L_y;
     // Avoid rounding errors after creating random numbers by ensuring out max
     // is upto 1.0f not up to 1.0f + FLT_EPSILON
     float shrink = (1.0f - FLT_EPSILON)*(float)N;
@@ -74,11 +119,15 @@ __global__ void mc_sweep(curandState *state, const int L_x, const int L_y, const
       spin = loc_grid[my_idx];
 
       // find neighbours, periodic boundary conditions. D,U,L,R
-      n1 = loc_grid[L*((row+1)%L) + col];
-      n2 = loc_grid[L*((row+L-1)%L) + col];
-      n3 = loc_grid[L*row + (col+1)%L];
-      n4 = loc_grid[L*row + (col+L-1)%L];
-
+      // n1 = loc_grid[L*((row+1)%L) + col];
+      // n2 = loc_grid[L*((row+L-1)%L) + col];
+      // n3 = loc_grid[L*row + (col+1)%L];
+      // n4 = loc_grid[L*row + (col+L-1)%L];
+      // use neighbour list to get neighbours from constant memory
+      n1 = loc_grid[d_neighbour_list[my_idx] + 0];
+      n2 = loc_grid[d_neighbour_list[my_idx] + 1];
+      n3 = loc_grid[d_neighbour_list[my_idx] + 2];
+      n4 = loc_grid[d_neighbour_list[my_idx] + 3];
       //n_sum = 4;
       // index = 5*(spin+1) + n1+n2+n3+n4 + 4;
       index = ((spin+1) >> 1) + (n1+n2+n3+n4) + 4;

@@ -1,7 +1,7 @@
 #include "../include/helpers.h"
 
 // populate acceptance probabilities
-void preComputeProbs_gpu(ising_model_config *config, float* d_Pacc) {
+void preComputeProbs(ising_model_config *config, float* d_Pacc) {
   /* Precompute the acceptance probabilities for the GPU.
     *
     * Parameters:
@@ -10,7 +10,7 @@ void preComputeProbs_gpu(ising_model_config *config, float* d_Pacc) {
   */
 
     float *h_Pacc=(float *)malloc(config.prob_size*sizeof(float));
-
+    
     int s, nsum, index;  
     for (s=-1;s<2;s=s+2){
       for (nsum=-4;nsum<5;nsum=nsum+2){

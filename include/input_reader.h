@@ -15,9 +15,10 @@ typedef struct ising_model_config {
     int iterations;   // number of iterations in the simulation
     int iter_per_step; // number of iterations per step
     int seed;         // seed for the random number generator
-    float temperature;  // temperature of the system
+    float inv_temperature;  // temperature of the system
+    float field;        // magnetic field strength
     char* input_file; // input file name
-    int starting_config; // starting configuration
+    int starting_config; // starting configuration, 0 for file input, 1 for random, 2 for all up, 3 for all down
     // User or System set parameters
     int num_threads;  // number of threads per block
     // System set parameters

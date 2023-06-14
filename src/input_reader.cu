@@ -5,7 +5,7 @@ void read_lines(FILE* input_file, int start_line, int end_line) {
     char* line;
     size_t len = 0;
     int line_num = 0;
-    //reset the file to begining
+    // Reset the file to begining
     fseek(input_file, 0, SEEK_SET);
     while ((getline(&line, &len, input_file)) != -1) {
         if (line_num >= start_line && line_num < end_line) {
@@ -16,7 +16,7 @@ void read_lines(FILE* input_file, int start_line, int end_line) {
 }
 
 void get_number_of_models(const char* filename, int* models) {
-   FILE* input_file = fopen(filename, "r");
+    FILE* input_file = fopen(filename, "r");
     if (input_file == NULL) {
         fprintf(stderr, "Error: Could not open file '%s'\n", filename);
         exit(1);
@@ -75,8 +75,9 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
     int iterations;   // number of iterations in the simulation
     int iter_per_step; // number of iterations per step
     int seed;         // seed for the random number generator
-    float beta;       // inverse temperature
-    float temperature; 
+    float field;       // external field
+    float inv_temperature; // inverse temperature
+    int starting_config; // starting configuration
     int num_threads;
     char input_file;
     kvp_register_i("model_id", &model_id);
@@ -87,9 +88,11 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
     kvp_register_i("iterations", &iterations);
     kvp_register_i("iter_per_step", &iter_per_step);
     kvp_register_i("seed", &seed);
-    kvp_register_f("temperature", &temperature);
+    kvp_register_f("inv_temperature", &inv_temperature);
+    kvp_register_f("field", &field)
     kvp_register_i("num_threads", &num_threads);
     kvp_register_s("input_file", &input_file);
+    kvp_register_i("starting_config", &starting_config);
     
 
     // Modify this loop to go over the line numbers instead of parsing the file line by line
@@ -118,7 +121,10 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
             .iterations = iterations,
             .iter_per_step = iter_per_step,
             .seed = seed,
-            .temperature = temperature
+            .inv_temperature = inv_temperature,
+            .field = field,
+            .input_file = input_file,
+            .starting_config = starting_config
         };
         
     }
