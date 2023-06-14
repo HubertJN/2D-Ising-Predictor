@@ -1,5 +1,8 @@
 #include "../include/kernels.h"
 
+
+
+
 __global__ void init_rng(curandState *state, unsigned int seed, int n)
 {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
@@ -76,9 +79,8 @@ __global__ void init_ud_grids(const int L_x, const int L_y, const int ngrids, in
   return;
 }
 
-
 // sweep on the gpu - default version
-__global__ void mc_sweep(curandState *state, const int L_x, const int L_y, const int ngrids, int *d_ising_grids, const float beta, const float h, int nsweeps) {
+__global__ void mc_sweep(curandState *state, const int L_x, const int L_y, const int ngrids, int *d_ising_grids, const float beta, const float h, int nsweeps, const int *d_neighbour_list, const float *d_Pacc) {
   /* 
     * Default version of the sweep kernel, uses a neighbour list to avoid branching.
     * 
@@ -108,17 +110,18 @@ __global__ void mc_sweep(curandState *state, const int L_x, const int L_y, const
     int *loc_grid = &d_ising_grids[idx*N]; // pointer to device global memory 
 
 
-    int imove, my_idx, spin, n1, n2, n3, n4, row, col;
+    int imove, my_idx, spin, n1, n2, n3, n4; //row, col;
     for (imove=0;imove<N*nsweeps;imove++){
 
       my_idx = __float2int_rd(shrink*curand_uniform(&localState));
 
-      row = my_idx/L;
-      col = my_idx%L;
+
 
       spin = loc_grid[my_idx];
 
       // find neighbours, periodic boundary conditions. D,U,L,R
+      // row = my_idx/L_x;
+      // col = my_idx%L_x;
       // n1 = loc_grid[L*((row+1)%L) + col];
       // n2 = loc_grid[L*((row+L-1)%L) + col];
       // n3 = loc_grid[L*row + (col+1)%L];

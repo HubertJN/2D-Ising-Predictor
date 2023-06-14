@@ -24,7 +24,7 @@ void preComputeProbs(ising_model_config *config, float* d_Pacc) {
 
   }
 
-void preComputeNeighbours(ising_model_config *config, int *d_neighbour_list){
+void preComputeNeighbours(ising_model_config *config, int *d_neighbour_list) {
   /* Precompute the neighbour list for the GPU.
       *
       * Parameters:

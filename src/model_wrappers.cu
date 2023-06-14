@@ -1,18 +1,20 @@
 #include "../include/model_wrappers.h"
 
-int init_model(ising_model_config launch_struct) {
+//Todo this should go to helpers
+void init_model(ising_model_config* launch_struct) {
     // Add model specific launch parameters
-    switch(launch_struct -> model_id) {
+    switch(launch_struct->model_id) {
         case 1:
-            launch_struct.element_size = sizeof(int);
+            launch_struct->element_size = sizeof(int);
             break;
         default:
             fprintf(stderr, "Invalid model selection.\n");
             break;
     }
+    return;
 }
 
-int launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config launch_struct, int *device_array) {
+void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config* launch_struct, int *device_array) {
     /*
       * This launches the original model. Single thread per grid.
       *
@@ -29,15 +31,15 @@ int launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config 
     */
 
     // Allocate memory for device array
-    gpuErrchk( cudaMalloc((void **)&device_array, launch_struct.element_size * launch_struct.size[0] * launch_struct.size[1]) );
+    cudaMalloc((void **)&device_array, launch_struct->element_size * launch_struct->size[0] * launch_struct->size[1]);
 
-    switch(launch_struct.starting_config) {
+    switch(launch_struct->starting_config) {
         case 0:
             // Load Grid from file
-            if (launch_struct.initial_grid != NULL) {
+            if (launch_struct->input_file != NULL) {
                 // create pinned host memory
                 int *host_array;
-                gpuErrchk( cudaMallocHost((void **)&host_array, launch_struct.element_size * launch_struct.size[0] * launch_struct.size[1]) );
+                cudaMallocHost((void **)&host_array, launch_struct->element_size * launch_struct->size[0] * launch_struct->size[1]);
                 // If we have initial grid(s) to load, load them, and transfer it to the device 
                 load_grid(launch_struct, host_array, device_array);
             } 
@@ -47,15 +49,15 @@ int launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config 
             break;
         case 1:
             // Random
-            init_random<<<launch_struct.num_blocks, launch_struct.num_concurrent, 0, stream>>>(state, device_array, launch_struct.size[0], launch_struct.size[1], launch_struct.num_concurrent);
+            init_rand_grids<<<launch_struct->num_blocks, launch_struct->num_concurrent, 0, stream>>>(state, launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, device_array);
             break;
         case 2:
             // All up
-            init_ud_grids<<<launch_struct.num_blocks, launch_struct.num_concurrent, 0, stream>>>(device_array, launch_struct.size[0], launch_struct.size[1], launch_struct.num_concurrent, 1);
+            init_ud_grids<<<launch_struct->num_blocks, launch_struct->num_concurrent, 0, stream>>>(launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, device_array, 1);
             break;
         case 3:
             // All down
-            init_ud_grids<<<launch_struct.num_blocks, launch_struct.num_concurrent, 0, stream>>>(device_array, launch_struct.size[0], launch_struct.size[1], launch_struct.num_concurrent, -1);
+            init_ud_grids<<<launch_struct->num_blocks, launch_struct->num_concurrent, 0, stream>>>(launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, device_array, -1);
             break;
         default:
             fprintf(stderr, "Invalid starting configuration.\n");
@@ -65,14 +67,19 @@ int launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config 
     //TODO: Create d_Pacc and d_neighbour list here and refactor precomputations to be flexible
     // Allocate memory for d_Pacc and d_neighbour_list
     int prob_size = 10;
-    launch_struct.prob_size = prob_size;
+    launch_struct->prob_size = prob_size;
 
-    __consatant__ float d_Pacc[prob_size];
-    __consatant__ int d_neighbour_list[launch_struct.size[0] * launch_struct.size[1] * 4];
+    // Allocate device memory for d_Pacc and d_neighbour_list (there is potential here to put this in a faster memory location?)
+    float *d_Pacc;
+    int *d_neighbour_list;
+    cudaMalloc((void **)&d_Pacc, prob_size * sizeof(float));
+    cudaMalloc((void **)&d_neighbour_list, launch_struct->size[0] * launch_struct->size[1] * 4 * sizeof(int));
 
     // Precompute
     preComputeProbs(launch_struct, d_Pacc);
     preComputeNeighbours(launch_struct, d_neighbour_list);
     // Launch kernel
-    mc_sweep<<<launch_struct.num_blocks, launch_struct.num_concurrent, 0, stream>>>(state, launch_struct.size[0], launch_struct.size[1], launch_struct.num_concurrent, device_array, launch_struct.inv_temperature, launch_struct.field, launch_struct.iter_per_step);
+    mc_sweep<<<launch_struct->num_blocks, launch_struct->num_concurrent, 0, stream>>>(state, launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, device_array, launch_struct->inv_temperature, launch_struct->field, launch_struct->iter_per_step, d_neighbour_list, d_Pacc);
+
+    return;
 }
