@@ -9,17 +9,17 @@ void preComputeProbs(ising_model_config *config, float* d_Pacc) {
     * h: magnetic field
   */
 
-    float *h_Pacc=(float *)malloc(config.prob_size*sizeof(float));
+    float *h_Pacc=(float *)malloc(config->prob_size*sizeof(float));
     
     int s, nsum, index;  
     for (s=-1;s<2;s=s+2){
       for (nsum=-4;nsum<5;nsum=nsum+2){
-        index = ((spin+1) >> 1) + (nsum) + 4;
-        h_Pacc[index] = expf(-(float)beta*2.0f*(float)s*((float)nsum+(float)h));
+        index = ((s+1) >> 1) + (nsum) + 4;
+        h_Pacc[index] = expf(-(float)config->inv_temperature*2.0f*(float)s*((float)nsum+(float)config->field));
       }
     }
   
-    gpuErrchk( cudaMemcpyToSymbol(d_Pacc, h_Pacc, config.prob_size*sizeof(float),0, cudaMemcpyHostToDevice ) );
+    cudaMemcpyToSymbol(d_Pacc, h_Pacc, config->prob_size*sizeof(float),0, cudaMemcpyHostToDevice );
     free(h_Pacc);
 
   }
@@ -39,10 +39,10 @@ void preComputeNeighbours(ising_model_config *config, int *d_neighbour_list){
   int *h_neighbour_list = (int *)malloc(neighbour_list_size*sizeof(int));
 
   int grid_index;
-  for (grid_index=0;grid_index<config->size[0]*cofig->size[1];grid_index++){
+  for (grid_index=0;grid_index<config->size[0]*config->size[1];grid_index++){
 
-    int row = spin_index/config->size[0];
-    int col = spin_index%config->size[0];
+    int row = grid_index/config->size[0];
+    int col = grid_index%config->size[0];
 
     h_neighbour_list[4*(row*config->size[0]+col) + 0] = config->size[0]*((row+1)%config->size[0]) + col;
     h_neighbour_list[4*(row*config->size[0]+col) + 1] = config->size[0]*((row+config->size[0]-1)%config->size[0]) + col;
@@ -51,7 +51,7 @@ void preComputeNeighbours(ising_model_config *config, int *d_neighbour_list){
 
   }
 
-  gpuErrchk( cudaMemcpyToSymbol(d_neighbour_list, h_neighbour_list, neighbour_list_size*sizeof(int), cudaMemcpyHostToDevice ) );
+  cudaMemcpyToSymbol(d_neighbour_list, h_neighbour_list, neighbour_list_size*sizeof(int), cudaMemcpyHostToDevice );
 
   free(h_neighbour_list);
 

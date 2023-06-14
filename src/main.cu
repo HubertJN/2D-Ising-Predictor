@@ -134,6 +134,7 @@ int main(int argc, char *argv[]) {
     */
     int nBlocks;
     int nThreads;
+    int prob_size;
     int nStreams = 0;
     int total_blocks = 0;
     int total_threads = 0;
@@ -148,6 +149,7 @@ int main(int argc, char *argv[]) {
             //Concurrency style 1: Many models fit in a single block's shared memory
             nThreads = params_array[i]->num_concurrent;
             nBlocks = (nThreads + max_threads_per_block - 1) / max_threads_per_block;
+            prob_size = 10;
             break;
         case 2:
             // Concurrency style 2: Each model fills a block's shared memory
@@ -162,6 +164,7 @@ int main(int argc, char *argv[]) {
         // Apply the computed values to the model parameters for kernel launch
         params_array[i]->num_blocks = nBlocks;
         params_array[i]->num_threads = nThreads;
+        params_array[i]->prob_size = prob_size;
 
         // Update the total number of blocks and threads
         total_blocks += nBlocks;
