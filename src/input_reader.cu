@@ -79,7 +79,8 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
     float inv_temperature; // inverse temperature
     int starting_config; // starting configuration
     int num_threads;
-    char* grid_file;
+    const int grid_file_str_len = 256;
+    char grid_file[grid_file_str_len];
     kvp_register_i("model_id", &model_id);
     kvp_register_i("num_concurrent", &num_concurrent);
     kvp_register_i("size_x", &size[0]);
@@ -91,7 +92,7 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
     kvp_register_f("inv_temperature", &inv_temperature);
     kvp_register_f("field", &field);
     kvp_register_i("num_threads", &num_threads);
-    kvp_register_c("input_file", grid_file);
+    kvp_register_string("input_file", grid_file, grid_file_str_len);
     kvp_register_i("starting_config", &starting_config);
     
 
@@ -160,7 +161,7 @@ void load_grid(cudaStream_t stream, ising_model_config* launch_struct, int* dev_
     //reset the file to begining
     fseek(input_file, 0, SEEK_SET);
     // Each grid element is on a new line.
-    // TODO: Be smarter about this use abinary
+    // TODO: Be smarter about this use a binary
     while ((getline(&line, &len, input_file)) != -1) {
         host_grid[line_num] = atoi(line);
         line_num++;
@@ -171,4 +172,7 @@ void load_grid(cudaStream_t stream, ising_model_config* launch_struct, int* dev_
 
     // Close the file and free the memory
     fclose(input_file);
+
+    // Free the pinned memory
+    cudaFreeHost(host_grid);
 }
