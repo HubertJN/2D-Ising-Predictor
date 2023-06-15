@@ -80,7 +80,7 @@ __global__ void init_ud_grids(const int L_x, const int L_y, const int ngrids, in
 }
 
 // sweep on the gpu - default version
-__global__ void mc_sweep(curandState *state, const int L_x, const int L_y, const int ngrids, int *d_ising_grids, const float beta, const float h, int nsweeps, const int *d_neighbour_list, const float *d_Pacc) {
+__global__ void mc_sweep(curandState *state, const int L_x, const int L_y, const int ngrids, int *d_ising_grids, const float beta, const float h, int nsweeps, int *d_neighbour_list, float *d_Pacc) {
   /* 
     * Default version of the sweep kernel, uses a neighbour list to avoid branching.
     * 

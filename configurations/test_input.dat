@@ -8,4 +8,4 @@ iter_per_step=100
 seed=1
 inv_temperature=1.0
 field=1.0
-starting_config=1
+starting_config=2
