@@ -10,7 +10,8 @@ int main(int argc, char *argv[]) {
     // Read the configuration file ===============================================
     char* filename;
     // Check if command line arguments were provided
-    if (argc == 1) {
+    printf("Number of arguments: %d\n", argc);
+    if (argc == 2) {
         filename = argv[1];
     }
     else {
@@ -71,7 +72,7 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "Max shared memory per block: %d\n", max_shared_memory_per_block);
     fprintf(stderr, "Max blocks per multiprocessor: %d\n", max_blocks_per_multiprocessor);
     fprintf(stderr, "Max threads per multiprocessor: %d\n", max_threads_per_multiprocessor);
-    
+
 
     // Run compatibility checks between selected device and model configurations
 
