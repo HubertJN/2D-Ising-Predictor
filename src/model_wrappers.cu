@@ -37,11 +37,8 @@ void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config
         case 0:
             // Load Grid from file
             if (launch_struct->input_file != NULL) {
-                // create pinned host memory
-                int *host_array;
-                cudaMallocHost((void **)&host_array, launch_struct->mem_size);
                 // If we have initial grid(s) to load, load them, and transfer it to the device 
-                load_grid(stream, launch_struct, host_array, device_array);
+                load_grid(stream, launch_struct, device_array);
             } 
             else {
                 fprintf(stderr, "No initial grid to load.\n");
