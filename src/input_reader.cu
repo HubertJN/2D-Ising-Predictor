@@ -131,7 +131,7 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
     fclose(input_file);
 }
 
-void load_grid(ising_model_config* launch_struct, int* host_grid, int* dev_grid) {
+void load_grid(cudaStream_t stream, ising_model_config* launch_struct, int* host_grid, int* dev_grid) {
     /* Load the grid from the input file, this function reads a file line by line into host_grid
     then does an async copy to dev_grid
     Parameters:
@@ -149,7 +149,6 @@ void load_grid(ising_model_config* launch_struct, int* host_grid, int* dev_grid)
     char* line;
     size_t len = 0;
     int line_num = 0;
-    int grid_size = launch_struct->size[0] * launch_struct->size[1];
 
     //reset the file to begining
     fseek(input_file, 0, SEEK_SET);
@@ -162,7 +161,7 @@ void load_grid(ising_model_config* launch_struct, int* host_grid, int* dev_grid)
     }
 
     // Copy to the device grid from the pinned memory
-    cudaMemcpyAsync(dev_grid, host_grid, grid_size * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(dev_grid, host_grid, launch_struct->mem_size, cudaMemcpyHostToDevice, stream);
 
     // Close the file and free the memory
     fclose(input_file);

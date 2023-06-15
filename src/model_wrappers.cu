@@ -31,7 +31,7 @@ void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config
     */
 
     // Allocate memory for device array
-    cudaMalloc((void **)&device_array, launch_struct->element_size * launch_struct->size[0] * launch_struct->size[1]);
+    //cudaMalloc((void **)&device_array, launch_struct->element_size * launch_struct->size[0] * launch_struct->size[1]);
 
     switch(launch_struct->starting_config) {
         case 0:
@@ -39,9 +39,9 @@ void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config
             if (launch_struct->input_file != NULL) {
                 // create pinned host memory
                 int *host_array;
-                cudaMallocHost((void **)&host_array, launch_struct->element_size * launch_struct->size[0] * launch_struct->size[1]);
+                cudaMallocHost((void **)&host_array, launch_struct->mem_size);
                 // If we have initial grid(s) to load, load them, and transfer it to the device 
-                load_grid(launch_struct, host_array, device_array);
+                load_grid(stream, launch_struct, host_array, device_array);
             } 
             else {
                 fprintf(stderr, "No initial grid to load.\n");
@@ -70,10 +70,10 @@ void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config
     launch_struct->prob_size = prob_size;
 
     // Allocate device memory for d_Pacc and d_neighbour_list (there is potential here to put this in a faster memory location?)
-    float *d_Pacc;
-    int *d_neighbour_list;
-    cudaMalloc((void **)&d_Pacc, prob_size * sizeof(float));
-    cudaMalloc((void **)&d_neighbour_list, launch_struct->size[0] * launch_struct->size[1] * 4 * sizeof(int));
+    float* d_Pacc;
+    int* d_neighbour_list;
+    cudaMalloc(&d_Pacc, prob_size * sizeof(float));
+    cudaMalloc(&d_neighbour_list, launch_struct->size[0] * launch_struct->size[1] * 4 * sizeof(int));
 
     // Precompute
     preComputeProbs(launch_struct, d_Pacc);
