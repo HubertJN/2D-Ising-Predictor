@@ -65,6 +65,13 @@ int main(int argc, char *argv[]) {
     int max_blocks_per_multiprocessor = deviceProp.maxThreadsPerMultiProcessor / max_threads_per_block;
     int max_threads_per_multiprocessor = max_blocks_per_multiprocessor * max_threads_per_block;
 
+    // Print device specs
+    fprintf(stderr, "Device name: %s\n", deviceProp.name);
+    fprintf(stderr, "Max threads per block: %d\n", max_threads_per_block);
+    fprintf(stderr, "Max shared memory per block: %d\n", max_shared_memory_per_block);
+    fprintf(stderr, "Max blocks per multiprocessor: %d\n", max_blocks_per_multiprocessor);
+    fprintf(stderr, "Max threads per multiprocessor: %d\n", max_threads_per_multiprocessor);
+    
 
     // Run compatibility checks between selected device and model configurations
 
@@ -200,16 +207,16 @@ int main(int argc, char *argv[]) {
 
     // Loop over the models, load grids where required, and allocate memory for the grids on the device
     int mem_size; 
-    int h_data[nStreams];
-    int *d_data[nStreams];
+    int* h_data[nStreams];
+    int* d_data[nStreams];
     // LOOP
-        for (int i=0; i < nStreams; i++) {
-            mem_size = params_array[i] -> size[0] * params_array[i] -> size[1] * params_array[i] -> element_size * params_array[i] -> num_concurrent;
-            params_array[i] -> mem_size = mem_size;
-            // Allocate required space on host and device
-            cudaMalloc(&d_data[i], mem_size);
-            h_data[i] = (int *)malloc(mem_size);
-        }
+    for (int i=0; i < nStreams; i++) {
+        mem_size = params_array[i] -> size[0] * params_array[i] -> size[1] * params_array[i] -> element_size * params_array[i] -> num_concurrent;
+        params_array[i] -> mem_size = mem_size;
+        // Allocate required space on host and device
+        cudaMalloc(&d_data[i], mem_size);
+        h_data[i] = (int *)malloc(mem_size);
+    }
     //LOOP END
     // ============================================================================
 
@@ -236,9 +243,6 @@ int main(int argc, char *argv[]) {
             case 1:
                 cudaMemcpy(h_data[i], d_data[i], params_array[i] -> mem_size, cudaMemcpyDeviceToHost);
                 break;
-            case 2:
-                cudaMemcpy(h_data[i], d_data[i], params_array[i] -> mem_size, cudaMemcpyDeviceToHost);
-                break;
             default:
                 fprintf(stderr, "Invalid model selection.\n");
                 break;
@@ -248,7 +252,7 @@ int main(int argc, char *argv[]) {
     // ============================================================================
 
     // Print results ==============================================================
-    for (int i; i < nStreams; i++) {
+    for (int i=0; i < nStreams; i++) {
         
     }
 
