@@ -90,13 +90,11 @@ int main() {
     // Loops over slices i.e. sweep snapshots
 
     for (islice=0;islice<nsweeps/100;islice++) {
-        printf("\rNumber of sweeps processed: %d/%d", islice+1, nsweeps/100); // Print progress
+        printf("\rCluster calculation percentage completion: %d%%", (int)((double)(islice+1)/(double)(nsweeps/100)*100)); // Print progress
         fflush(stdout);
         // Loops over grids of each sweep snapshot  
         for (igrid=0;igrid<nreplicas;igrid++) {
             read_input_grid(read_file, bitgrid, L, ising_grids, nreplicas, islice, igrid);
-            //if (islice==0) {
-            //for (i=0;i<L*L;i++) {printf("%d ", ising_grids[i]);}}
             // Saves grid number, slice, cluster size and spare data entry for commitor
             temp_cluster_size = find_cluster_size(L, Maxcon, ising_grids, Lcon, Ncon);
             output_ngrid[igrid] = igrid;
@@ -113,12 +111,7 @@ int main() {
         
         
     } // isweep
-/*
-    read_input_grid(read_file, bitgrid, L, ising_grids, nreplicas, 10, 0);
-    for (islice=0;islice<Nvert;islice++) {if (islice%L==0) {printf("\n");} if(ising_grids[islice]==1) {printf("1");} if(ising_grids[islice]==-1) {printf("0");} }
-    k = find_cluster_size(L, Maxcon, ising_grids, Lcon, Ncon);
-    printf("\n%d\n", k);
-*/
+
     // Free memory
     free(bitgrid); free(output_ngrid); free(output_slice); free(output_cluster); free(output_commitor); free(ising_grids); free(Lcon); free(Ncon);
 
@@ -127,6 +120,8 @@ int main() {
     
     // New line
     printf("\n");
+
+    printf("Cluster calculation successfully completed. \n");
 
     return EXIT_SUCCESS;
 }
