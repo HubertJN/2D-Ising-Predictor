@@ -6,10 +6,15 @@
 #include "functions/read_input_variables.h" 
 #include "functions/comparison.h" 
 
-#define MOD(a,b) ((((a)%(b))+(b))%(b))
+#define MOD(a,b) ((((a)%(b))+(b))%(b)) // Custom definition so that mod works correctly with negative numbers
 
 int main (int argc, char *argv[]) {
     
+    // Setup for timing code
+    clock_t start, end;
+    double execution_time;
+    start = clock();
+
     // Initialise pseudo-random number generation
     srand(time(NULL));
 
@@ -21,12 +26,15 @@ int main (int argc, char *argv[]) {
     
     int samples;
 
-    samples = atoi(argv[1]); // Samples to be chosen per division
+    samples = atoi(argv[1]); // Number of samples to be chosen
 
     // Define and read input variables
     int L, nreplicas, nsweeps, mag_output_int, grid_output_int, threadsPerBlock, gpu_device, gpu_method;
     double beta, h;
     read_input_variables(&L, &nreplicas, &nsweeps, &mag_output_int, &grid_output_int, &threadsPerBlock, &gpu_device, &gpu_method, &beta, &h);
+
+    int min_cluster_size = 50;
+    int max_cluster_size = (int)((double)(L*L)*0.95);
 
     // Set filenames
     const char *index_filename = "index.bin";
@@ -47,7 +55,6 @@ int main (int argc, char *argv[]) {
         fprintf(stderr,"Error opening %s for write!\n",commitor_filename);
         exit(EXIT_FAILURE);
     }
-
 
     // Create loop variables
     int i = 0, j = 0, k = 0;
@@ -119,21 +126,19 @@ int main (int argc, char *argv[]) {
         }
     }
 
-    for(i = 0; i < 50; i++)
-        printf("%d ", store_cluster[i]);
-    printf("\n");
+    free(p_store_cluster); // Freed since no longer needed
 
     // Find indices of start cluster and final cluster size to go to
     int start_index = 0;
     int end_index = 0;
     for (i=0;i<nreplicas*nsweeps/100;i++) {
-        if (store_cluster[i] == (int) 0.025*L*L) {
+        if (store_cluster[i] == (int) min_cluster_size) {
             start_index = i;
             break;
         }
     }
     for (i=0;i<nreplicas*nsweeps/100;i++) {
-        if (store_cluster[i] == (int) 0.975*L*L) {
+        if (store_cluster[i] == (int) max_cluster_size) {
             end_index = i;
             break;
         }
@@ -168,6 +173,8 @@ int main (int argc, char *argv[]) {
     for (i = 0; i < L*L; i++) {
         if ( cluster_hist[i] != 0) {reject_prob[i] = (1.0/(double)cluster_hist[i])/inv_sum;}
     }
+
+
 
     // Create an array of binned statistics
     int bins = 250;
@@ -218,13 +225,8 @@ int main (int argc, char *argv[]) {
         }
         k += bin_size;
     }
-    int *sample_selection = (int *)malloc(samples*sizeof(int)); // stores how many of each cluster size are chosen to be sampled
-    if (sample_selection==NULL){
-        fprintf(stderr,"Error allocating memory for sample selection!\n");
-        exit(EXIT_FAILURE);
-    }
 
-    int maximum_random = nsweeps/100*nreplicas-start_index-end_index; // Number of rows within index.bin file i.e. number of individual grid entries
+    int maximum_random = end_index-start_index; // Number of rows within index.bin file i.e. number of individual grid entries
     int random_selection = 0; // Used to randomly select grid from index.bin file
     double random_percentage = 0.0; // Used to generate a number between 0 and 1 for sample acceptance
     int selected_cluster_size = 0;
@@ -240,32 +242,21 @@ int main (int argc, char *argv[]) {
             fwrite(&selected_cluster_size, sizeof(int), 1, commitor_file);
             fwrite(&store_commitor[random_selection], sizeof(double), 1, commitor_file);
             i += 1;
+            printf("\rSample selection percentage completion: %d%%", (int)((double)i/(double)samples*100)); // Print progress
+            fflush(stdout);
         } 
     }  
 
-    //printf("\n"); // Newline for command prompt
+    printf("\n"); // Newline
 
-    free(cluster_hist); free(reject_prob); free(sample_selection); 
-    free(store_ngrid); free(store_slice); free(store_cluster); free(store_commitor); free(binned_prob); free(p_store_cluster);
+    free(cluster_hist); free(reject_prob);
+    free(store_ngrid); free(store_slice); free(store_cluster); free(store_commitor); free(binned_prob);
     fclose(index_file); fclose(commitor_file);
 
-    /*
-    FILE *commitor_file1 = fopen(commitor_filename,"rb");
-    if (commitor_file1==NULL){
-        fprintf(stderr,"Error opening %s for write!\n",commitor_filename);
-        exit(EXIT_FAILURE);
-    }
+    // Print time taken for program to execute
+    end = clock();
+    execution_time = ((double)(end - start))/CLOCKS_PER_SEC;
+    printf("Time taken: %.2f seconds \n", execution_time);
 
-    fseek(commitor_file1, 0, SEEK_SET);
-    for (i=0;i<samples*4;i++) {
-        if (i%4==0) {printf("\n");}
-        fread(&random_percentage, sizeof(double), 1, commitor_file1);
-        printf("%f ", random_percentage);
-    }
-
-    fclose(commitor_file1);
-    */
-
-    printf("Samples successfully chosen \n");
     return EXIT_SUCCESS;
 }  
