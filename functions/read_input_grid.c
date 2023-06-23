@@ -1,5 +1,6 @@
 #include "read_input_grid.h"
 
+// Reads grid from "gridstates.bin" file produced by ising.cu
 void read_input_grid(FILE *ptr, char *bitgrid, int L, int *ising_grids, int grids_per_slice, int islice, int igrid) {
     
     // bytes per slice to move through gridfile, 3 ints plus grid size

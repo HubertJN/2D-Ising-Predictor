@@ -1,6 +1,6 @@
 #include "find_cluster_size.h" // Includes all function definitions
 
-#define MOD(a,b) ((((a)%(b))+(b))%(b))
+#define MOD(a,b) ((((a)%(b))+(b))%(b)) // Custom definition of modulus function so that it works correctly for negative values.
 
 int find_cluster_size(int L, int Maxcon, int *grid, int* Lcon, int* Ncon) {
 
@@ -51,6 +51,7 @@ int find_cluster_size(int L, int Maxcon, int *grid, int* Lcon, int* Ncon) {
         } /* if */
     } /* i */
 
+    // Checks if connections exist
     int con_exist = 0;
     for (i=0;i<Nvert;i++) { 
         if (Ncon[i] !=  0) {
@@ -60,9 +61,8 @@ int find_cluster_size(int L, int Maxcon, int *grid, int* Lcon, int* Ncon) {
     }
 
     if (con_exist == 1) {
-        //printf("Begin recursive \n");
         lclus = find_clusters_recursive(Nvert, Maxcon, Ncon, Lcon);
-        //lclus = find_clusters_eqclass(Nvert, Maxcon, Ncon, Lcon);
+        //lclus = find_clusters_eqclass(Nvert, Maxcon, Ncon, Lcon); // Currently does not work
         avlclus = lclus; 
     }
     else {
@@ -88,7 +88,6 @@ int find_clusters_recursive(int Nvert, int Maxcon, int *Ncon, int *Lcon) {
     for (iv=0;iv<Nvert;iv++) {cluster_size[iv] = 0;}
 
     // Lopp over vertices
-    //printf("Begin cluster size loop \n");
     for (iv=0;iv<Nvert;iv++) {
         if (lvisited[iv]==0) {
             lvisited[iv] = 1;
@@ -102,7 +101,6 @@ int find_clusters_recursive(int Nvert, int Maxcon, int *Ncon, int *Lcon) {
             // Search onward over all edges involving this vertex
             // After function finish should have followed all possible links originating on vertex iv
             // all members of the cluster containing iv.
-            //printf("Begin vertex search\n");
             vertex_search(iv, ivcluster, Maxcon, Ncon, Lcon, lvisited, cluster_size);
 
             // Next cluster
@@ -113,11 +111,9 @@ int find_clusters_recursive(int Nvert, int Maxcon, int *Ncon, int *Lcon) {
     // Analysis complete. Output number of cluster and size of cluster
     // Compare elements of array with max
     for (iv=0;iv<Nvert;iv++) {if(cluster_size[iv]>lmax) {lmax=cluster_size[iv];}}
-    //for (iv=0;iv<Nvert;iv++) {printf("%d ", cluster_size[iv]);}
 
     // Free memory
     free(lvisited); free(cluster_size);
-    //printf("\n%d\n", lmax);
     return lmax;
 }
 
@@ -137,7 +133,6 @@ void vertex_search(int i, int icluster, int Maxcon, int *Ncon, int *Lcon, int *l
             // Increment the size of icluster, and add j to the list of vertices in icluster
             cluster_size[icluster] += 1;
             // Search onward from here, calling this function recursively
-            //if (icluster==0) {printf("%d ",cluster_size[icluster]);}
             vertex_search(j, icluster, Maxcon, Ncon, Lcon, lvisited, cluster_size);
         }
     }
@@ -189,10 +184,8 @@ int find_clusters_eqclass(int Nvert, int Maxcon, int *Ncon, int *Lcon) {
     // Analysis complete. Output number of cluster and size of cluster
     // Compare elements of array with max
     for (iv=0;iv<Nvert;iv++) {if(cluster_size[iv]>lmax) {lmax=cluster_size[iv];}}
-    //for (iv=0;iv<Nvert;iv++) {printf("%d ", cluster_size[iv]);}
 
     // Free memory
     free(lcl); free(cluster_size);
-    //printf("\n%d\n", lmax);
     return lmax;
 }
