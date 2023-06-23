@@ -17,6 +17,11 @@
 
 int main() {
 
+    // Setup for timing code
+    clock_t start, end;
+    double execution_time;
+    start = clock();
+
     // Define and read input variables
     int L, nreplicas, nsweeps, mag_output_int, grid_output_int, threadsPerBlock, gpu_device, gpu_method;
     double beta, h;
@@ -122,6 +127,11 @@ int main() {
     printf("\n");
 
     printf("Cluster calculation successfully completed. \n");
+
+    // Print time taken for program to execute
+    end = clock();
+    execution_time = ((double)(end - start))/CLOCKS_PER_SEC;
+    printf("Time taken: %.2f seconds \n", execution_time);
 
     return EXIT_SUCCESS;
 }
