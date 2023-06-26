@@ -95,9 +95,11 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
     kvp_register_string("input_file", grid_file, grid_file_str_len);
     kvp_register_i("starting_config", &starting_config);
     
-
+    fprintf(stderr, "found %d models\n", models);
     // Modify this loop to go over the line numbers instead of parsing the file line by line
     for (int i = 0; i < models; i++) {
+        fprintf(stderr, "Reading model %d\n", i);
+        fflush(stderr);
         // get the line number pairs
         if (i == models - 1) {
             // read from line_numbers[i] to eof

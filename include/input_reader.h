@@ -24,7 +24,7 @@ typedef struct ising_model_config {
     // System set parameters
     int num_blocks;   // number of blocks
     int element_size; // size of the grid elements in bytes
-    int mem_size;     // size of all grids required in bytes
+    size_t mem_size;     // size of all grids required in bytes
     int prob_size;    // size of the probability array
 } ising_model_config;
 

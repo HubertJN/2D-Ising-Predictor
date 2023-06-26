@@ -14,7 +14,7 @@ void init_model(ising_model_config* launch_struct) {
     return;
 }
 
-void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config* launch_struct, int *device_array) {
+void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config* launch_struct, int *host_array, int *device_array) {
     /*
       * This launches the original model. Single thread per grid.
       *
@@ -39,6 +39,8 @@ void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config
             if (launch_struct->input_file != NULL) {
                 // If we have initial grid(s) to load, load them, and transfer it to the device 
                 load_grid(stream, launch_struct, device_array);
+                gpuErrchk( cudaPeekAtLastError() );
+                gpuErrchk( cudaDeviceSynchronize() );
             } 
             else {
                 fprintf(stderr, "No initial grid to load.\n");
@@ -47,19 +49,30 @@ void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config
         case 1:
             // Random
             init_rand_grids<<<launch_struct->num_blocks, launch_struct->num_concurrent, 0, stream>>>(state, launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, device_array);
+            gpuErrchk( cudaPeekAtLastError() );
+            gpuErrchk( cudaDeviceSynchronize() );
             break;
         case 2:
             // All up
+            fprintf(stderr, "All up\n");
             init_ud_grids<<<launch_struct->num_blocks, launch_struct->num_concurrent, 0, stream>>>(launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, device_array, 1);
+            gpuErrchk( cudaPeekAtLastError() );
+            gpuErrchk( cudaDeviceSynchronize() );
+            fprintf(stderr, "All are up\n");
             break;
         case 3:
             // All down
             init_ud_grids<<<launch_struct->num_blocks, launch_struct->num_concurrent, 0, stream>>>(launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, device_array, -1);
+            gpuErrchk( cudaPeekAtLastError() );
+            gpuErrchk( cudaDeviceSynchronize() );
             break;
         default:
             fprintf(stderr, "Invalid starting configuration.\n");
             break;
     }
+
+    // Get initial grid from device
+    gpuErrchk( cudaMemcpy(host_array, device_array, launch_struct->mem_size, cudaMemcpyDeviceToHost) );
 
     //TODO: Create d_Pacc and d_neighbour list here and refactor precomputations to be flexible
     // Allocate memory for d_Pacc and d_neighbour_list
@@ -71,12 +84,25 @@ void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config
     int* d_neighbour_list;
     cudaMalloc(&d_Pacc, prob_size * sizeof(float));
     cudaMalloc(&d_neighbour_list, launch_struct->size[0] * launch_struct->size[1] * 4 * sizeof(int));
+    fprintf(stderr, "Allocated memory for d_Pacc and d_neighbour_list\n");
 
     // Precompute
     preComputeProbs(launch_struct, d_Pacc);
     preComputeNeighbours(launch_struct, d_neighbour_list);
-    // Launch kernel
-    mc_sweep<<<launch_struct->num_blocks, launch_struct->num_concurrent, 0, stream>>>(state, launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, device_array, launch_struct->inv_temperature, launch_struct->field, launch_struct->iter_per_step, d_neighbour_list, d_Pacc);
+    fprintf(stderr, "Precomputed probs and neighbours\n");
 
+    // Launch kernel
+    for (int i = 0; i < launch_struct->iterations; i+=launch_struct->iter_per_step){
+        mc_sweep<<<launch_struct->num_blocks, launch_struct->num_concurrent, 0, stream>>>(state, launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, device_array, launch_struct->inv_temperature, launch_struct->field, launch_struct->iter_per_step, d_neighbour_list, d_Pacc);
+        gpuErrchk( cudaPeekAtLastError() );
+        gpuErrchk( cudaStreamSynchronize(stream) );
+        gpuErrchk( cudaMemcpy(host_array, device_array, launch_struct->mem_size, cudaMemcpyDeviceToHost));
+        fprintf(stderr, "Iterations %d to %d\n", i, i+launch_struct->iter_per_step);
+        // Compute energy and magnetisation
+        // TODO
+
+        // Write to file
+        output_grid_to_file(launch_struct, host_array, i);
+    }
     return;
 }

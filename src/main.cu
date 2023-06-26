@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
         printf("Usage: %s [filename] \n", argv[0]);
         exit(1);
     }
-    int models;
+    int models = 0;
     get_number_of_models(filename, &models);
     // Allocate memory for the array of pointers to structs
     ising_model_config* params_array[models];
@@ -207,7 +207,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Loop over the models, load grids where required, and allocate memory for the grids on the device
-    int mem_size; 
+    size_t mem_size; 
     int* h_data[nStreams];
     int* d_data[nStreams];
     // LOOP
@@ -226,7 +226,7 @@ int main(int argc, char *argv[]) {
         // Switch to select the correct launch wrapper
         switch(params_array[i] -> model_id) {
             case 1:
-                launch_mc_sweep(stream[i], dev_states, params_array[i], d_data[i]);
+                launch_mc_sweep(stream[i], dev_states, params_array[i], h_data[i], d_data[i]);
                 break;
             default:
                 fprintf(stderr, "Invalid model selection.\n");

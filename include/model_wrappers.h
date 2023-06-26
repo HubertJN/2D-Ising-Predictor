@@ -10,7 +10,7 @@
 
 void init_model(ising_model_config* launch_struct);
 
-void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config* launch_struct, int *device_array);
+void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config* launch_struct, int *host_array, int *device_array);
 
 
 

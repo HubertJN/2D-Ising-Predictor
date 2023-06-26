@@ -1,5 +1,17 @@
 #include "../include/helpers.h"
 
+cudaError_t err;  // cudaError_t is a type defined in cuda.h
+
+// Boilerplate error checking code borrowed from stackoverflow
+void gpuAssert(cudaError_t code, const char *file, int line, bool abort)
+{
+  if (code != cudaSuccess) 
+    {
+      fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+      if (abort) exit(code);
+    }
+}
+
 // populate acceptance probabilities
 void preComputeProbs(ising_model_config *config, float* d_Pacc) {
   /* Precompute the acceptance probabilities for the GPU.
@@ -19,7 +31,7 @@ void preComputeProbs(ising_model_config *config, float* d_Pacc) {
       }
     }
   
-    cudaMemcpyToSymbol(d_Pacc, h_Pacc, config->prob_size*sizeof(float),0, cudaMemcpyHostToDevice );
+    cudaMemcpy(d_Pacc, h_Pacc, config->prob_size*sizeof(float), cudaMemcpyHostToDevice );
     free(h_Pacc);
 
   }
@@ -51,7 +63,7 @@ void preComputeNeighbours(ising_model_config *config, int *d_neighbour_list) {
 
   }
 
-  cudaMemcpyToSymbol(d_neighbour_list, h_neighbour_list, neighbour_list_size*sizeof(int), cudaMemcpyHostToDevice );
+  cudaMemcpy(d_neighbour_list, h_neighbour_list, neighbour_list_size*sizeof(int), cudaMemcpyHostToDevice );
 
   free(h_neighbour_list);
 
@@ -66,3 +78,5 @@ void preComputeNeighbours(ising_model_config *config, int *d_neighbour_list) {
 
     //   }
 }
+
+output_grid_to_file(ising_model_config *launch_struct, int *host_array, int i)
