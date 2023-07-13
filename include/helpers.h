@@ -16,4 +16,6 @@ void preComputeProbs(ising_model_config *config, float* d_Pacc);
 
 void preComputeNeighbours(ising_model_config *config, int *d_neighbour_list);
 
+void outputGridToFile(ising_model_config *config, int *host_grid, int iteration, int stream_ix);
+
 #endif // HELPERS_H

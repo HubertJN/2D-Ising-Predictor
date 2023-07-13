@@ -79,4 +79,49 @@ void preComputeNeighbours(ising_model_config *config, int *d_neighbour_list) {
     //   }
 }
 
-output_grid_to_file(ising_model_config *launch_struct, int *host_array, int i)
+// TODO: Deprecate this with the binary dump from issue #8
+void outputGridToFile(ising_model_config *launch_struct, int *host_grid, int iteration, int stream_ix) {
+  /* Output the grid to a file.
+      *
+      * Parameters:
+      * launch_struct: pointer to the ising model configuration
+      * host_array: pointer to the array of spins
+      * i: iteration number
+  */
+  fprintf(stderr, "Outputting grid to file\n");
+  fflush(stderr);
+  // Output the grid to a file
+  char filename[100];
+  int grid_size = launch_struct->size[0]*launch_struct->size[1];
+  snprintf(filename, sizeof(filename), "../output/grid_%d_%d_%d.txt", stream_ix, grid_size, iteration);
+  realpath(filename, filename);
+  fprintf(stderr, "Making File: %s\n", filename);
+  fflush(stderr);
+
+  FILE *fp = fopen(filename, "w");
+  if (fp == NULL) {
+    fprintf(stderr, "Error opening file: %s\n", filename);
+    exit(1);
+  }
+  fprintf(stderr, "File Opened\n");
+  fflush(stderr);
+
+  fprintf(fp, "Grid Dims %d %d\n", launch_struct->size[0], launch_struct->size[1]);
+  fprintf(stderr, "Grid Dims %d %d\n", launch_struct->size[0], launch_struct->size[1]);
+  fflush(stderr);
+
+  int row, col, grid_index;
+  for (grid_index=0; grid_index<launch_struct->num_concurrent;grid_index++){
+    fprintf(fp, "Copy %d\n", grid_index+1);
+    for (row=0;row<launch_struct->size[0];row++){
+      for (col=0;col<launch_struct->size[1];col++){
+        fprintf(stderr, "%d ", host_grid[row*launch_struct->size[0]+col+grid_index*grid_size]);
+        fprintf(fp, "%d ", host_grid[row*launch_struct->size[0]+col+grid_index*grid_size]);
+      }
+      fprintf(fp, "\n");
+    }
+    fprintf(fp, "\n");
+  }
+  fclose(fp);
+
+}

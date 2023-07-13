@@ -14,7 +14,7 @@ void init_model(ising_model_config* launch_struct) {
     return;
 }
 
-void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config* launch_struct, int *host_array, int *device_array) {
+void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config* launch_struct, int *host_array, int *device_array, int stream_ix) {
     /*
       * This launches the original model. Single thread per grid.
       *
@@ -102,7 +102,7 @@ void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config
         // TODO
 
         // Write to file
-        output_grid_to_file(launch_struct, host_array, i);
+        outputGridToFile(launch_struct, host_array, i, stream_ix);
     }
     return;
 }

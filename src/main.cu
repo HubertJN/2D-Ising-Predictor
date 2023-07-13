@@ -226,7 +226,7 @@ int main(int argc, char *argv[]) {
         // Switch to select the correct launch wrapper
         switch(params_array[i] -> model_id) {
             case 1:
-                launch_mc_sweep(stream[i], dev_states, params_array[i], h_data[i], d_data[i]);
+                launch_mc_sweep(stream[i], dev_states, params_array[i], h_data[i], d_data[i], i);
                 break;
             default:
                 fprintf(stderr, "Invalid model selection.\n");
