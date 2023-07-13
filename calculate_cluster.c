@@ -95,7 +95,7 @@ int main() {
     // Loops over slices i.e. sweep snapshots
 
     for (islice=0;islice<nsweeps/100;islice++) {
-        printf("\rCluster calculation percentage completion: %d%%", (int)((double)(islice+1)/(double)(nsweeps/100)*100)); // Print progress
+        printf("\rPercentage of clusters calculated: %d%%", (int)((double)(islice+1)/(double)(nsweeps/100)*100)); // Print progress
         fflush(stdout);
         // Loops over grids of each sweep snapshot  
         for (igrid=0;igrid<nreplicas;igrid++) {
@@ -108,10 +108,11 @@ int main() {
             output_commitor[igrid] = (double)-1;
         } // igrid
         for (igrid=0;igrid<nreplicas;igrid++) {
-            fwrite(&output_ngrid[igrid], sizeof(int), 1, write_file);
             fwrite(&output_slice[igrid], sizeof(int), 1, write_file);
+            fwrite(&output_ngrid[igrid], sizeof(int), 1, write_file);
             fwrite(&output_cluster[igrid], sizeof(int), 1, write_file);
             fwrite(&output_commitor[igrid], sizeof(double), 1, write_file);
+            fwrite(&output_commitor[igrid], sizeof(double), 1, write_file); // Additional write to store standard deviation on commitor
         }
         
         

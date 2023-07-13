@@ -19,22 +19,28 @@ int main (int argc, char *argv[]) {
     srand(time(NULL));
 
     // Process commandline input
-    if (argc != 2) {
-        printf("Usage : samples\n");
+    if (argc != 4) {
+        printf("Usage : samples min_cluster_size max_cluster_size\n");
+        printf("Set either min_cluster_size or max_cluster_size to -1 to use default value.\n");
         exit(EXIT_FAILURE);
     }
     
-    int samples;
-
-    samples = atoi(argv[1]); // Number of samples to be chosen
-
     // Define and read input variables
     int L, nreplicas, nsweeps, mag_output_int, grid_output_int, threadsPerBlock, gpu_device, gpu_method;
     double beta, h;
     read_input_variables(&L, &nreplicas, &nsweeps, &mag_output_int, &grid_output_int, &threadsPerBlock, &gpu_device, &gpu_method, &beta, &h);
 
+    int samples;
     int min_cluster_size = 50;
     int max_cluster_size = (int)((double)(L*L)*0.95);
+
+    samples = atoi(argv[1]); // Number of samples to be chosen
+    if (atoi(argv[2]) != -1) {
+        min_cluster_size = atoi(argv[2]);
+    }
+    if (atoi(argv[2]) != -1) {
+        max_cluster_size = atoi(argv[3]);
+    }
 
     // Set filenames
     const char *index_filename = "index.bin";
@@ -83,10 +89,11 @@ int main (int argc, char *argv[]) {
     for (islice=0;islice<nsweeps/100;islice++) {
         // Loops over grids of each sweep snapshot  
         for (igrid=0;igrid<nreplicas;igrid++) {
-            fread(&store_ngrid[igrid+nreplicas*islice], sizeof(int), 1, index_file);
             fread(&store_slice[igrid+nreplicas*islice], sizeof(int), 1, index_file);
+            fread(&store_ngrid[igrid+nreplicas*islice], sizeof(int), 1, index_file);
             fread(&store_cluster[igrid+nreplicas*islice], sizeof(int), 1, index_file);
             fread(&store_commitor[igrid+nreplicas*islice], sizeof(double), 1, index_file);
+            fread(&store_commitor[igrid+nreplicas*islice], sizeof(double), 1, index_file); // Dummy read that reads the standard deviation value in, which at this stage is also -1
         }
     }
 
@@ -237,12 +244,13 @@ int main (int argc, char *argv[]) {
         random_percentage = (double)rand()/(double)(RAND_MAX);
         selected_cluster_size = store_cluster[random_selection];
         if (random_percentage < reject_prob[selected_cluster_size]) {
-            fwrite(&store_ngrid[random_selection], sizeof(int), 1, commitor_file);
             fwrite(&store_slice[random_selection], sizeof(int), 1, commitor_file);
+            fwrite(&store_ngrid[random_selection], sizeof(int), 1, commitor_file);
             fwrite(&selected_cluster_size, sizeof(int), 1, commitor_file);
             fwrite(&store_commitor[random_selection], sizeof(double), 1, commitor_file);
+            fwrite(&store_commitor[random_selection], sizeof(double), 1, commitor_file); // Write to create space for standard deviation
             i += 1;
-            printf("\rSample selection percentage completion: %d%%", (int)((double)i/(double)samples*100)); // Print progress
+            printf("\rPercentage of samples selected: %d%%", (int)((double)i/(double)samples*100)); // Print progress
             fflush(stdout);
         } 
     }  
