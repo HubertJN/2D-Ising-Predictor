@@ -115,7 +115,7 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, int ite
     fprintf(fp, "Copy %d\n", grid_index+1);
     for (row=0;row<launch_struct->size[0];row++){
       for (col=0;col<launch_struct->size[1];col++){
-        fprintf(stderr, "%d ", host_grid[row*launch_struct->size[0]+col+grid_index*grid_size]);
+        //fprintf(stderr, "%d ", host_grid[row*launch_struct->size[0]+col+grid_index*grid_size]);
         fprintf(fp, "%d ", host_grid[row*launch_struct->size[0]+col+grid_index*grid_size]);
       }
       fprintf(fp, "\n");

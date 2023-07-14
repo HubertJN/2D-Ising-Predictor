@@ -124,8 +124,16 @@ class Type1(Simulation):
             for i in range(0, self.config['iterations'], self.config['iter_per_step'])
         ]
 
+    def convert_to_image_array(self):
+        # This expands the array by one dimention to allow for the rgb values
+        # We then multiply by 255 to get the values in the range -255 to 255
+        # Finally we add 255 and divide by 2 to get the values in the range 0 to 255
+        self.image_grids = np.divide(np.add( 
+            np.expand_dims(self.all_grids, axis=4) * np.array([255,255,255]), 
+                       255), 2).astype(int)
+
     def load_all_grids(self):
-        self.all_grids = np.array([self.load_grid_single(i) for i in self.file_names])
+        self.all_grids = np.array([self.load_grid_single(i) for i in self.file_names], dtype=np.int8)
             
     def load_grid_set(self):
         pass
