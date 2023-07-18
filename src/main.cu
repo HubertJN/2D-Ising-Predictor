@@ -10,14 +10,15 @@ int main(int argc, char *argv[]) {
     // Read the configuration file ===============================================
     char* filename;
     // Check if command line arguments were provided
-    if (argc == 1) {
+    printf("Number of arguments: %d\n", argc);
+    if (argc == 2) {
         filename = argv[1];
     }
     else {
         printf("Usage: %s [filename] \n", argv[0]);
         exit(1);
     }
-    int models;
+    int models = 0;
     get_number_of_models(filename, &models);
     // Allocate memory for the array of pointers to structs
     ising_model_config* params_array[models];
@@ -30,14 +31,14 @@ int main(int argc, char *argv[]) {
     
     // Print the models we are going to run
     for (int i = 0; i < models; i++) {
-        init_model(params_array[i])
+        init_model(params_array[i]);
         // Print the parameters of the model
         fprintf(stderr, "Model #: %d, ModelID: %d\n", i, params_array[i]->model_id);
         fprintf(stderr, "Grid x,y, %d, %d\n", params_array[i]->size[0], params_array[i]->size[1]);
         fprintf(stderr, "Number of iterations: %d\n", params_array[i]->iterations);
         fprintf(stderr, "Number of iterations per step: %d\n", params_array[i]->iter_per_step);
         fprintf(stderr, "Number of concurrent models: %d\n", params_array[i]->num_concurrent);
-        fprintf(stderr, "Temprature: %f\n", params_array[i]->temperature);
+        fprintf(stderr, "Temprature: %f\n", params_array[i]->inv_temperature);
     }
     // Configuration loaded, now run the parallel simulations in multiple streams.
 
@@ -64,6 +65,13 @@ int main(int argc, char *argv[]) {
     int max_shared_memory_per_block = deviceProp.sharedMemPerBlock;
     int max_blocks_per_multiprocessor = deviceProp.maxThreadsPerMultiProcessor / max_threads_per_block;
     int max_threads_per_multiprocessor = max_blocks_per_multiprocessor * max_threads_per_block;
+
+    // Print device specs
+    fprintf(stderr, "Device name: %s\n", deviceProp.name);
+    fprintf(stderr, "Max threads per block: %d\n", max_threads_per_block);
+    fprintf(stderr, "Max shared memory per block: %d\n", max_shared_memory_per_block);
+    fprintf(stderr, "Max blocks per multiprocessor: %d\n", max_blocks_per_multiprocessor);
+    fprintf(stderr, "Max threads per multiprocessor: %d\n", max_threads_per_multiprocessor);
 
 
     // Run compatibility checks between selected device and model configurations
@@ -134,6 +142,7 @@ int main(int argc, char *argv[]) {
     */
     int nBlocks;
     int nThreads;
+    int prob_size;
     int nStreams = 0;
     int total_blocks = 0;
     int total_threads = 0;
@@ -148,6 +157,7 @@ int main(int argc, char *argv[]) {
             //Concurrency style 1: Many models fit in a single block's shared memory
             nThreads = params_array[i]->num_concurrent;
             nBlocks = (nThreads + max_threads_per_block - 1) / max_threads_per_block;
+            prob_size = 10;
             break;
         case 2:
             // Concurrency style 2: Each model fills a block's shared memory
@@ -162,6 +172,7 @@ int main(int argc, char *argv[]) {
         // Apply the computed values to the model parameters for kernel launch
         params_array[i]->num_blocks = nBlocks;
         params_array[i]->num_threads = nThreads;
+        params_array[i]->prob_size = prob_size;
 
         // Update the total number of blocks and threads
         total_blocks += nBlocks;
@@ -196,33 +207,26 @@ int main(int argc, char *argv[]) {
     }
 
     // Loop over the models, load grids where required, and allocate memory for the grids on the device
-    int mem_size; 
-    int h_data[nStreams];
-    int *d_data[nStreams];
+    size_t mem_size; 
+    int* h_data[nStreams];
+    int* d_data[nStreams];
     // LOOP
-        for (int i=0; i < nStreams; i++) {
-            mem_size = params_array[i] -> size[0] * params_array[i] -> size[1] * params_array[i] -> data_type_size * params_array[i] -> num_concurrent;
-            params_array[i] -> mem_size = mem_size;
-            // Allocate required space on host and device
-            cudaMalloc(&d_data[i], mem_size);
-            h_data[i] = (int *)malloc(mem_size);
-        }
+    for (int i=0; i < nStreams; i++) {
+        mem_size = params_array[i] -> size[0] * params_array[i] -> size[1] * params_array[i] -> element_size * params_array[i] -> num_concurrent;
+        params_array[i] -> mem_size = mem_size;
+        // Allocate required space on host and device
+        cudaMalloc(&d_data[i], mem_size);
+        h_data[i] = (int *)malloc(mem_size);
+    }
     //LOOP END
     // ============================================================================
 
     // Queue memcopys and CUDA kernels on multiple streams ========================
     for (int i=0; i < nStreams; i++) {
-        // Copy the model configuration to the device
-        // TODO: Write this
-        // Copy the grid to the device, TODO: add switch for different grid types
-        //cudaMemcpyAsync(d_data[i], &h_data[i], sizeof(float) * sizeof(int), cudaMemcpyHostToDevice, stream[i]);
-        // Launch the CUDA kernel
+        // Switch to select the correct launch wrapper
         switch(params_array[i] -> model_id) {
             case 1:
-                testModel1(stream[i], dev_states, *params_array[i], d_data[i]);
-                break;
-            case 2:
-                testModel2(stream[i], dev_states, *params_array[i], d_data[i]);
+                launch_mc_sweep(stream[i], dev_states, params_array[i], h_data[i], d_data[i], i);
                 break;
             default:
                 fprintf(stderr, "Invalid model selection.\n");
@@ -233,14 +237,11 @@ int main(int argc, char *argv[]) {
 
 
     // Copy results back to host ==================================================
-    for (int i; i < nStreams; i++) {
+    for (int i=0; i < nStreams; i++) {
         // TODO: make this async
         switch (params_array[i] -> model_id)
         {
             case 1:
-                cudaMemcpy(h_data[i], d_data[i], params_array[i] -> mem_size, cudaMemcpyDeviceToHost);
-                break;
-            case 2:
                 cudaMemcpy(h_data[i], d_data[i], params_array[i] -> mem_size, cudaMemcpyDeviceToHost);
                 break;
             default:
@@ -252,7 +253,7 @@ int main(int argc, char *argv[]) {
     // ============================================================================
 
     // Print results ==============================================================
-    for (int i; i < nStreams; i++) {
+    for (int i=0; i < nStreams; i++) {
         
     }
 

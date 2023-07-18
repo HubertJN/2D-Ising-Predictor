@@ -15,13 +15,17 @@ typedef struct ising_model_config {
     int iterations;   // number of iterations in the simulation
     int iter_per_step; // number of iterations per step
     int seed;         // seed for the random number generator
-    float temperature;  // temperature of the system
+    float inv_temperature;  // temperature of the system
+    float field;        // magnetic field strength
+    char* input_file; // input file name
+    int starting_config; // starting configuration, 0 for file input, 1 for random, 2 for all up, 3 for all down
     // User or System set parameters
     int num_threads;  // number of threads per block
     // System set parameters
     int num_blocks;   // number of blocks
     int element_size; // size of the grid elements in bytes
-    int mem_size;     // size of all grids required in bytes
+    size_t mem_size;     // size of all grids required in bytes
+    int prob_size;    // size of the probability array
 } ising_model_config;
 
 
@@ -32,6 +36,7 @@ void get_number_of_models(const char* filename, int* models);
 
 void read_input_file(const char* filename, ising_model_config* params_array[], int models);
 
+void load_grid(cudaStream_t stream, ising_model_config* launch_struct, int* dev_grid);
 
 
 #endif // INPUT_READER_H

@@ -1,0 +1,5 @@
+bin/
+output/
+.vscode/
+__pycache__/
+pyviz/pyviz/__pycache__/
