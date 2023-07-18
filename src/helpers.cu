@@ -80,7 +80,7 @@ void preComputeNeighbours(ising_model_config *config, int *d_neighbour_list) {
 }
 
 // TODO: Deprecate this with the binary dump from issue #8
-void outputGridToFile(ising_model_config *launch_struct, int *host_grid, int iteration, int stream_ix) {
+void outputGridToFile(ising_model_config *launch_struct, int *host_grid, int *host_mag, int iteration, int stream_ix) {
   /* Output the grid to a file.
       *
       * Parameters:
@@ -112,7 +112,7 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, int ite
 
   int row, col, grid_index;
   for (grid_index=0; grid_index<launch_struct->num_concurrent;grid_index++){
-    fprintf(fp, "Copy %d\n", grid_index+1);
+    fprintf(fp, "Copy %d, Mag %f, Nucleated %s\n", grid_index+1, host_mag[grid_index]);
     for (row=0;row<launch_struct->size[0];row++){
       for (col=0;col<launch_struct->size[1];col++){
         //fprintf(stderr, "%d ", host_grid[row*launch_struct->size[0]+col+grid_index*grid_size]);

@@ -14,22 +14,21 @@ __global__ void init_rng(curandState *state, unsigned int seed, int n)
 }
 
 // compute magnetisation on the gpu
-__global__ void compute_magnetisation(const int L, const int ngrids, int *d_ising_grids, float *d_magnetisation) {
+__global__ void compute_magnetisation(const int L_x, const int L_y, const int ngrids, const float nuc_threshold, int *device_grids, float *d_magnetisation, int *d_nucleation) {
 
   int idx = threadIdx.x+blockIdx.x*blockDim.x;
-
   if (idx < ngrids) {
-
-    int *loc_grid = &d_ising_grids[idx*L*L]; // pointer to device global memory
-
+    int N = L_x*L_y;
+    int *loc_grid = &device_grids[idx*N]; // pointer to device global memory
     float m = 0.0f;
-
-    int i;
-    for (i=0;i<L*L;i++) { m += loc_grid[i]; }
-    d_magnetisation[idx] = m/(float)(L*L);
-
+    for (int i=0;i<N;i++) { 
+      m += loc_grid[i]; 
+    }
+    d_magnetisation[idx] = m/(float)(N);
+    if (d_magnetisation[idx] > nuc_threshold) {
+      d_nucleation[idx] = 1;
+    }
   }
-
   return;
 }
 
@@ -115,24 +114,13 @@ __global__ void mc_sweep(curandState *state, const int L_x, const int L_y, const
 
       my_idx = __float2int_rd(shrink*curand_uniform(&localState));
 
-
-
       spin = loc_grid[my_idx];
 
-      // find neighbours, periodic boundary conditions. D,U,L,R
-      // row = my_idx/L_x;
-      // col = my_idx%L_x;
-      // n1 = loc_grid[L*((row+1)%L) + col];
-      // n2 = loc_grid[L*((row+L-1)%L) + col];
-      // n3 = loc_grid[L*row + (col+1)%L];
-      // n4 = loc_grid[L*row + (col+L-1)%L];
       // use neighbour list to get neighbours from constant memory
       n1 = loc_grid[d_neighbour_list[my_idx] + 0];
       n2 = loc_grid[d_neighbour_list[my_idx] + 1];
       n3 = loc_grid[d_neighbour_list[my_idx] + 2];
       n4 = loc_grid[d_neighbour_list[my_idx] + 3];
-      //n_sum = 4;
-      // index = 5*(spin+1) + n1+n2+n3+n4 + 4;
       index = ((spin+1) >> 1) + (n1+n2+n3+n4) + 4;
 
       // The store back to global memory, not the branch or the RNG generation
