@@ -125,6 +125,7 @@ void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config
                 fprintf(stderr, "Nucleation detected at iteration %d on grid %d\n", i, j+1);
                 full_nucleation++;
             }
+        }
         if (full_nucleation == launch_struct->num_concurrent) {
             fprintf(stderr, "Full nucleation on all grids \n");
             break;
