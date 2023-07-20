@@ -175,7 +175,7 @@ class Type1(Simulation):
 
         self.figure = make_subplots(rows=rows, cols=cols, 
                                     subplot_titles=[f"Copy {i+1}" for i in range(self.config['num_concurrent'])], 
-                                    horizontal_spacing=0.1, vertical_spacing=0.1)
+                                    horizontal_spacing=0.1, vertical_spacing=0.15)
 
         for i in range(self.config['num_concurrent']):
             self.figure.add_trace(
@@ -258,6 +258,15 @@ class Type1(Simulation):
         frame_list = [
             go.Frame(
                 data=[go.Image(z=self.image_grids[i,j,:,:]) for j in range(self.config['num_concurrent'])], 
+                layout=go.Layout(annotations=[
+                                                {
+                                                    'text':f"Copy {j+1}, frame {i} <br> mag {self.all_mag_nuc[i][j][0]:.2f}, nuc {int(self.all_mag_nuc[i][j][1])}",
+                                                    'font': {'size': 8},
+                                                    'align': 'center'
+                                                    }
+                                            for j in range(self.config['num_concurrent'])
+                                            ] 
+                                ),
                 traces=[j for j in range(self.config['num_concurrent'])],
             )
             for i in range(self.image_grids.shape[0])
