@@ -10,9 +10,8 @@ test_sim.load_all_grids()
 # Convert the grids to image arrays
 test_sim.convert_to_image_array()
 
-
-test_sim.plot_frames()
 test_sim.make_figure()
+test_sim.create_frames()
 test_sim.create_layout()
 test_sim.animate_all_grids()
 

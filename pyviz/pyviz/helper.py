@@ -184,74 +184,76 @@ class Type1(Simulation):
             )
     
     def create_layout(self):
-        # self.layout=go.Layout(
-        #     width=600, height=600,
-        #     title="Ising Model",
-        #     updatemenus=[dict(
-        #         type="buttons",
-        #         buttons=[
+        # The buttons dont work either
+        # buttons = [
+        #     dict(
+        #         label='Play',
+        #         method='animate',
+        #         args=[
+        #             None, 
         #             dict(
-        #             label="Play",
-        #             method="animate",
-        #             args=[None]
-        #         )]
-        #     )]
-        # )
-        button = dict(
-             label='Play',
-             method='animate',
-             args=[None, dict(frame=dict(duration=50, redraw=False), 
-                              transition=dict(duration=0),
-                              fromcurrent=True,
-                              mode='immediate')])
-        slider = dict(
-            active=0,
-            steps=[]
-        )
+        #                 frame=dict(duration=50, redraw=False), 
+        #                 transition=dict(duration=0),
+        #                 fromcurrent=True,
+        #                 mode='immediate'
+        #             )
+        #         ]
+        #     ),
+        #     dict(
+        #         label='Pause',
+        #         method='animate',
+        #         args=[
+        #             [None],
+        #             dict(
+        #                 frame=dict(duration=0, redraw=False), 
+        #                 transition=dict(duration=0),
+        #                 fromcurrent=True,
+        #                 mode='immediate'
+        #             )
+        #         ]
+        #     )
+        # ]
 
-        # Create and add slider
-        # TODO this toggles plots not frames
-        """steps = []
-        for i in range(len(self.figure.data)):
-            step = dict(
-                method="update",
-                args=[{"visible": [False] * len(self.figure.data)},
-                    {"title": "Frame: " + str(i)}],  # layout attribute
-            )
-            step["args"][0]["visible"][i] = True  # Toggle i'th trace to "visible"
-            steps.append(step)
-        
-        sliders = [dict(
-            active=0,
-            currentvalue={"prefix": "Frame: "},
-            pad={"t": 50},
-            steps=steps
-        )]"""
+
+        # Adding a slider
+        # This does not work as expected
+        # sliders = [{
+        #     'yanchor': 'top',
+        #     'xanchor': 'left', 
+        #     'active': 1,
+        #     'currentvalue': {'font': {'size': 16}, 'prefix': 'Steps: ', 'visible': True, 'xanchor': 'right'},
+        #     'transition': {'duration': 200, 'easing': 'linear'},
+        #     'pad': {'b': 10, 't': 50}, 
+        #     'len': 0.9, 'x': 0.15, 'y': 0, 
+        #     'steps': [{'args': [[k], {'frame': {'duration': 200, 'easing': 'linear', 'redraw': False},
+        #                               'transition': {'duration': 0, 'easing': 'linear'}}], 
+        #                               'label': k, 'method': 'animate'} for k in range(len(self.figure.frames) - 1)       
+        #         ]
+        # }]
+
 
         self.figure.update_layout(
-            updatemenus=[
-                dict(
-                    type='buttons',
-                    showactive=False,
-                    y=0,
-                    x=1.05,
-                    xanchor='left',
-                    yanchor='bottom',
-                    buttons=[button] )
-            ],
-            #sliders=sliders,
+            # updatemenus=[
+            #     dict(
+            #         type='buttons',
+            #         showactive=False,
+            #         y=0,
+            #         x=1.05,
+            #         xanchor='left',
+            #         yanchor='bottom',
+            #         buttons=buttons )
+            # ],
             width=800, height=500
         )
     
 
     def animate_all_grids(self):
-        self.figure.frames = self.frame_list
         self.figure.write_html(self.path_base/"animation_test.html")
 
     def animate_grid_set(self):
         pass
 
-    def plot_frames(self):
+    def create_frames(self):
         """Creates a list of frames"""
         frame_list = [
             go.Frame(
@@ -260,4 +262,4 @@ class Type1(Simulation):
             )
             for i in range(self.image_grids.shape[0])
         ]
-        self.frame_list = frame_list
+        self.figure.frames = frame_list
