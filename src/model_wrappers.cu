@@ -91,6 +91,15 @@ void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config
     preComputeNeighbours(launch_struct, d_neighbour_list);
     fprintf(stderr, "Precomputed probs and neighbours\n");
 
+    // Allocate memory for magnetisation and energy
+    float h_magnetisation[launch_struct->num_concurrent];
+    float* d_magnetisation;
+    cudaMalloc(&d_magnetisation, launch_struct->num_concurrent * sizeof(float));
+    float h_nucleation[launch_struct->num_concurrent];
+    int* d_nucleation;
+    cudaMalloc(&d_nucleation, launch_struct->num_concurrent * sizeof(int));
+
+
     // Launch kernel
     for (int i = 0; i < launch_struct->iterations; i+=launch_struct->iter_per_step){
         mc_sweep<<<launch_struct->num_blocks, launch_struct->num_concurrent, 0, stream>>>(state, launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, device_array, launch_struct->inv_temperature, launch_struct->field, launch_struct->iter_per_step, d_neighbour_list, d_Pacc);
@@ -98,11 +107,29 @@ void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config
         gpuErrchk( cudaStreamSynchronize(stream) );
         gpuErrchk( cudaMemcpy(host_array, device_array, launch_struct->mem_size, cudaMemcpyDeviceToHost));
         fprintf(stderr, "Iterations %d to %d\n", i, i+launch_struct->iter_per_step);
-        // Compute energy and magnetisation
-        // TODO
-
-        // Write to file
-        outputGridToFile(launch_struct, host_array, i, stream_ix);
+        gpuErrchk( cudaPeekAtLastError() );
+        gpuErrchk( cudaDeviceSynchronize() );
+        
+        // Compute energy and magnetisation (GPU)
+        compute_magnetisation<<<launch_struct->num_blocks, launch_struct->num_concurrent, 0, stream>>>(launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, launch_struct->nucleation_threshold, device_array, d_magnetisation, d_nucleation);
+        gpuErrchk( cudaPeekAtLastError() );
+        gpuErrchk( cudaStreamSynchronize(stream) );
+        gpuErrchk( cudaMemcpy(h_magnetisation, d_magnetisation, launch_struct->num_concurrent * sizeof(float), cudaMemcpyDeviceToHost));
+        gpuErrchk( cudaPeekAtLastError() );
+        // Write to file (CPU)
+        outputGridToFile(launch_struct, host_array, h_magnetisation, i, stream_ix);
+        // Check for full nucleation
+        int full_nucleation = 0;
+        for (int j = 0; j < launch_struct->num_concurrent; j++) {
+            if (h_magnetisation[j] > launch_struct->nucleation_threshold) {
+                fprintf(stderr, "Nucleation detected at iteration %d on grid %d\n", i, j+1);
+                full_nucleation++;
+            }
+        }
+        if (full_nucleation == launch_struct->num_concurrent) {
+            fprintf(stderr, "Full nucleation on all grids \n");
+            break;
+        }
     }
     return;
 }

@@ -1,6 +1,9 @@
 import numpy as np
 from pathlib import Path
 import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+from plotly_gif import GIF, capture
 
 class SimulationSet():
 
@@ -78,6 +81,9 @@ class Simulation():
 
     def load_grid_single(self):
         pass
+    
+    def make_figure(self):
+        pass
 
     def animate_all_grids(self):
         pass
@@ -85,7 +91,7 @@ class Simulation():
     def animate_grid_set(self):
         pass
 
-    def plot_grid_snapshot(self):
+    def plot_frames(self):
         pass
 
 
@@ -117,7 +123,7 @@ class Type1(Simulation):
                     print(e1, e2, e3)
                     raise FileNotFoundError
     
-        
+        self.path_base = path_base
         grid_size = self.config['size_x']*self.config['size_y']
         self.file_names = [
             path_base/Path(f"grid_{self.config['sim_num']}_{grid_size}_{i}.txt") 
@@ -133,7 +139,9 @@ class Type1(Simulation):
                        255), 2).astype(int)
 
     def load_all_grids(self):
-        self.all_grids = np.array([self.load_grid_single(i) for i in self.file_names], dtype=np.int8)
+        grids_and_mags = [self.load_grid_single(i) for i in self.file_names]
+        self.all_grids = np.array([i[0] for i in grids_and_mags]).astype(int)
+        self.all_mag_nuc = np.array([i[1] for i in grids_and_mags]).astype(float)
             
     def load_grid_set(self):
         pass
@@ -145,21 +153,122 @@ class Type1(Simulation):
             dims = get_dims.split()[2:]
             dims = [int(i) for i in dims]
             grids = []
+            mag_nuc = []
             for i in range(self.config['num_concurrent']):
-                assert lines.pop(0).strip() == f"Copy {i+1}".strip(), "File not formatted correctly"
+                # Copy 1, Mag -0.989800, Nucleated 0
+                copyline = lines.pop(0).split()
+                mag = float(copyline[3].strip(','))
+                nuc = int(copyline[5].strip(','))
+                assert (copyline[0], copyline[1].strip(',')) == ("Copy", f"{i+1}"), "File not formatted correctly"
                 grids.append(
                     [lines.pop(0).split()
                     for _ in range(dims[0])]
                 )
+                mag_nuc.append((mag, nuc))
                 lines.pop(0)
-        return grids
+        return grids, mag_nuc
+
+    def make_figure(self):
+        self.maxcols = 4
+        cols = min(self.config['num_concurrent'], self.maxcols)
+        rows = int(np.ceil(self.config['num_concurrent']/cols))
+
+        self.figure = make_subplots(rows=rows, cols=cols, 
+                                    subplot_titles=[f"Copy {i+1}" for i in range(self.config['num_concurrent'])], 
+                                    horizontal_spacing=0.1, vertical_spacing=0.15)
+
+        for i in range(self.config['num_concurrent']):
+            self.figure.add_trace(
+                go.Image(z=self.image_grids[i,0,:,:]),
+                row=(i//self.maxcols)+1, col=(i%self.maxcols)+1
+            )
+    
+    def create_layout(self):
+        # The buttons dont work either
+        # buttons = [
+        #     dict(
+        #         label='Play',
+        #         method='animate',
+        #         args=[
+        #             None, 
+        #             dict(
+        #                 frame=dict(duration=50, redraw=False), 
+        #                 transition=dict(duration=0),
+        #                 fromcurrent=True,
+        #                 mode='immediate'
+        #             )
+        #         ]
+        #     ),
+        #     dict(
+        #         label='Pause',
+        #         method='animate',
+        #         args=[
+        #             [None],
+        #             dict(
+        #                 frame=dict(duration=0, redraw=False), 
+        #                 transition=dict(duration=0),
+        #                 fromcurrent=True,
+        #                 mode='immediate'
+        #             )
+        #         ]
+        #     )
+        # ]
+
+
+        # Adding a slider
+        # This does not work as expected
+        # sliders = [{
+        #     'yanchor': 'top',
+        #     'xanchor': 'left', 
+        #     'active': 1,
+        #     'currentvalue': {'font': {'size': 16}, 'prefix': 'Steps: ', 'visible': True, 'xanchor': 'right'},
+        #     'transition': {'duration': 200, 'easing': 'linear'},
+        #     'pad': {'b': 10, 't': 50}, 
+        #     'len': 0.9, 'x': 0.15, 'y': 0, 
+        #     'steps': [{'args': [[k], {'frame': {'duration': 200, 'easing': 'linear', 'redraw': False},
+        #                               'transition': {'duration': 0, 'easing': 'linear'}}], 
+        #                               'label': k, 'method': 'animate'} for k in range(len(self.figure.frames) - 1)       
+        #         ]
+        # }]
+
+
+        self.figure.update_layout(
+            # updatemenus=[
+            #     dict(
+            #         type='buttons',
+            #         showactive=False,
+            #         y=0,
+            #         x=1.05,
+            #         xanchor='left',
+            #         yanchor='bottom',
+            #         buttons=buttons )
+            # ],
+            width=800, height=500
+        )
+    
 
     def animate_all_grids(self):
-        px.imshow(self.all_grids, animation_frame=0, binary_string=True)
-        pass
+        self.figure.write_html(self.path_base/"animation_test.html")
 
     def animate_grid_set(self):
         pass
 
-    def plot_grid_snapshot(self):
-        pass
+    def create_frames(self):
+        """Creates a list of frames"""
+        frame_list = [
+            go.Frame(
+                data=[go.Image(z=self.image_grids[i,j,:,:]) for j in range(self.config['num_concurrent'])], 
+                layout=go.Layout(annotations=[
+                                                {
+                                                    'text':f"Copy {j+1}, frame {i} <br> mag {self.all_mag_nuc[i][j][0]:.2f}, nuc {int(self.all_mag_nuc[i][j][1])}",
+                                                    'font': {'size': 8},
+                                                    'align': 'center'
+                                                    }
+                                            for j in range(self.config['num_concurrent'])
+                                            ] 
+                                ),
+                traces=[j for j in range(self.config['num_concurrent'])],
+            )
+            for i in range(self.image_grids.shape[0])
+        ]
+        self.figure.frames = frame_list

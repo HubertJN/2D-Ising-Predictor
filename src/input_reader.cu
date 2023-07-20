@@ -78,6 +78,7 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
     float field;       // external field
     float inv_temperature; // inverse temperature
     int starting_config; // starting configuration
+    float nucleation_threshold; // nucleation threshold
     int num_threads;
     const int grid_file_str_len = 256;
     char grid_file[grid_file_str_len];
@@ -94,6 +95,7 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
     kvp_register_i("num_threads", &num_threads);
     kvp_register_string("input_file", grid_file, grid_file_str_len);
     kvp_register_i("starting_config", &starting_config);
+    kvp_register_f("nucleation_threshold", &nucleation_threshold);
     
     fprintf(stderr, "found %d models\n", models);
     // Modify this loop to go over the line numbers instead of parsing the file line by line

@@ -19,6 +19,7 @@ typedef struct ising_model_config {
     float field;        // magnetic field strength
     char* input_file; // input file name
     int starting_config; // starting configuration, 0 for file input, 1 for random, 2 for all up, 3 for all down
+    float nucleation_threshold; // nucleation threshold
     // User or System set parameters
     int num_threads;  // number of threads per block
     // System set parameters
