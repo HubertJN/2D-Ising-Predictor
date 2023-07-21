@@ -59,8 +59,7 @@ class SimulationSet():
             Warning(f"Key {key} not recognised")
             sim_dict[key] = value
     
-            
-    
+     
 class Simulation():
     """
     Class for simulation
@@ -246,7 +245,6 @@ class Type1(Simulation):
             width=800, height=500
         )
     
-
     def animate_all_grids(self):
         self.figure.write_html(self.path_base/"animation_test.html")
 
