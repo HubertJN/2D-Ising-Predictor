@@ -93,7 +93,10 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
   // Output the grid to a file
   char filename[100];
   int grid_size = launch_struct->size[0]*launch_struct->size[1];
-  snprintf(filename, sizeof(filename), "../output/grid_%d_%d_%d.txt", stream_ix, grid_size, iteration);
+
+  snprintf(filename, sizeof(filename), prefix);
+  snprintf(filename+strlen(prefix), sizeof(filename)-strlen(prefix), "grid_%d_%d_%d.txt", stream_ix, grid_size, iteration);
+
   realpath(filename, filename);
   fprintf(stderr, "Making File: %s\n", filename);
   fflush(stderr);
