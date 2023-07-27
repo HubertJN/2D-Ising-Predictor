@@ -236,5 +236,4 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
   if(write_err) fprintf(stderr, "File Writing error");
 
   file.close();
-  exit(0);
 }
