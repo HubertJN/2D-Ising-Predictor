@@ -70,7 +70,9 @@ for i in range(min(n_conc, 100)):  # Min while developing reader - prevent giant
     file_data.append(next_loc)
     raw_data = file.read(total_sz * grid_sz)
     data = np.frombuffer(raw_data, dt, count=total_sz)
-    print(data, data.size)
+    data = np.reshape(data, dims)
+    print("Grid {} ({})".format(i, data.shape))
+    print(data)
 
 
 
