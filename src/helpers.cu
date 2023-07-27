@@ -182,7 +182,7 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
   next_location += size_sz*(n_dims+3); // + 3 for location info, n_dims, n_grids
   file.write((char*) & next_location, size_sz);
   file.write((char*) & n_dims, size_sz);
-  tmp = launch_struct->size[0];
+  tmp = launch_struct->size[0]; // todo fix to use n_dims properly
   file.write((char*) & tmp, size_sz);
   tmp = launch_struct->size[1];
   file.write((char*) & tmp, size_sz);
@@ -193,7 +193,7 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
   //Check file location matches what we expected
   if((size_t)file.tellg() != next_location) write_err=1;
   fprintf(stderr, "Next loc %d (%d)\n", next_location, write_err);
-
+  // todo remove these debugging prints
 
   const size_t total_size = launch_struct->size[0] * launch_struct->size[1];
 
