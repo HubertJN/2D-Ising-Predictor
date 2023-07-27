@@ -159,7 +159,7 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
   bool write_err = false;
   file.open(filename, std::ios::out|std::ios::binary);
 
-  size_t size_sz = sizeof(size_t); //Use size_t type for header data
+  const size_t size_sz = sizeof(size_t); //Use size_t type for header data
   const size_t host_mag_sz = sizeof(host_mag[0]);
   const size_t host_grid_sz = sizeof(host_grid[0]);
   fprintf(stderr, "Size of size_t: %d\n", size_sz);
@@ -177,7 +177,7 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
   fprintf(stderr, "Next loc %d (%d)\n", next_location, write_err);
 
   //Now write dimension info: n_dims, followed by each dim, and the total number of grids
-  const size_t n_dims = 2;
+  const size_t n_dims = 2; // TODO - n_dims should be got from somewhere higher up!
   size_t tmp;
   next_location += size_sz*(n_dims+3); // + 3 for location info, n_dims, n_grids
   file.write((char*) & next_location, size_sz);
