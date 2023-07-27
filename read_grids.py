@@ -1,4 +1,5 @@
 import struct
+import numpy as np
 
 endian = 'little' # ToDo use check to verify this...
 sz_sz = 8
@@ -48,14 +49,28 @@ file_data.append(next_loc)
 print("#", next_loc)
 
 # Now we get all of the grids meta-data
-for i in range(min(n_conc, 1000)):
+for i in range(min(n_conc, 100)):  # Min while developing reader - prevent giant loop if n_conc is misread
     indx = int.from_bytes(file.read(sz_sz), endian)
     mag_raw = file.read(mag_sz)
     mag = struct.unpack(fmt, mag_raw)[0]
     nuc = int.from_bytes(file.read(sz_sz), endian)
     print("grid num:{}, magnetisation:{:.6f}, (nucleated?:{})".format(indx, mag, nuc))
- 
 
+
+total_sz = dims[0]
+for i in range(1, len(dims)): total_sz *= dims[i]
+print("Data per grid:", total_sz)
+
+grid_fmt_string = "i{}".format(grid_sz)
+dt = np.dtype(grid_fmt_string)
+
+# Now the actual grids
+for i in range(min(n_conc, 100)):  # Min while developing reader - prevent giant loop if n_conc is misread
+    next_loc = int.from_bytes(file.read(sz_sz), endian)
+    file_data.append(next_loc)
+    raw_data = file.read(total_sz * grid_sz)
+    data = np.frombuffer(raw_data, dt, count=total_sz)
+    print(data, data.size)
 
 
 

@@ -215,13 +215,11 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
    // Also print this info to the screen
    fprintf(stderr, "Copy %d, Mag %f, Nucleated %d\n", grid_index+1, host_mag[grid_index], nuc);
   }
- //Check file location matches what we expected
+
+  //Check file location matches what we expected
   if((size_t)file.tellg() != next_location) write_err=1;
   fprintf(stderr, "Next loc %d (%d)\n", next_location, write_err);
 
-
-  file.close();
-  exit(0);
   // Then write the actual grids
 
   for (grid_index=0; grid_index<launch_struct->num_concurrent;grid_index++){
@@ -234,7 +232,6 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
   //Check file location matches what we expected
   if((size_t)file.tellg() != next_location) write_err=1;
   fprintf(stderr, "Next loc %d\n", next_location);
-
 
   if(write_err) fprintf(stderr, "File Writing error");
 
