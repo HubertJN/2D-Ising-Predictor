@@ -222,11 +222,10 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
 
   // Then write the actual grids
 
-  for (grid_index=0; grid_index<launch_struct->num_concurrent;grid_index++){
-
+  for(grid_index=0; grid_index<launch_struct->num_concurrent;grid_index++){
     next_location += host_grid_sz*total_size + size_sz;
     file.write((char*) & next_location, size_sz);
-    file.write((char*) host_grid+grid_index*total_size, total_size*host_grid_sz);
+    file.write((char*) (host_grid + grid_index*total_size), total_size*host_grid_sz);
   }
 
   //Check file location matches what we expected
