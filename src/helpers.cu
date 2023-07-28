@@ -236,3 +236,95 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
 
   file.close();
 }
+
+int readGridsFromFile(ising_model_config * config, int * &host_grid, char* filename){
+  /* Read grids from given file
+      *
+      * Parameters:
+      * config : pointer to config struct (allocated)
+      * host_grid : pointer to grid (will be allocated/reallocated)
+      * filename : full filename to read from
+    Returns 1 if there is an error
+   */
+
+  fprintf(stderr, "Reading grid from file\n");
+  fflush(stderr);
+
+  std::fstream file;
+  bool read_err = false;
+  file.open(filename, std::ios::in|std::ios::binary);
+
+  // Read file header info
+  const size_t size_sz = sizeof(size_t); //Use size_t type for header data - todo - add to file and read back...
+  size_t host_mag_sz;
+  size_t host_grid_sz;
+  size_t next_location;
+
+  //Read Size of ints and data, IO verification constant
+  const float io_verify = 3.0/32.0;// An identifiable value - use to check type, endianness etc TODO - match to host_mag type
+  float io_verify_in;
+  file.read((char*) & host_mag_sz, size_sz); // Size of mag data
+  file.read((char*) & host_grid_sz, size_sz); // Size of grid data
+  file.read((char*) &io_verify_in, host_mag_sz);
+
+  fprintf(stderr, "Host mag size %d\n", host_mag_sz);
+  fprintf(stderr, "Host grid sz %d\n", host_grid_sz);
+  fprintf(stderr, "IO verify %f\n", io_verify_in);
+  // Do verification steps:
+  if(host_grid_sz != sizeof(host_grid[0])){
+    fprintf(stderr, "File data does not match requested data size, aborting");
+    // todo - avoid this potential error somehow?
+    return 1;
+  }
+  if(io_verify_in != io_verify){
+    fprintf(stderr, "IO verification failed, aborting");
+    // todo - is exact real comparision the right thing here?
+    return 1;
+  }
+
+  // Read grids metadata
+  // todo Do we want to fill in the config struct? Or verify against it??
+
+  // Next location marker
+  file.read((char*) & next_location, size_sz);
+  
+  size_t n_dims;
+  file.read((char*) & n_dims, size_sz);
+
+  size_t tmp1, tmp2; // todo fix for different n_dims?
+  file.read((char*) & tmp1, size_sz);
+  file.read((char*) & tmp2, size_sz);
+
+  size_t n_c;
+  file.read((char*) & n_c, size_sz);
+
+  // todo - see above
+  // For now, verify against config passed in...??
+  if(n_dims != 2 || tmp1 != config->size[0] || tmp2 != config->size[1] || n_c != config->num_concurrent){
+    fprintf(stderr, "Data read does not match specified configuration");
+    return 2;
+  }
+
+  const size_t total_size = config->size[0] * config->size[1];
+
+  host_grid = (int *) malloc(n_c * total_size * sizeof(int));
+  //Skip over magnetization and nucleation - should calculate instead
+  file.read((char*) & next_location, size_sz);
+  file.seekg(next_location);
+
+  // Read grids
+  size_t grid_index;
+  for (grid_index=0; grid_index<config->num_concurrent; grid_index++){
+
+    file.read((char*) & next_location, size_sz);
+    file.read((char*) (host_grid + grid_index*total_size), total_size*host_grid_sz);
+  }
+
+  // Finish
+  file.close();
+  return 0;
+
+}
+
+
+

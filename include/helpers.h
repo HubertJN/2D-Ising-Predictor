@@ -20,4 +20,6 @@ const char prefix[30]="./output/";
 
 void outputGridToFile(ising_model_config *config, int *host_grid, float *host_mag, int iteration, int stream_ix);
 
+int readGridsFromFile(ising_model_config * config, int *&host_grid, char* filename);
+
 #endif // HELPERS_H
