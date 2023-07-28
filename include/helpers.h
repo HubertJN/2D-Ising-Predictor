@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cuda.h>
+#include "shared_data.h"
 #include "input_reader.h"
 
 // Macro for error checking
