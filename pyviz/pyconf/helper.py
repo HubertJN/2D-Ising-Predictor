@@ -2,6 +2,7 @@ import ctypes
 import json
 from typing import Any, Dict, List
 from warnings import warn
+import copy
 
 #===============================================================================
 # https://gist.github.com/f0k/63a664160d016a491b2cbea15913d549
@@ -178,6 +179,47 @@ def get_cuda_device_specs() -> List[Dict[str, Any]]:
 #===============================================================================
 # Classes that define the simulation type, used to define simulation specific details
 
+class SimulationSet():
+    
+    def __init__(self, config_list):
+        self.config_list = config_list
+
+        self.calculate_replications()
+        self.generate_config_file()
+    
+
+    def calculate_replications(self):
+        for model_type in self.config_list:
+            # Read the number/memory requirement of set replications for each model type
+            # Read the models without set replications
+            # Calculate the number of replications needed to fill the memory
+
+            # Check the replications are within multiprocessing limits
+
+            # Assign the replications to the models
+            pass
+    
+    def recurse_dict(self, config_dict, keys_processed):
+        if len(keys_processed) == 0:
+            config_dict = {}
+        if len(keys_processed) == len(config_dict):
+            write_to_file(config_dict)
+        else:
+            config_dict = copy.copy(config_dict)
+            for key, values in config_dict.items():
+                if key not in keys_processed:
+                    keys_processed.append(key)
+                    for value in values:
+                        self.recurse_dict(value, keys_processed)
+        
+        
+
+    def generate_config_file(self):
+        
+        pass
+
+
+
 class Simulation():
 
     def __init__(self):
@@ -191,10 +233,12 @@ class Simulation():
 
 class Type1(Simulation):
 
-    def __init__(self):
+    def __init__(self, config):
         super().__init__()
+        # hard coded information about the model.
+        array_element_size = 4 #bytes
+    def array_size(self):
 
-    def array_element_size(self):
         
 
 #===============================================================================
