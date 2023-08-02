@@ -300,11 +300,8 @@ class Type1(Simulation):
                 if event.key == pygame.K_DOWN:
                     igrid = max(igrid-1,0)
                 if event.key == pygame.K_w:
-                    outfile = open(f"{args.output_dir}/gridinput.bin","wb")
-                    outfile.write(L.tobytes())
-                    gridbuffer.tofile(outfile)
-                    outfile.close()
-                    print(f"Grid snapshot written to {args.output_dir}/gridinput.bin")
+                    # TODO: Write current active grid to file
+                    print(f"Grid snapshot written to pyviz/dump/gridinput.bin")
 
     def animate_grid_set(self):
         pass
