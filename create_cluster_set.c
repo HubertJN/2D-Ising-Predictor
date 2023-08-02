@@ -44,7 +44,7 @@ int main (int argc, char *argv[]) {
 
     // Set filenames
     const char *index_filename = "index.bin";
-    const char *commitor_filename = "commitor_calc_index.bin";
+    const char *committor_filename = "committor_index.bin";
 
     // Open file to read
     FILE *index_file = fopen(index_filename,"rb");
@@ -53,12 +53,12 @@ int main (int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    // Remove commitor file
-    remove(commitor_filename);
+    // Remove committor file
+    remove(committor_filename);
     // Create file to write
-    FILE *commitor_file = fopen(commitor_filename,"wb");
-    if (commitor_file==NULL){
-        fprintf(stderr,"Error opening %s for write!\n",commitor_filename);
+    FILE *committor_file = fopen(committor_filename,"wb");
+    if (committor_file==NULL){
+        fprintf(stderr,"Error opening %s for write!\n",committor_filename);
         exit(EXIT_FAILURE);
     }
 
@@ -74,15 +74,15 @@ int main (int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    // Create arrays for storing for ngrid, islice, cluster and spare for commitor        
+    // Create arrays for storing for ngrid, islice, cluster and spare for committor        
     int *store_ngrid = (int *)malloc(nreplicas*nsweeps/100*sizeof(int));
     if (store_ngrid==NULL){fprintf(stderr,"Error allocating memory for store_ngrid array!\n"); exit(EXIT_FAILURE);} 
     int *store_slice = (int *)malloc(nreplicas*nsweeps/100*sizeof(int));
     if (store_slice==NULL){fprintf(stderr,"Error allocating memory for store_slice array!\n"); exit(EXIT_FAILURE);} 
     int *store_cluster = (int *)malloc(nreplicas*nsweeps/100*sizeof(int));
     if (store_cluster==NULL){fprintf(stderr,"Error allocating memory for store_cluster array!\n"); exit(EXIT_FAILURE);} 
-    double *store_commitor = (double *)malloc(nreplicas*nsweeps/100*sizeof(double));
-    if (store_commitor==NULL){fprintf(stderr,"Error allocating memory for store_commitor array!\n"); exit(EXIT_FAILURE);} 
+    double *store_committor = (double *)malloc(nreplicas*nsweeps/100*sizeof(double));
+    if (store_committor==NULL){fprintf(stderr,"Error allocating memory for store_committor array!\n"); exit(EXIT_FAILURE);} 
 
     // Read and sotre data from index file
     // Loops over slices
@@ -92,8 +92,8 @@ int main (int argc, char *argv[]) {
             fread(&store_slice[igrid+nreplicas*islice], sizeof(int), 1, index_file);
             fread(&store_ngrid[igrid+nreplicas*islice], sizeof(int), 1, index_file);
             fread(&store_cluster[igrid+nreplicas*islice], sizeof(int), 1, index_file);
-            fread(&store_commitor[igrid+nreplicas*islice], sizeof(double), 1, index_file);
-            fread(&store_commitor[igrid+nreplicas*islice], sizeof(double), 1, index_file); // Dummy read that reads the standard deviation value in, which at this stage is also -1
+            fread(&store_committor[igrid+nreplicas*islice], sizeof(double), 1, index_file);
+            fread(&store_committor[igrid+nreplicas*islice], sizeof(double), 1, index_file); // Dummy read that reads the standard deviation value in, which at this stage is also -1
         }
     }
 
@@ -115,20 +115,20 @@ int main (int argc, char *argv[]) {
             ta = store_ngrid[i];
             tb = store_slice[i];
             tc = store_cluster[i];
-            td = store_commitor[i];
+            td = store_committor[i];
             k = i;
             while(i != (j = p_store_cluster[k]-store_cluster)){
                 store_ngrid[k] = store_ngrid[j];
                 store_slice[k] = store_slice[j];
                 store_cluster[k] = store_cluster[j];
-                store_commitor[k] = store_commitor[k];
+                store_committor[k] = store_committor[k];
                 p_store_cluster[k] = &store_cluster[k];
                 k = j;
             }
             store_ngrid[k] = ta;
             store_slice[k] = tb;
             store_cluster[k] = tc;
-            store_commitor[k] = td;
+            store_committor[k] = td;
             p_store_cluster[k] = &store_cluster[k];
         }
     }
@@ -244,11 +244,11 @@ int main (int argc, char *argv[]) {
         random_percentage = (double)rand()/(double)(RAND_MAX);
         selected_cluster_size = store_cluster[random_selection];
         if (random_percentage < reject_prob[selected_cluster_size]) {
-            fwrite(&store_slice[random_selection], sizeof(int), 1, commitor_file);
-            fwrite(&store_ngrid[random_selection], sizeof(int), 1, commitor_file);
-            fwrite(&selected_cluster_size, sizeof(int), 1, commitor_file);
-            fwrite(&store_commitor[random_selection], sizeof(double), 1, commitor_file);
-            fwrite(&store_commitor[random_selection], sizeof(double), 1, commitor_file); // Write to create space for standard deviation
+            fwrite(&store_slice[random_selection], sizeof(int), 1, committor_file);
+            fwrite(&store_ngrid[random_selection], sizeof(int), 1, committor_file);
+            fwrite(&selected_cluster_size, sizeof(int), 1, committor_file);
+            fwrite(&store_committor[random_selection], sizeof(double), 1, committor_file);
+            fwrite(&store_committor[random_selection], sizeof(double), 1, committor_file); // Write to create space for standard deviation
             i += 1;
             printf("\rPercentage of samples selected: %d%%", (int)((double)i/(double)samples*100)); // Print progress
             fflush(stdout);
@@ -258,8 +258,8 @@ int main (int argc, char *argv[]) {
     printf("\n"); // Newline
 
     free(cluster_hist); free(reject_prob);
-    free(store_ngrid); free(store_slice); free(store_cluster); free(store_commitor); free(binned_prob);
-    fclose(index_file); fclose(commitor_file);
+    free(store_ngrid); free(store_slice); free(store_cluster); free(store_committor); free(binned_prob);
+    fclose(index_file); fclose(committor_file);
 
     // Print time taken for program to execute
     end = clock();
