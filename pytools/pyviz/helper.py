@@ -7,7 +7,6 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from plotly_gif import GIF, capture
 import logging
-logging.basicConfig(filename='pyviz.log', encoding='utf-8', level=logging.DEBUG)
 
 
 class SimulationSet():
@@ -113,7 +112,7 @@ class Type1(Simulation):
         """
 
         # C code that makes the files:
-        # snprintf(filename, sizeof(filename), "../output/grid_%d_%d_%d.txt", stream_ix, grid_size, iteration);
+        # snprintf(filename, sizeof(filename), "../output/grid_%d_%d_%d.dat", stream_ix, grid_size, iteration);
         try:
             path_base = Path("./output/").resolve(strict=True)
         except FileNotFoundError as e1:
@@ -130,7 +129,7 @@ class Type1(Simulation):
         self.path_base = path_base
         grid_size = self.config['size_x']*self.config['size_y']
         self.file_names = [
-            path_base/Path(f"grid_{self.config['sim_num']}_{grid_size}_{i}.txt") 
+            path_base/Path(f"grid_{self.config['sim_num']}_{grid_size}_{i}.dat") 
             for i in range(0, self.config['iterations'], self.config['iter_per_step'])
         ]
 
@@ -143,15 +142,14 @@ class Type1(Simulation):
                        255), 2).astype(int)
 
     def load_all_grids(self):
-        grids_and_mags = [self.load_grid_single(i) for i in self.file_names]
+        grids_and_mags = [self.load_grid_set(i) for i in self.file_names]
         self.all_grids = np.array([i[0] for i in grids_and_mags]).astype(int)
         self.all_mag = np.array([i[1] for i in grids_and_mags]).astype(float)
         self.all_nuc = np.array([i[2] for i in grids_and_mags]).astype(int)
             
-    def load_grid_set(self):
-        pass
+    def load_grid_set(self, file_name):
+        # Loads all the grid replications (and their meta data) from an output file
 
-    def load_grid_single(self, file_name):
         endian = 'little' # ToDo use check to verify this...
         sz_sz = 8
         bytes_read = 0
@@ -161,12 +159,12 @@ class Type1(Simulation):
         fst = file.read(sz_sz) # Size of magnetization data
         bytes_read += sz_sz
         mag_sz = int.from_bytes(fst, endian)
-        logging.info("Size of mag data (float):", mag_sz)
+        logging.info(f"Size of mag data (float):{mag_sz}")
 
         nxt = file.read(sz_sz) # Size of grid data
         bytes_read += sz_sz
         grid_sz = int.from_bytes(nxt, endian)
-        logging.info("Size of grid data (int):", grid_sz)
+        logging.info(f"Size of grid data (int):{grid_sz}")
 
         # Format for float unpacking
         fmt = 'f'
@@ -176,7 +174,7 @@ class Type1(Simulation):
         check_raw = file.read(mag_sz)
         bytes_read += mag_sz
         check = struct.unpack(fmt, check_raw)[0]
-        print("Check value", check)
+        logging.info("Check value: {check}")
 
         if check != 3.0/32.0: print("ERRROROR")
 
@@ -185,56 +183,59 @@ class Type1(Simulation):
         next_loc = int.from_bytes(file.read(sz_sz), endian)
         bytes_read += sz_sz
         file_data.append(next_loc)
-        logging.debug('#',next_loc)
+        logging.debug(f'#{next_loc}')
 
         n_dims = int.from_bytes(file.read(sz_sz), endian)
         bytes_read += sz_sz
-        logging.debug("n_dims", n_dims)
+        logging.debug(f"n_dims: {n_dims}")
 
         dims = []
         for i in range(n_dims):
             dims.append(int.from_bytes(file.read(sz_sz), endian))
             bytes_read += sz_sz
 
-        logging.info("dims", dims)
+        logging.info(f"dims{dims}")
 
         n_conc = int.from_bytes(file.read(sz_sz), endian)
-        logging.info("n_concurrent", n_conc)
+        logging.info(f"n_concurrent{n_conc}")
         bytes_read += sz_sz
 
         next_loc = int.from_bytes(file.read(sz_sz), endian)
         file_data.append(next_loc)
-        logging.debug("#", next_loc)
+        logging.debug(f"#{next_loc}")
         bytes_read += sz_sz
 
+        mag = np.zeros(n_conc)
+        nuc = np.zeros(n_conc)
         # Now we get all of the grids meta-data
         for i in range(min(n_conc, 100)):  # Min while developing reader - prevent giant loop if n_conc is misread
             indx = int.from_bytes(file.read(sz_sz), endian)
 
             mag_raw = file.read(mag_sz)
-            mag = struct.unpack(fmt, mag_raw)[0]
-            nuc = int.from_bytes(file.read(sz_sz), endian)
-            logging.info("grid num:{}, magnetisation:{:.6f}, (nucleated?:{})".format(indx, mag, nuc))
+            mag[i] = struct.unpack(fmt, mag_raw)[0]
+            nuc[i] = int.from_bytes(file.read(sz_sz), endian)
+            logging.info(f"grid num:{indx}, magnetisation:{mag[i]:.6f}, (nucleated?:{nuc[i]}])")
             bytes_read += sz_sz + mag_sz + sz_sz
 
 
         total_sz = dims[0]
         for i in range(1, len(dims)): total_sz *= dims[i]
-        logging.info("Data per grid:", total_sz)
+        logging.info(f"Data per grid:{total_sz}" )
 
         grid_fmt_string = "i{}".format(grid_sz)
         dt = np.dtype(grid_fmt_string)
 
         # Now the actual grids
+        data = np.zeros((n_conc, dims[0], dims[1]))
         for i in range(min(n_conc, 100)):  # Min while developing reader - prevent giant loop if n_conc is misread
-            data = np.zeros(total_sz)
+            _data = np.zeros(total_sz)
             next_loc = int.from_bytes(file.read(sz_sz), endian)
             file_data.append(next_loc)
             raw_data = file.read(total_sz * grid_sz)
             bytes_read += sz_sz + total_sz * grid_sz
-            data = np.frombuffer(raw_data, dt, count=total_sz)
-            data = np.reshape(data, dims)
-            logging.debug("Calculated magnetization: {}:".format(np.sum(data)))
+            _data = np.frombuffer(raw_data, dt, count=total_sz)
+            data[i] = np.reshape(_data, dims)
+            logging.debug("Calculated magnetization: {np.sum(data)}:")
 
         
         return data, mag, nuc
@@ -242,7 +243,7 @@ class Type1(Simulation):
     def make_figure(self):
         self.create_layout()
         pygame.init()
-        size = (self.block_size*self.config.size_x, self.block_size*self.config.size_y)
+        size = (self.block_size*self.config['size_x'], self.block_size*self.config['size_y'])
         self.screen = pygame.display.set_mode(size)
         pygame.display.set_caption(f"Sweep : {0:d}")
         self.screen.fill(self.BLACK)
@@ -261,14 +262,15 @@ class Type1(Simulation):
         
     
     def animate_all_grids(self):
+        self.make_figure()
         while True:
-            irow_max = self.config.size_x
-            icol_max = self.config.size_y
+            irow_max = self.config['size_x']
+            icol_max = self.config['size_y']
             npix = irow_max * icol_max
             for ix in range(npix):
                 irow = ix // icol_max
                 icol = ix % icol_max
-                pygame.draw.rect(self.screen, self.color_map[self.all_grids[self.igrid][self.isweep][irow][icol]], 
+                pygame.draw.rect(self.screen, self.color_map[self.all_grids[self.isweep][self.igrid][irow][icol]], 
                                  (icol*self.block_size, irow*self.block_size, self.block_size, self.block_size))
             self.process_events()
             # Update and limit frame rate

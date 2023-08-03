@@ -1,5 +1,11 @@
 import helper
 import plotly.graph_objects as go
+import logging
+
+for handler in logging.root.handlers[:]:
+    logging.root.removeHandler(handler)
+
+logging.basicConfig(filename='./pyviz.log', encoding='utf-8', level=logging.DEBUG)
 
 sim_set = helper.SimulationSet('/home/pgrylls/scratch/code/GPU_Arch_Test_2/configurations/test_input.dat')
 
