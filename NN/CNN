@@ -162,6 +162,7 @@ if load == 1:
 
 accuracy = 0
 accuracy_update = 0
+epoch = 0
 
 run = 1
 if run == 1:
@@ -169,6 +170,7 @@ if run == 1:
     n_total_steps = np.int32(len(trainset)/batch_size)
     correct = 0
     while (1):
+        epoch += 1
         if epoch > num_epochs:
             break
         for i, (images, labels) in enumerate(trainloader):
