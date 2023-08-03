@@ -151,6 +151,7 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
   snprintf(filename, sizeof(filename), prefix);
   snprintf(filename+strlen(prefix), sizeof(filename)-strlen(prefix), "grid_%d_%d_%d.dat", stream_ix, grid_size, iteration);
 
+  fprintf(stderr, "Making File: %s\n", filename);
   realpath(filename, filename);
   fprintf(stderr, "Making File: %s\n", filename);
   fflush(stderr);
@@ -162,7 +163,7 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
   const size_t size_sz = sizeof(size_t); //Use size_t type for header data
   const size_t host_mag_sz = sizeof(host_mag[0]);
   const size_t host_grid_sz = sizeof(host_grid[0]);
-  fprintf(stderr, "Size of size_t: %d\n", size_sz);
+  //fprintf(stderr, "Size of size_t: %d\n", size_sz);
 
   size_t next_location = (size_t) file.tellg() + size_sz*2 + host_mag_sz; // + GIT_VERSION_SIZE*sizeof(char);
   
@@ -174,7 +175,7 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
  
   //Check file location matches what we expected
   if((size_t)file.tellg() != next_location) write_err=1;
-  fprintf(stderr, "Next loc %d (%d)\n", next_location, write_err);
+  //fprintf(stderr, "Next loc %d (%d)\n", next_location, write_err);
 
   //Now write dimension info: n_dims, followed by each dim, and the total number of grids
   const size_t n_dims = 2; // TODO - n_dims should be got from somewhere higher up!
@@ -189,23 +190,23 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
   tmp = launch_struct->num_concurrent;
   file.write((char*) & tmp, size_sz);
 
-  fprintf(stderr, "n_dims %d, dims % d %d, n_conc %d\n", n_dims,  launch_struct->size[0],  launch_struct->size[1], launch_struct->num_concurrent);
+  //fprintf(stderr, "n_dims %d, dims % d %d, n_conc %d\n", n_dims,  launch_struct->size[0],  launch_struct->size[1], launch_struct->num_concurrent);
   //Check file location matches what we expected
   if((size_t)file.tellg() != next_location) write_err=1;
-  fprintf(stderr, "Next loc %d (%d)\n", next_location, write_err);
+  //fprintf(stderr, "Next loc %d (%d)\n", next_location, write_err);
   // todo remove these debugging prints
 
   const size_t total_size = launch_struct->size[0] * launch_struct->size[1];
 
   // First write info on all the grids - index, magnetisation, nucleation state
   const size_t grid_info_count = (size_sz*2 + host_mag_sz) * launch_struct->num_concurrent;
-  fprintf(stderr, "grid info count %d\n", grid_info_count);
+  //fprintf(stderr, "grid info count %d\n", grid_info_count);
   next_location += grid_info_count + size_sz;
   file.write((char*) & next_location, size_sz);
 
 
   size_t grid_index;
-  fprintf(stderr, "mag sz %d, grid sz %d\n", host_mag_sz, host_grid_sz);
+  //fprintf(stderr, "mag sz %d, grid sz %d\n", host_mag_sz, host_grid_sz);
   for (grid_index=0; grid_index<launch_struct->num_concurrent;grid_index++){
     file.write((char*) & grid_index, size_sz);
     file.write((char*) & host_mag[grid_index], host_mag_sz);
@@ -213,12 +214,12 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
     file.write((char*) &nuc, size_sz);
 
    // Also print this info to the screen
-   fprintf(stderr, "Copy %d, Mag %f, Nucleated %d\n", grid_index+1, host_mag[grid_index], nuc);
+   //fprintf(stderr, "Copy %d, Mag %f, Nucleated %d\n", grid_index+1, host_mag[grid_index], nuc);
   }
 
   //Check file location matches what we expected
   if((size_t)file.tellg() != next_location) write_err=1;
-  fprintf(stderr, "Next loc %d (%d)\n", next_location, write_err);
+  //fprintf(stderr, "Next loc %d (%d)\n", next_location, write_err);
 
   // Then write the actual grids
 
@@ -230,7 +231,7 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
 
   //Check file location matches what we expected
   if((size_t)file.tellg() != next_location) write_err=1;
-  fprintf(stderr, "Next loc %d\n", next_location);
+  //fprintf(stderr, "Next loc %d\n", next_location);
 
   if(write_err) fprintf(stderr, "File Writing error");
 
