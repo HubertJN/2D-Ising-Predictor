@@ -37,7 +37,6 @@ class IsingDataset(Dataset):
 def test_accuracy(net, testloader, diff_array=None, device="cpu"):
     correct = 0
     total = 0
-    net.eval()
     with torch.no_grad():
         if diff_array == None:
             for i, (images, labels) in enumerate(testloader):
@@ -57,8 +56,8 @@ def test_accuracy(net, testloader, diff_array=None, device="cpu"):
                 for j, (k, l) in enumerate(zip(predicted,labels)):
                     diff = abs(k-l).item()
                     correct += (diff < 0.01*k.item())
-                    diff_array[i*batch_size+j, 0] = l
-                    diff_array[i*batch_size+j, 1] = diff
+                    diff_array[i*test_batch_size+j, 0] = l
+                    diff_array[i*test_batch_size+j, 1] = diff
 
     return correct / total
 
@@ -118,19 +117,19 @@ print("Parameters: ", total_params)
 #exit()
 
 # 2) Hyper-parameters, loss and optimizer
-num_epochs = 1000
+num_epochs = 500
 learning_rate = 0.001
-weight_decay = 0.0
-learning_rate_decay = 0.01
+weight_decay = 0.00001
 
 criterion = nn.MSELoss()
 optimizer = torch.optim.Adagrad(net.parameters(), lr=learning_rate, weight_decay=weight_decay)
 scheduler = StepLR(optimizer, step_size=1, gamma=0.5)
 
 trainset, testset = load_data()
-batch_size = 10
-trainloader = torch.utils.data.DataLoader(trainset, shuffle=True, num_workers=2, batch_size=batch_size)
-testloader = torch.utils.data.DataLoader(testset, shuffle=False, num_workers=2, batch_size=batch_size)
+train_batch_size = 10
+test_batch_size = 1
+trainloader = torch.utils.data.DataLoader(trainset, shuffle=True, num_workers=2, batch_size=train_batch_size)
+testloader = torch.utils.data.DataLoader(testset, shuffle=False, num_workers=2, batch_size=test_batch_size)
 
 transform = transforms.RandomApply(torch.nn.ModuleList([transforms.transforms.RandomHorizontalFlip(),transforms.RandomVerticalFlip()]), p=0.50)
 
@@ -161,18 +160,23 @@ if load == 1:
     print("Loaded NN")
 
 accuracy = 0
-accuracy_update = 0
+revert_to_checkpoint = 0
+revert_limit = 0
 epoch = 0
 
 run = 1
 if run == 1:
     print('Beginning Training Loop')
-    n_total_steps = np.int32(len(trainset)/batch_size)
+    n_total_steps = np.int32(len(trainset)/train_batch_size)
     correct = 0
     while (1):
         epoch += 1
         if epoch > num_epochs:
             break
+        if revert_limit == 10:
+            revert_limit = 0
+            optimizer.param_groups[0]["lr"] = learning_rate
+            print("Revertion limit reached, resetting learning rate to initial value.")
         for i, (images, labels) in enumerate(trainloader):
             #images = torch.roll(transform(images), shifts=(torch.randint(64, [1]).item(), torch.randint(64, [1]).item()), dims=(-1, -2))
             images = torch.roll(images, shifts=(torch.randint(64, [1]).item(), torch.randint(64, [1]).item()), dims=(-1, -2))
@@ -186,29 +190,32 @@ if run == 1:
             loss.backward()
             optimizer.step()
 
-        if (epoch+1) % 10 == 0:
-            accuracy_update += 1
-            test_loss = loss.item()
-            net_cpu.load_state_dict(net.state_dict())
-            net_cpu.eval()
-            test_acc = test_accuracy(net_cpu, testloader)
-            if (accuracy < test_acc):
-                accuracy_update = 0
-                accuracy = test_acc
-                torch.save({
-                    'epoch': epoch,
-                    'model_state_dict': net.state_dict(),
-                    'optimizer_state_dict': optimizer.state_dict(),
-                    'loss': test_loss,
-                    }, PATH)
-            print (f'Epoch [{epoch+1}/{num_epochs}], Loss: {test_loss:.4f}, Accuracy: {test_acc*100:.1f}%, Current Best: {accuracy*100:.1f}%')
-            if accuracy_update == 5:
-                checkpoint = torch.load(PATH)
-                net.load_state_dict(checkpoint['model_state_dict'])
-                optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-                epoch = checkpoint['epoch']
-                scheduler.step()
-                print("Checkpoint loaded")
+        revert_to_checkpoint += 1
+        test_loss = loss.item()
+        net_cpu.load_state_dict(net.state_dict())
+        net_cpu.eval()
+        test_acc = test_accuracy(net_cpu, testloader)
+        if (accuracy < test_acc):
+            revert_to_checkpoint = 0
+            revert_limit = 0
+            accuracy = test_acc
+            torch.save({
+                'epoch': epoch,
+                'model_state_dict': net.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'accuracy': accuracy,
+                }, PATH)
+        print (f'Epoch [{epoch+1}/{num_epochs}], Loss: {test_loss:.4f}, Current Accuracy: {test_acc*100:.1f}%, Best Accuracy: {accuracy*100:.1f}%')
+        if revert_to_checkpoint == 25:
+            revert_to_checkpoint = 0
+            revert_limit += 1
+            checkpoint = torch.load(PATH)
+            net.load_state_dict(checkpoint['model_state_dict'])
+            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            epoch = checkpoint['epoch']
+            accuracy = np.round(0.95*accuracy, decimals=2)
+            scheduler.step()
+            print("Checkpoint loaded. Starting from epoch: ", epoch)
         
         
 else:
