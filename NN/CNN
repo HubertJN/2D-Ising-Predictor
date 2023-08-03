@@ -1,0 +1,163 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import numpy as np
+import sys
+np.set_printoptions(threshold=sys.maxsize)
+np.set_printoptions(linewidth=np.nan)
+import os
+from sklearn import datasets
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+import torchvision
+import torchvision.transforms as transforms
+from torch.utils.data import Dataset
+import copy
+
+# Device configuration
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+class IsingDataset(Dataset):
+    def __init__(self, img_dir, label_dir):
+        self.img_labels = torch.load(label_dir)
+        self.img_data = torch.load(img_dir)
+        self.transform = None
+
+    def __len__(self):
+        return len(self.img_labels)
+
+    def __getitem__(self, idx):
+        image = self.img_data[idx]
+        label = self.img_labels[idx]
+        if self.transform:
+            image = self.transform(image)
+        return image, label
+    
+def test_accuracy(net, testloader, device="cpu"):
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for i, (images, labels) in enumerate(testloader):
+            images, labels = images.to(device), (images).to(device)
+            outputs = net(images)
+            predicted = outputs
+            total += labels.size(0)
+            for i in abs((predicted) - images.sum(2).sum(2)):
+                correct += (i.item() < 10.0)
+
+    return correct / total
+
+def load_data(grid_dir="./grid_data", committor_dir="./committor_data"):    
+    dataset = IsingDataset(grid_dir, committor_dir)
+
+    train_size = int(0.8 * len(dataset))
+    test_size = len(dataset) - train_size
+    trainset, testset = torch.utils.data.random_split(dataset, [train_size, test_size])
+
+    return trainset, testset
+
+# 1) Model
+class ConvNet(nn.Module):
+    def __init__(self):
+        super(ConvNet, self).__init__()
+        # convolutional layers
+        self.conv1 = nn.Conv2d(1, 2, 3, padding=[1,1], padding_mode='circular')
+        # pooling layer
+        self.pool = nn.MaxPool2d(2, 2)
+        # fully connected layer
+        self.fc1 = nn.Linear(2*32*32, 1)
+        # dropout layer
+        self.dropout = nn.Dropout(p=0.05)
+
+    def forward(self, x):
+        # convolutional layers
+        x = self.pool(F.relu(self.conv1(x)))
+        # fully connected layer
+        x = x.view(-1, 2*32*32)
+        x = self.dropout(x)
+        x = self.fc1(x)
+        return x
+
+net = ConvNet().to(device)
+device_cpu = torch.device('cpu')
+net_cpu = ConvNet().to(device_cpu)
+
+#total_params = sum(p.numel() for p in net.parameters())
+#print(total_params)
+#exit()
+
+# 2) Hyper-parameters, loss and optimizer
+num_epochs = 25
+learning_rate = 0.01
+weight_decay = 0.0001
+
+criterion = nn.MSELoss()
+optimizer = torch.optim.Adagrad(net.parameters(), lr=learning_rate)
+
+trainset, testset = load_data()
+batch_size = 10
+trainloader = torch.utils.data.DataLoader(trainset, shuffle=True, num_workers=1, batch_size=batch_size)
+testloader = torch.utils.data.DataLoader(testset, shuffle=False, num_workers=1, batch_size=batch_size)
+
+transform = transforms.RandomApply(torch.nn.ModuleList([transforms.transforms.RandomHorizontalFlip(),transforms.RandomVerticalFlip()]), p=0.75)
+
+#(images, labels) = trainloader.dataset[0]
+#conv1 = nn.Conv2d(1, 2, 9)
+#conv2 = nn.Conv2d(2, 4, 9)
+#pool1 = nn.AvgPool2d(3, 1)
+#pool2 = nn.MaxPool2d(2, 2)
+#test = images
+#test = pool1(test); print(test.shape)
+#test = conv1(test); print(test.shape)
+#test = pool2(test); print(test.shape)
+#test = conv2(test); print(test.shape)
+#test = pool2(test); print(test.shape)
+#exit()
+
+# 3) Training loop
+PATH = './model.pth'
+
+load = 0
+if load == 1:
+    net.load_state_dict(torch.load(PATH))
+
+accuracy = 0
+saved = 0
+
+run = 1
+if run == 1:
+    print('Beginning Training Loop')
+    n_total_steps = np.int32(len(trainset)/batch_size)
+    correct = 0
+    for epoch in range(num_epochs):
+        for i, (images, labels) in enumerate(trainloader):
+            images = transform(images).to(device)
+            labels = (images.sum(2).sum(2)).to(device)
+            outputs = net(images)
+            loss = criterion(outputs, labels)
+
+            # Backward and optimize
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+        test_loss = loss.item()
+        net_cpu.load_state_dict(net.state_dict())
+        test_acc = test_accuracy(net_cpu, testloader)
+        if (accuracy < test_acc):
+            accuracy = test_acc
+            torch.save({
+                'epoch': epoch,
+                'model_state_dict': net.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'loss': test_loss,
+                }, PATH)
+            saved = 1
+        print (f'Epoch [{epoch+1}/{num_epochs}], Loss: {test_loss:.4f}, Accuracy: {test_acc*100:.1f}%, Saved: {saved}')
+        saved = 0
+else:
+    torch.load(PATH)
+    net.eval()
+    print('Testing')
+    test_acc = test_accuracy(net, testset, device)
+    print (f'Accuracy: {test_acc*100:.1f}%')
