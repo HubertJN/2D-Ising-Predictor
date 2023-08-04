@@ -15,9 +15,8 @@ import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 from torch.optim.lr_scheduler import StepLR
 
-# Device configuration
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+# 0) Load data
+# Defining class for loading data
 class IsingDataset(Dataset):
     def __init__(self, img_dir, label_dir):
         self.img_labels = torch.load(label_dir)
@@ -33,12 +32,13 @@ class IsingDataset(Dataset):
         if self.transform:
             image = self.transform(image)
         return image, label
-    
+
+# Defining function for calculating accuracy
 def test_accuracy(net, testloader, diff_array=None, device="cpu"):
     correct = 0
     total = 0
     with torch.no_grad():
-        if diff_array == None:
+        if diff_array == None: # if diff_array is not given, then return accuracy and do not store diff_array
             for i, (images, labels) in enumerate(testloader):
                 images, labels = images.to(device), (labels).to(device)
                 outputs = net(images)
@@ -47,7 +47,7 @@ def test_accuracy(net, testloader, diff_array=None, device="cpu"):
                 for j, (k, l) in enumerate(zip(predicted,labels)):
                     diff = abs(k-l).item()
                     correct += (diff < 0.01*k.item())
-        else:
+        else: # if diff_array is given, then return accuracy and store diff_array
             for i, (images, labels) in enumerate(testloader):
                 images, labels = images.to(device), (labels).to(device)
                 outputs = net(images)
@@ -59,8 +59,9 @@ def test_accuracy(net, testloader, diff_array=None, device="cpu"):
                     diff_array[i*test_batch_size+j, 0] = l
                     diff_array[i*test_batch_size+j, 1] = diff
 
-    return correct / total
+    return correct / total, diff_array
 
+# Defining function for loading data
 def load_data(grid_dir="./grid_data", committor_dir="./committor_data"):    
     dataset = IsingDataset(grid_dir, committor_dir)
 
@@ -93,10 +94,13 @@ class ConvNet(nn.Module):
 
     def forward(self, x):
         # convolutional layers
+        # layer 1
         x = self.conv1_1(x)
         x = F.softplus(self.conv1_2(x))
+        # layer 2
         x = self.conv2_1(x)
         x = F.softplus(self.conv2_2(x))
+        # layer 3
         x = self.conv3_1(x)
         x = F.softplus(self.conv3_2(x))
 
@@ -108,47 +112,41 @@ class ConvNet(nn.Module):
         x = self.fc3(x)
         return x
 
+# Device configuration and setting up network
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 net = ConvNet().to(device)
 device_cpu = torch.device('cpu')
 net_cpu = ConvNet().to(device_cpu)  
 
+# Printing number of parameters
 total_params = sum(p.numel() for p in net.parameters())
 print("Parameters: ", total_params)
 #exit()
 
-# 2) Hyper-parameters, loss and optimizer
+# 2) Hyper-parameters, loss and optimizer, data loading
 num_epochs = 500
 learning_rate = 0.001
-weight_decay = 0.00001
+weight_decay = 0.0001
+train_batch_size = 10
+test_batch_size = 1
 
+# Loss and optimizer
 criterion = nn.MSELoss()
 optimizer = torch.optim.Adagrad(net.parameters(), lr=learning_rate, weight_decay=weight_decay)
 scheduler = StepLR(optimizer, step_size=1, gamma=0.5)
 
+# Loading data
 trainset, testset = load_data()
-train_batch_size = 10
-test_batch_size = 1
 trainloader = torch.utils.data.DataLoader(trainset, shuffle=True, num_workers=2, batch_size=train_batch_size)
 testloader = torch.utils.data.DataLoader(testset, shuffle=False, num_workers=2, batch_size=test_batch_size)
 
+# Data augmentation
 transform = transforms.RandomApply(torch.nn.ModuleList([transforms.transforms.RandomHorizontalFlip(),transforms.RandomVerticalFlip()]), p=0.50)
-
-#(images, labels) = trainloader.dataset[0]
-#conv1 = nn.Conv2d(1, 2, 9)
-#conv2 = nn.Conv2d(2, 4, 9)
-#pool1 = nn.AvgPool2d(3, 1)
-#pool2 = nn.MaxPool2d(2, 2)
-#test = images
-#test = pool1(test); print(test.shape)
-#test = conv1(test); print(test.shape)
-#test = pool2(test); print(test.shape)
-#test = conv2(test); print(test.shape)
-#test = pool2(test); print(test.shape)
-#exit()
 
 # 3) Training loop
 PATH = './model.pth'
 
+# Loading model
 load = 0
 if load == 1:
     checkpoint = torch.load(PATH)
@@ -159,11 +157,13 @@ if load == 1:
     net.train()
     print("Loaded NN")
 
+# Initializing counters
 accuracy = 0
 revert_to_checkpoint = 0
 revert_limit = 0
 epoch = 0
 
+# Running training loop
 run = 1
 if run == 1:
     print('Beginning Training Loop')
@@ -171,12 +171,16 @@ if run == 1:
     correct = 0
     while (1):
         epoch += 1
-        if epoch > num_epochs:
+        if epoch >= num_epochs:
             break
-        if revert_limit == 10:
+        if revert_limit == 10: # Reset learning rate if no improvement after 10 checkpoint revertions
             revert_limit = 0
             optimizer.param_groups[0]["lr"] = learning_rate
             print("Revertion limit reached, resetting learning rate to initial value.")
+        if accuracy < 0.05 and epoch < 50: # Resetting optimizer if accuracy is too low
+            epoch = 0
+            optimizer = torch.optim.Adagrad(net.parameters(), lr=learning_rate, weight_decay=weight_decay)
+            print("Accuracy too low, resetting optimizer and restarting from epoch 1.")
         for i, (images, labels) in enumerate(trainloader):
             #images = torch.roll(transform(images), shifts=(torch.randint(64, [1]).item(), torch.randint(64, [1]).item()), dims=(-1, -2))
             images = torch.roll(images, shifts=(torch.randint(64, [1]).item(), torch.randint(64, [1]).item()), dims=(-1, -2))
@@ -190,11 +194,14 @@ if run == 1:
             loss.backward()
             optimizer.step()
 
-        revert_to_checkpoint += 1
+        revert_to_checkpoint += 1 # Incrementing checkpoint counter
         test_loss = loss.item()
+        # Test accuracy
         net_cpu.load_state_dict(net.state_dict())
         net_cpu.eval()
         test_acc = test_accuracy(net_cpu, testloader)
+
+        # Saving checkpoint
         if (accuracy < test_acc):
             revert_to_checkpoint = 0
             revert_limit = 0
@@ -206,6 +213,7 @@ if run == 1:
                 'accuracy': accuracy,
                 }, PATH)
         print (f'Epoch [{epoch+1}/{num_epochs}], Loss: {test_loss:.4f}, Current Accuracy: {test_acc*100:.1f}%, Best Accuracy: {accuracy*100:.1f}%')
+        # If no improvement after 25 epochs, revert to previous checkpoint
         if revert_to_checkpoint == 25:
             revert_to_checkpoint = 0
             revert_limit += 1
@@ -213,7 +221,7 @@ if run == 1:
             net.load_state_dict(checkpoint['model_state_dict'])
             optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
             epoch = checkpoint['epoch']
-            accuracy = np.round(0.95*accuracy, decimals=2)
+            accuracy = np.round(0.99*accuracy, decimals=3)
             scheduler.step()
             print("Checkpoint loaded. Starting from epoch: ", epoch)
         
