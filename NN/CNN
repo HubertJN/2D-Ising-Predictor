@@ -23,8 +23,13 @@ class IsingDataset(Dataset):
         #self.img_labels = torch.load(label_dir)
         #self.img_data = torch.load(img_dir)
         self.img_labels = torch.load(label_dir)*2-1
-        image = torch.load(img_dir)
-        self.img_data = transforms.functional.rotate(image, 90)/4 + transforms.functional.rotate(image, 180)/4 + transforms.functional.rotate(image, 270)/4 + image/4
+        image = torch.load(img_dir) 
+        image = transforms.functional.rotate(image, 90)/4 + transforms.functional.rotate(image, 180)/4 + transforms.functional.rotate(image, 270)/4 + image/4
+        image_tmp = image*0
+        for i in range(64):
+            for j in range(64):
+                image_tmp += torch.roll(image, shifts=(i,j), dims=(-1, -2))
+        self.img_data = image_tmp/4096
         self.transform = None
 
     def __len__(self):
@@ -32,7 +37,6 @@ class IsingDataset(Dataset):
 
     def __getitem__(self, idx):
         image = self.img_data[idx]
-        image = torch.roll(image, shifts=(torch.randint(64, [1]).item(), torch.randint(64, [1]).item()), dims=(-1, -2))
         label = self.img_labels[idx]
         if self.transform:
             image = self.transform(image)
@@ -68,7 +72,7 @@ def test_accuracy(net, testloader, output_label=None, device="cpu"):
     return correct / total, output_label
 
 # Defining function for loading data
-def load_data(grid_dir="./grid_data", committor_dir="./committor_data"):    
+def load_data(grid_dir="./grid_data_tmp", committor_dir="./committor_data_tmp"):    
     dataset = IsingDataset(grid_dir, committor_dir)
 
     train_size = int(0.8 * len(dataset))
