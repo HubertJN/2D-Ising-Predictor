@@ -61,7 +61,7 @@ int main (int argc, char *argv[]) {
         fprintf(stderr,"Error opening %s for write!\n",committor_filename);
         exit(EXIT_FAILURE);
     }
-
+    
     // Create loop variables
     int i = 0, j = 0, k = 0;
     int islice, igrid;
@@ -108,7 +108,7 @@ int main (int argc, char *argv[]) {
 
     // sort array of pointers
     qsort(p_store_cluster, nreplicas*nsweeps/100, sizeof(p_store_cluster[0]), compare);
-
+    
     // reorder loaded arrays according to the array of pointers
     for(i=0;i<nreplicas*nsweeps/100;i++){
         if(i != p_store_cluster[i]-store_cluster){
@@ -181,7 +181,7 @@ int main (int argc, char *argv[]) {
         if ( cluster_hist[i] != 0) {reject_prob[i] = (1.0/(double)cluster_hist[i])/inv_sum;}
     }
 
-
+    
 
     // Create an array of binned statistics
     int bins = 250;
@@ -265,6 +265,6 @@ int main (int argc, char *argv[]) {
     end = clock();
     execution_time = ((double)(end - start))/CLOCKS_PER_SEC;
     printf("Time taken: %.2f seconds \n", execution_time);
-
+    
     return EXIT_SUCCESS;
 }  
