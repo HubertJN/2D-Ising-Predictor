@@ -25,11 +25,12 @@ class IsingDataset(Dataset):
         self.img_labels = torch.load(label_dir)*2-1
         image = torch.load(img_dir) 
         image = transforms.functional.rotate(image, 90)/4 + transforms.functional.rotate(image, 180)/4 + transforms.functional.rotate(image, 270)/4 + image/4
-        image_tmp = image*0
-        for i in range(64):
-            for j in range(64):
-                image_tmp += torch.roll(image, shifts=(i,j), dims=(-1, -2))
-        self.img_data = image_tmp/4096
+        #image_tmp = image*0
+        #for i in range(64):
+        #    for j in range(64):
+        #        image_tmp += torch.roll(image, shifts=(i,j), dims=(-1, -2))
+        #self.img_data = image_tmp/4096
+        self.img_data = image
         self.transform = None
 
     def __len__(self):
@@ -67,7 +68,9 @@ def test_accuracy(net, testloader, output_label=None, device="cpu"):
                     diff = abs(k-l[0]).item()
                     correct += (diff < 0.05)
                     output_label[i*test_batch_size+j, 0] = l[0].item()
-                    output_label[i*test_batch_size+j, 1] = k.item()
+                    output_label[i*test_batch_size+j, 1] = l[1].item()
+                    output_label[i*test_batch_size+j, 2] = l[2].item()
+                    output_label[i*test_batch_size+j, 3] = k.item()
 
     return correct / total, output_label
 
@@ -104,34 +107,64 @@ class ConvNet(nn.Module):
         self.pool = nn.MaxPool2d(2,2)
 
         # convolution layers
-        self.conv1 = nn.Conv2d(1, 1, 3, padding=[1,1], padding_mode="circular")
+        self.conv1 = nn.Conv2d(1, 1, 3, padding=[1,1], padding_mode="circular") # Maybe pad to 10 cause area of cluster
         self.conv2 = nn.Conv2d(1, 2**7, 3, padding=[1,1], padding_mode="circular")
+
+        # drop out
+        self.drop = nn.Dropout(p=0.1)
 
     def forward(self, x):
         # layer 1
-        x = F.relu(self.conv1(x))
+        x = F.leaky_relu(self.conv1(x))
         x = self.pool(x)
         # layer 2
-        x = F.relu(self.conv1(x))
+        x = F.leaky_relu(self.conv1(x))
         x = self.pool(x)
         # layer 3
-        x = F.relu(self.conv2(x))
+        x = F.leaky_relu(self.conv2(x))
         x = self.pool(x) # (2**3)**2
 
         # flatten
         x = x.view(-1, 2**13)
-        # data loss
-        x = F.dropout(x, p=0.2, training=True)
+        
         # fully connected layer
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
+        x = F.leaky_relu(self.fc1(x))
+        x = self.drop(x)
+        x = F.leaky_relu(self.fc2(x))
+        x = self.drop(x)
+        x = self.fc3(x)
+        return F.sigmoid(x)*2-1
+    
+class LinNet(nn.Module):
+    def __init__(self):
+        super(LinNet, self).__init__()
+        # fully connected layers
+        self.fc1 = nn.Linear(64*64, 64)
+        self.fc2 = nn.Linear(64, 16)
+        self.fc3 = nn.Linear(16, 1)
+
+        # drop out
+        self.drop = nn.Dropout(p=0.2)
+
+    def forward(self, x):
+        # flatten
+        x = x.view(-1, 64*64)
+        # fully connected layer
+        x = F.leaky_relu(self.fc1(x))
+        x = self.drop(x)
+        x = F.leaky_relu(self.fc2(x))
+        x = self.drop(x)
         x = self.fc3(x)
         return F.sigmoid(x)*2-1
 
 # Device configuration and setting up network
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-net = ConvNet().to(device)
 device_cpu = torch.device('cpu')
+
+#net = ConvNet().to(device)
+#net_cpu = ConvNet().to(device_cpu)  
+
+net = ConvNet().to(device)
 net_cpu = ConvNet().to(device_cpu)  
 
 # Printing number of parameters
@@ -142,8 +175,8 @@ print("Parameters: ", total_params)
 # 2) Hyper-parameters, loss and optimizer, data loading
 num_epochs = 100
 learning_rate = 1e-3
-weight_decay = 0e-5
-train_batch_size = 100
+weight_decay = 1e-5
+train_batch_size = 50
 test_batch_size = 10
 
 # Loss and optimizer
@@ -168,6 +201,7 @@ revert_break = 0
 epoch = 0
 loss_offset = 0
 min_loss = np.inf
+lr_power = 0
 
 # checkpoint system
 checkpoint = 1
@@ -198,17 +232,8 @@ if run == 1:
     while (1):
         epoch += 1
         if epoch > num_epochs or revert_break >= 10:
+            print("Last epoch reached or revertion break threshold reached.")
             break
-        if revert_limit == 5 and checkpoint == 1: # Reset learning rate if no improvement after 10 checkpoint revertions
-            revert_limit = 0
-            learning_rate = 0.9*learning_rate
-            revert_break += 1
-            optimizer.param_groups[0]["lr"] = learning_rate
-            print("Revertion limit reached, resetting learning rate to initial value.")
-        if accuracy < 0.05 and epoch == 20 and reset == 1: # Resetting optimizer if accuracy is too low
-            epoch = 1
-            optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate, weight_decay=weight_decay)
-            print("Accuracy too low, resetting optimizer and restarting from epoch 1.")
         for i, (images, labels) in enumerate(trainloader):
             images = images.to(device)
             labels = labels[:,0].to(device)
@@ -225,11 +250,11 @@ if run == 1:
         test_loss = loss.item()
         loss_arr[epoch-1] = test_loss
         np.save("loss.npy", loss_arr)
-        # Test accuracy
-        net_cpu.load_state_dict(net.state_dict())
-        net_cpu.eval()
-        accuracy, _ = test_accuracy(net_cpu, testloader)
-        lr = scheduler.optimizer.param_groups[0]['lr']
+        # Test loss for reset
+        if test_loss > 0.1 and epoch == 20 and reset == 1: # Resetting optimizer if accuracy is too low
+            epoch = 1
+            net = ConvNet().to(device)
+            print("Accuracy too low, resetting network and restarting from epoch 1.")
         # Saving checkpoint
         if (min_loss > test_loss):
             revert_to_checkpoint = 0
@@ -242,42 +267,65 @@ if run == 1:
                 'optimizer_state_dict': optimizer.state_dict(),
                 'accuracy': accuracy,
                 }, PATH)
-        print (f'Epoch [{epoch}/{num_epochs}], Loss: {test_loss:.8f}, Current Accuracy: {accuracy*100:.1f}%, Minimum Loss: {min_loss:.6f}, Learning Rate: {lr:.10f}')
         # If no improvement after x epochs, revert to previous checkpoint
         if revert_to_checkpoint == 10 and checkpoint == 1 and epoch > 20:
             revert_to_checkpoint = 0
             revert_limit += 1
+            lr_power += 1
+            if revert_limit > 5 and checkpoint == 1: # Reset learning rate if no improvement after 10 checkpoint revertions
+                revert_limit = 0
+                lr_power = 0
+                learning_rate = 1.25*learning_rate
+                revert_break += 1
+                checkpoint_model = torch.load(PATH)
+                net.load_state_dict(checkpoint_model['model_state_dict'])
+                optimizer.load_state_dict(checkpoint_model['optimizer_state_dict'])
+                epoch = checkpoint_model['epoch']
+                optimizer.param_groups[0]["lr"] = learning_rate
+                print("Revertion limit reached, resetting learning rate to adjusted initial value.")
+                continue
             checkpoint_model = torch.load(PATH)
             net.load_state_dict(checkpoint_model['model_state_dict'])
             optimizer.load_state_dict(checkpoint_model['optimizer_state_dict'])
             epoch = checkpoint_model['epoch']
-            scheduler.step()
-            min_loss = 1.05*min_loss
+            optimizer.param_groups[0]["lr"] = learning_rate*0.5**lr_power
             print("Checkpoint loaded. Starting from epoch: ", epoch)
+        lr = optimizer.param_groups[0]["lr"]
+        print (f'Epoch [{epoch}/{num_epochs}], Loss: {test_loss:.8f}, Minimum Loss: {min_loss:.6f}, Learning Rate: {lr:.10f}')
 
-#loss_arr = np.load("loss.npy")
-#plt.plot(loss_arr[1:])
-#plt.xlabel("Epoch")
-#plt.ylabel("BCE Loss")
-#plt.show()
 
 test_batch_size = 1
-outputs_labels = np.zeros([test_size, 2])
+outputs_labels = np.zeros([test_size, 4])
 testloader = torch.utils.data.DataLoader(testset, shuffle=False, num_workers=2, batch_size=test_batch_size)
+net_cpu.load_state_dict(net.state_dict())
+net_cpu.eval()
 _, outputs_labels = test_accuracy(net_cpu, testloader, output_label=outputs_labels)
 outputs_labels = (outputs_labels+1)/2
 
+np.save("prediction_actual.npy", outputs_labels)
+
 err_width = 0.05
+std_dev = np.zeros(101)
+comm_percent = 0
+for i in range(101):
+    index = np.where((np.round(100*outputs_labels[:,0])).astype(np.int32) == i)
+    std_dev[i] = np.std(outputs_labels[index][:,-1])
+    comm_percent += np.sum((abs(outputs_labels[index][:,-1]-outputs_labels[index][:,0])) < std_dev[i])
+
+comm_percent = comm_percent/test_size*100
 
 fig, axs = plt.subplots(1, 2)
 fig.set_size_inches(12.5, 6)
-axs[0].scatter(outputs_labels[:,0],outputs_labels[:,1], s=0.5, c='red')
-line = np.linspace(0, 1, 50)
+axs[0].scatter(outputs_labels[:,0],outputs_labels[:,-1], s=0.75, c='red')
+line = np.linspace(0, 1, 101)-0.005
 axs[0].plot(line, line, c='blue')
-axs[0].fill_between(line, line - err_width, line + err_width, alpha=0.2)
+axs[0].fill_between(line, line - std_dev, line + std_dev, alpha=0.3, step="mid")
 axs[0].set_title("Committor")
 axs[0].set_xlabel("Actual")
 axs[0].set_ylabel("Predicted")
+axs[0].text(0.01, 0.99, 'Predictions within std_dev: {}%'.format(round(comm_percent,1)))
 axs[1].plot(loss_arr)
 axs[1].set_title("Loss")
+axs[1].set_xlabel("Epoch")
+axs[1].set_ylabel("Loss")
 plt.show()
