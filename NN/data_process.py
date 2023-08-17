@@ -11,9 +11,9 @@ byte_prefix = 4*(3)
 ngrids = 8192
 L = 64
 bytes_per_slice = byte_prefix+ngrids*(L*L/8)
-grid_data = np.zeros((5000,64*64), dtype=np.float32)
-committor_data = np.zeros((5000, 2), dtype=np.float32)
-cluster = np.zeros((5000, 1), dtype=np.float32)
+grid_data = np.zeros((9000,64*64), dtype=np.float32)
+committor_data = np.zeros((9000, 3), dtype=np.float32)
+cluster = np.zeros((9000, 1), dtype=np.float32)
 i = 0
 ibit=0
 ibyte=0
@@ -39,7 +39,7 @@ while(1):
     grid_data[i] = ising_grids
     committor_data[i, 0] = committor
     committor_data[i, 1] = std_dev
-    cluster[i] = index[2]
+    committor_data[i, 2] = index[2]
     i += 1
 print(i)
 try:
@@ -49,13 +49,13 @@ except:
     pass
 
 # fix data
-#cluster = cluster[committor_data[:, 0] > 0.01]
-#grid_data = grid_data[committor_data[:, 0] > 0.01]
-#committor_data = committor_data[committor_data[:, 0] > 0.01]
+fix_index = (committor_data[:, 0] >= 0.01) & (committor_data[:, 0] <= 0.99)
+grid_data = grid_data[fix_index]
+committor_data = committor_data[fix_index]
 
 # convert data to batch form
 grid_data = grid_data.reshape(grid_data.shape[0], 1, 64, 64)
-committor_data = committor_data.reshape(committor_data.shape[0], 2)
+committor_data = committor_data.reshape(committor_data.shape[0], 3)
 
 grid_data = torch.from_numpy(grid_data.astype(np.float32))
 committor_data = torch.from_numpy(committor_data.astype(np.float32))
@@ -66,5 +66,5 @@ torch.save(committor_data, '/home/eng/phunsc/PhD_Project/2D_Ising_Project/NN/com
 gridstates.close()
 index_file.close()
 
-plt.scatter(cluster, committor_data[:,0], s=0.5)
+plt.scatter(committor_data[:,2], committor_data[:,0], s=0.5)
 plt.show()
