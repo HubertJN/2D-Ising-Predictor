@@ -20,7 +20,7 @@ int main (int argc, char *argv[]) {
 
     // Process commandline input
     if (argc != 4) {
-        printf("Usage : samples min_cluster_size max_cluster_size\n");
+        printf("Usage : samples_per_cluster_size min_cluster_size max_cluster_size\n");
         printf("Set either min_cluster_size or max_cluster_size to -1 to use default value.\n");
         exit(EXIT_FAILURE);
     }
@@ -135,21 +135,22 @@ int main (int argc, char *argv[]) {
 
     free(p_store_cluster); // Freed since no longer needed
 
-    // Find indices of start cluster and final cluster size to go to
-    int start_index = 0;
-    int end_index = 0;
+    // Create array for storing starting index of each cluster size and how many of a given cluster exist
+    int *store_cluster_index = (int *)malloc(64*64*2*sizeof(int));
+    if (store_cluster_index==NULL){fprintf(stderr,"Error allocating memory for store_cluster_index array!\n"); exit(EXIT_FAILURE);}
+    for (i=0;i<64*64*2;i++) {store_cluster_index[i]=0;}
+
+    int cluster_check = 0;
+    cluster_size = 0;
     for (i=0;i<nreplicas*nsweeps/100;i++) {
-        if (store_cluster[i] == (int) min_cluster_size) {
-            start_index = i;
-            break;
+        cluster_size = store_cluster[i];
+        if ( cluster_size > cluster_check) {
+            cluster_check = cluster_size;
+            store_cluster_index[cluster_size*2] = i;
         }
+        store_cluster_index[cluster_size*2+1] = store_cluster_index[cluster_size*2+1]+1;
     }
-    for (i=0;i<nreplicas*nsweeps/100;i++) {
-        if (store_cluster[i] == (int) max_cluster_size) {
-            end_index = i;
-            break;
-        }
-    }
+
 
     // Initialise cluster_hist
     for (i = 0; i < L*L; i++) {cluster_hist[i] = 0;}
@@ -180,8 +181,6 @@ int main (int argc, char *argv[]) {
     for (i = 0; i < L*L; i++) {
         if ( cluster_hist[i] != 0) {reject_prob[i] = (1.0/(double)cluster_hist[i])/inv_sum;}
     }
-
-    
 
     // Create an array of binned statistics
     int bins = 250;
@@ -233,26 +232,26 @@ int main (int argc, char *argv[]) {
         k += bin_size;
     }
 
-    int maximum_random = end_index-start_index; // Number of rows within index.bin file i.e. number of individual grid entries
     int random_selection = 0; // Used to randomly select grid from index.bin file
-    double random_percentage = 0.0; // Used to generate a number between 0 and 1 for sample acceptance
     int selected_cluster_size = 0;
 
-    i = 0;
-    while(i < samples) {
-        random_selection = rand()%maximum_random+start_index;
-        random_percentage = (double)rand()/(double)(RAND_MAX);
-        selected_cluster_size = store_cluster[random_selection];
-        if (random_percentage < reject_prob[selected_cluster_size]) {
+    int counter = 0;
+    for (i=min_cluster_size;i<max_cluster_size+1;i++) {
+        j = 0;
+        while(j < samples) {
+            if (store_cluster_index[i*2+1] == 0) {break;}
+            random_selection = rand()%store_cluster_index[i*2+1]+store_cluster_index[i*2];
+            selected_cluster_size = store_cluster[random_selection];
+            j += 1;
             fwrite(&store_slice[random_selection], sizeof(int), 1, committor_file);
             fwrite(&store_ngrid[random_selection], sizeof(int), 1, committor_file);
             fwrite(&selected_cluster_size, sizeof(int), 1, committor_file);
             fwrite(&store_committor[random_selection], sizeof(double), 1, committor_file);
             fwrite(&store_committor[random_selection], sizeof(double), 1, committor_file); // Write to create space for standard deviation
-            i += 1;
-            printf("\rPercentage of samples selected: %d%%", (int)((double)i/(double)samples*100)); // Print progress
-            fflush(stdout);
-        } 
+        }
+        counter += 1;
+        printf("\rPercentage of samples selected: %d%%", (int)((double)counter/(double)((max_cluster_size-min_cluster_size+1))*100)); // Print progress
+        fflush(stdout);
     }  
 
     printf("\n"); // Newline
