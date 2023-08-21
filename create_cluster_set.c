@@ -234,12 +234,15 @@ int main (int argc, char *argv[]) {
 
     int random_selection = 0; // Used to randomly select grid from index.bin file
     int selected_cluster_size = 0;
+    int samples_tmp = samples;
 
     int counter = 0;
     for (i=min_cluster_size;i<max_cluster_size+1;i++) {
         j = 0;
-        while(j < samples) {
-            if (store_cluster_index[i*2+1] == 0) {break;}
+        samples_tmp = samples;
+        if (store_cluster_index[i*2+1] == 0) {continue;}
+        if (store_cluster_index[i*2+1] < samples) {samples_tmp = store_cluster_index[i*2+1];}
+        while(j < samples_tmp) {
             random_selection = rand()%store_cluster_index[i*2+1]+store_cluster_index[i*2];
             selected_cluster_size = store_cluster[random_selection];
             j += 1;
