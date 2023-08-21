@@ -75,7 +75,7 @@ def test_accuracy(net, testloader, output_label=None, device="cpu"):
     return correct / total, output_label
 
 # Defining function for loading data
-def load_data(grid_dir="./grid_data_tmp", committor_dir="./committor_data_tmp"):    
+def load_data(grid_dir="./grid_data", committor_dir="./committor_data"):    
     dataset = IsingDataset(grid_dir, committor_dir)
 
     train_size = int(0.8 * len(dataset))
@@ -176,7 +176,7 @@ print("Parameters: ", total_params)
 num_epochs = 100
 learning_rate = 1e-3
 weight_decay = 1e-5
-train_batch_size = 50
+train_batch_size = 100
 test_batch_size = 10
 
 # Loss and optimizer
