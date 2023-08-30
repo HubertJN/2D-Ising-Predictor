@@ -1,1 +1,2 @@
-
+Train neural network to predict correction to sigmoid fit committor prediction
+Create class activation map to see important features of ising grid
