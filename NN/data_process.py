@@ -4,17 +4,30 @@ from sklearn.model_selection import train_test_split
 import torch
 from torch.utils.data import Dataset
 import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
 
 gridstates = open('/home/eng/phunsc/PhD_Project/2D_Ising_Project/bin/gridstates.bin', 'rb')
 index_file = open('/home/eng/phunsc/PhD_Project/2D_Ising_Project/bin/committor_index.bin', 'rb')
 byte_prefix = 4*(3)
 ngrids = 8192
 L = 64
-bytes_per_slice = byte_prefix+ngrids*(L*L/8)
-grid_data = np.zeros((9000,64*64), dtype=np.float32)
-committor_data = np.zeros((9000, 3), dtype=np.float32)
-cluster = np.zeros((9000, 1), dtype=np.float32)
 i = 0
+while(1):
+    index = np.fromfile(index_file, dtype=np.int32, count=3, sep='')
+    if index.size < 3:
+        break
+    committor = np.fromfile(index_file, dtype=np.float64, count=1, sep='')[0]
+    std_dev = np.fromfile(index_file, dtype=np.float64, count=1, sep='')[0]
+    i += 1
+print(i)
+
+index_file.seek(0, os.SEEK_SET)
+
+bytes_per_slice = byte_prefix+ngrids*(L*L/8)
+grid_data = np.zeros((i,64*64), dtype=np.float32)
+committor_data = np.zeros((i, 5), dtype=np.float32)
+cluster = np.zeros((i, 1), dtype=np.float32)
+j = 0
 ibit=0
 ibyte=0
 one = np.uint32(1)
@@ -36,26 +49,40 @@ while(1):
             isite += 1
             if (isite>L*L):
                 break
-    grid_data[i] = ising_grids
-    committor_data[i, 0] = committor
-    committor_data[i, 1] = std_dev
-    committor_data[i, 2] = index[2]
-    i += 1
-print(i)
+    grid_data[j] = ising_grids
+    committor_data[j, 0] = committor
+    committor_data[j, 3] = std_dev
+    committor_data[j, 4] = index[2]
+    j += 1
+
 try:
     os.remove('/home/eng/phunsc/PhD_Project/2D_Ising_Project/NN/grid_data')
     os.remove('/home/eng/phunsc/PhD_Project/2D_Ising_Project/NN/committor_data')
 except:
     pass
 
+# get residual data for committor_data
+# def fit
+
+def sigmoid(x, L ,x0, k, b):
+    y = L / (1 + np.exp(-k*(x-x0))) + b
+    return (y)
+p0 = [max(committor_data[:,0]), np.median(committor_data[:,-1]),1,min(committor_data[:,0])]
+
+popt, _ = curve_fit(sigmoid, committor_data[:,-1], committor_data[:,0], p0=p0)
+
 # fix data
 fix_index = (committor_data[:, 0] >= 0.01) & (committor_data[:, 0] <= 0.99)
 grid_data = grid_data[fix_index]
 committor_data = committor_data[fix_index]
 
+# converst committor_data to residual
+committor_data[:,1] = sigmoid(committor_data[:,-1], *popt)
+committor_data[:,2] = committor_data[:,0] - committor_data[:,1]
+
 # convert data to batch form
 grid_data = grid_data.reshape(grid_data.shape[0], 1, 64, 64)
-committor_data = committor_data.reshape(committor_data.shape[0], 3)
+committor_data = committor_data.reshape(committor_data.shape[0], 5)
 
 grid_data = torch.from_numpy(grid_data.astype(np.float32))
 committor_data = torch.from_numpy(committor_data.astype(np.float32))
