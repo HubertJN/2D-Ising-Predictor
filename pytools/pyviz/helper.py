@@ -242,6 +242,7 @@ class Type1(Simulation):
 
     def make_figure(self):
         self.create_layout()
+        pygame.display.init()
         pygame.init()
         size = (self.block_size*self.config['size_x'], self.block_size*self.config['size_y'])
         self.screen = pygame.display.set_mode(size)
@@ -260,8 +261,8 @@ class Type1(Simulation):
         self.igrid = 0
         self.isweep = 0
         
-    
     def animate_all_grids(self):
+        number_of_frames = len(self.all_grids)
         self.make_figure()
         while True:
             irow_max = self.config['size_x']
@@ -282,6 +283,8 @@ class Type1(Simulation):
                 break
             if (self.advance):
                 self.isweep += 1
+                if self.isweep == number_of_frames:
+                    self.isweep = 0
             
     def process_events(self):
             # Process events
