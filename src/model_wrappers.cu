@@ -96,17 +96,18 @@ void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config
     float* d_magnetisation;
     cudaMalloc(&d_magnetisation, launch_struct->num_concurrent * sizeof(float));
     float h_nucleation[launch_struct->num_concurrent];
-    int* d_up_threshold;
-    int* d_dn_threshold;
-    cudaMalloc(&d_up_threshold, launch_struct->num_concurrent * sizeof(int));
-    cudaMalloc(&d_dn_threshold, launch_struct->num_concurrent * sizeof(int));
-    // Copy threshold values to device
-    gpuErrchk(cudaMemcpy(d_up_threshold, launch_struct->up_threshold, sizeof(int), cudaMemcpyHostToDevice));
-    gpuErrchk(cudaMemcpy(d_dn_threshold, launch_struct->dn_threshold, sizeof(int), cudaMemcpyHostToDevice));
-    // Copy task across
-    int* d_model_itask
+    // Pass threshold values to device
+    float* d_up_threshold;
+    float* d_dn_threshold;
+    cudaMalloc(&d_up_threshold, sizeof(float));
+    cudaMalloc(&d_dn_threshold, sizeof(float));
+    // Copy to device
+    gpuErrchk(cudaMemcpy(d_up_threshold, &launch_struct->up_threshold, sizeof(float), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(d_dn_threshold, &launch_struct->dn_threshold, sizeof(float), cudaMemcpyHostToDevice));
+    // Copy task to device
+    int* d_model_itask;
     cudaMalloc(&d_model_itask, sizeof(int));
-    gpuErrchk(cudaMemcpy(d_model_itask, launch_struct->model_itask, sizeof(int), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(d_model_itask, &launch_struct->model_itask, sizeof(int), cudaMemcpyHostToDevice));
 
 
     // Launch kernel
@@ -135,17 +136,17 @@ void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config
                 fprintf(stderr, "Nucleation detected at iteration %d on grid %d\n", i, j+1);
                 full_nucleation++;
             }
-            else if (launch_struct->model_itask == 0 && [j] < launch_struct->dn_threshold) {
+            else if (launch_struct->model_itask == 0 && h_magnetisation[j] < launch_struct->dn_threshold) {
                 fprintf(stderr, "Resolved fate detected at iteration %d on grid %d\n", i, j+1);
                 full_nucleation++;
                 fate_down++;
             }
         }
-        
-        fraction_up = (float(full_nucleation - fate_down)) / float(full_nucleation);
+        int fate_up = full_nucleation - fate_down;
+        int fraction_up = (float(fate_up)) / float(full_nucleation);
         if (launch_struct->model_itask == 0) {
             printf("\r Sweep : %10d, Reached m = %6.2f : %4d , Reached m = %6.2f : %4d , Unresolved : %4d, pB = %10.6f",
-            i, launch_struct->dn_threshold, fate_down, launch_struct->up_threshold, fate_up, ngrids-nA-nB, fraction_up);
+            i, launch_struct->dn_threshold, fate_down, launch_struct->up_threshold, fate_up, launch_struct->num_concurrent-full_nucleation, fraction_up);
         }
 
         if (full_nucleation == launch_struct->num_concurrent) {

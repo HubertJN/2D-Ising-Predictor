@@ -15,7 +15,7 @@ void get_number_of_models(const char* filename, int* models);
 
 void read_input_file(const char* filename, ising_model_config* params_array[], int models);
 
-void load_grid(cudaStream_t stream, ising_model_config* launch_struct, int* dev_grid);
+void load_grid(cudaStream_t stream, ising_model_config* launch_struct, int* host_grid, int* dev_grid);
 
 
 #endif // INPUT_READER_H

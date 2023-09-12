@@ -71,7 +71,7 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
     int model_id = -1;     // model id
     int model_itask = -1;  // model itask
     int num_concurrent = -1; // number of concurrent simulations
-    int size[2] = [0, 0];         // size of each grid dimension
+    int size[2]; size[0] = 0; size[1] = 0;         // size of each grid dimension
     int L = 0;              // size of grid L == size[0] = size[1])
     int iterations = 0;   // number of iterations in the simulation
     int iter_per_step = 0; // number of iterations per step
@@ -86,7 +86,7 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
     const int grid_file_str_len = 256;
     char grid_file[grid_file_str_len];
     kvp_register_i("model_id", &model_id);
-    kvp_register_i("model_itask", &model_itask)
+    kvp_register_i("model_itask", &model_itask);
     kvp_register_i("num_concurrent", &num_concurrent);
     kvp_register_i("size_x", &size[0]);
     kvp_register_i("size_y", &size[1]);
@@ -120,7 +120,7 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
         nucleation_threshold = 0.0;
         dn_threshold = 0.0;
         up_threshold = 0.0;
-        grid_file = "NONE";
+        strcpy(grid_file, "NONE");
 
 
 
@@ -171,7 +171,7 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
         }
 
         // Check nucleation thresholds have been set correctly
-        if nucleation_threshold != 0.0 {
+        if (nucleation_threshold != 0.0) {
             if (up_threshold != 0.0 || dn_threshold != 0.0) {
                 fprintf(stderr, "Error: Cannot specify both nucleation_threshold and (up||dn)_threshold\n");
                 exit(1);
@@ -256,7 +256,7 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
     fclose(input_file);
 }
 
-void load_grid(cudaStream_t stream, ising_model_config* launch_struct, int* host_array, int* dev_grid) {
+void load_grid(cudaStream_t stream, ising_model_config* launch_struct, int* host_grid, int* dev_grid) {
     /* Load the grid from the input file, this function reads a file line by line into host_grid
     then does an async copy to dev_grid
     Parameters:
@@ -269,7 +269,7 @@ void load_grid(cudaStream_t stream, ising_model_config* launch_struct, int* host
     readGridsFromFile(launch_struct, host_grid, launch_struct->input_file);
 
     // Copy the grid to dev_grid
-    cudaMemcpy(dev_grid, host_grid, launch_struct->size[0] * launch_struct->size[1] * sizeof(int), cudaMemcpyHostToDevice, stream);
+    cudaMemcpy(dev_grid, host_grid, launch_struct->size[0] * launch_struct->size[1] * sizeof(int), cudaMemcpyHostToDevice);
 
     return;
 }

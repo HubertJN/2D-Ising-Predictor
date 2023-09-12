@@ -22,7 +22,7 @@ typedef struct ising_model_config {
     // Specify either parity theshold or up&down threshold
     float nucleation_threshold; // nucleation threshold
     float up_threshold; // up threshold
-    float down_threshold; // down threshold
+    float dn_threshold; // down threshold
     // User or System set parameters
     int num_threads;  // number of threads per block
     // System set parameters
