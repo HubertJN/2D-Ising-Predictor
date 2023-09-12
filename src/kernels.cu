@@ -14,7 +14,7 @@ __global__ void init_rng(curandState *state, unsigned int seed, int n)
 }
 
 // compute magnetisation on the gpu
-__global__ void compute_magnetisation(const int L_x, const int L_y, const int ngrids, const float nuc_threshold, int *device_grids, float *d_magnetisation, int *d_nucleation) {
+__global__ void compute_magnetisation(const int L_x, const int L_y, const int ngrids, int *device_grids, float *magnetisation) {
 
   int idx = threadIdx.x+blockIdx.x*blockDim.x;
   if (idx < ngrids) {
@@ -22,12 +22,9 @@ __global__ void compute_magnetisation(const int L_x, const int L_y, const int ng
     int *loc_grid = &device_grids[idx*N]; // pointer to device global memory
     float m = 0.0f;
     for (int i=0;i<N;i++) { 
-      m += loc_grid[i]; 
+      m += loc_grid[i];
     }
-    d_magnetisation[idx] = m/(float)(N);
-    if (d_magnetisation[idx] > nuc_threshold) {
-      d_nucleation[idx] = 1;
-    }
+    magnetisation[idx] = m/(float)(N);
   }
   return;
 }

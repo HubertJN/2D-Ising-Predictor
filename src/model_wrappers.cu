@@ -96,8 +96,17 @@ void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config
     float* d_magnetisation;
     cudaMalloc(&d_magnetisation, launch_struct->num_concurrent * sizeof(float));
     float h_nucleation[launch_struct->num_concurrent];
-    int* d_nucleation;
-    cudaMalloc(&d_nucleation, launch_struct->num_concurrent * sizeof(int));
+    int* d_up_threshold;
+    int* d_dn_threshold;
+    cudaMalloc(&d_up_threshold, launch_struct->num_concurrent * sizeof(int));
+    cudaMalloc(&d_dn_threshold, launch_struct->num_concurrent * sizeof(int));
+    // Copy threshold values to device
+    gpuErrchk(cudaMemcpy(d_up_threshold, launch_struct->up_threshold, sizeof(int), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(d_dn_threshold, launch_struct->dn_threshold, sizeof(int), cudaMemcpyHostToDevice));
+    // Copy task across
+    int* d_model_itask
+    cudaMalloc(&d_model_itask, sizeof(int));
+    gpuErrchk(cudaMemcpy(d_model_itask, launch_struct->model_itask, sizeof(int), cudaMemcpyHostToDevice));
 
 
     // Launch kernel
@@ -111,23 +120,40 @@ void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config
         gpuErrchk( cudaDeviceSynchronize() );
         
         // Compute energy and magnetisation (GPU)
-        compute_magnetisation<<<launch_struct->num_blocks, launch_struct->num_concurrent, 0, stream>>>(launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, launch_struct->nucleation_threshold, device_array, d_magnetisation, d_nucleation);
+        compute_magnetisation<<<launch_struct->num_blocks, launch_struct->num_concurrent, 0, stream>>>(launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, device_array, d_magnetisation);
         gpuErrchk( cudaPeekAtLastError() );
         gpuErrchk( cudaStreamSynchronize(stream) );
         gpuErrchk( cudaMemcpy(h_magnetisation, d_magnetisation, launch_struct->num_concurrent * sizeof(float), cudaMemcpyDeviceToHost));
         gpuErrchk( cudaPeekAtLastError() );
         // Write to file (CPU)
         outputGridToFile(launch_struct, host_array, h_magnetisation, i, stream_ix);
-        // Check for full nucleation
+        // Check for full nucleation or resolved fates
         int full_nucleation = 0;
+        int fate_down = 0;
         for (int j = 0; j < launch_struct->num_concurrent; j++) {
-            if (h_magnetisation[j] > launch_struct->nucleation_threshold) {
+            if (h_magnetisation[j] > launch_struct->up_threshold) {
                 fprintf(stderr, "Nucleation detected at iteration %d on grid %d\n", i, j+1);
                 full_nucleation++;
             }
+            else if (launch_struct->model_itask == 0 && [j] < launch_struct->dn_threshold) {
+                fprintf(stderr, "Resolved fate detected at iteration %d on grid %d\n", i, j+1);
+                full_nucleation++;
+                fate_down++;
+            }
         }
+        
+        fraction_up = (float(full_nucleation - fate_down)) / float(full_nucleation);
+        if (launch_struct->model_itask == 0) {
+            printf("\r Sweep : %10d, Reached m = %6.2f : %4d , Reached m = %6.2f : %4d , Unresolved : %4d, pB = %10.6f",
+            i, launch_struct->dn_threshold, fate_down, launch_struct->up_threshold, fate_up, ngrids-nA-nB, fraction_up);
+        }
+
         if (full_nucleation == launch_struct->num_concurrent) {
-            fprintf(stderr, "Full nucleation on all grids \n");
+            if (launch_struct->model_itask == 0) {
+                fprintf(stderr, "Resolved fate on all grids \n");
+            } else {
+                fprintf(stderr, "Full nucleation on all grids \n");
+            }
             break;
         }
     }

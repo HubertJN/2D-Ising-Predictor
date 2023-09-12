@@ -6,7 +6,7 @@
 #include <float.h>
 
 __global__ void init_rng(curandState *state, unsigned int seed, int n);
-__global__ void compute_magnetisation(const int L_x, const int L_y, const int ngrids, const float nuc_threshold, int *device_array, float *d_magnetisation, int *d_nucleation);
+__global__ void compute_magnetisation(const int L_x, const int L_y, const int ngrids, const float nuc_threshold, int *device_array, float *magnetisation, int *up_threshold, int *dn_threshold, int *model_itask);
 
 __global__ void init_rand_grids(curandState *state, const int L_x, const int L_y, const int ngrids, int *device_grids);
 __global__ void init_ud_grids(const int L_x, const int L_y, const int ngrids, int *device_grids, const int u_d);

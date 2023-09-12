@@ -183,12 +183,14 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
                 fprintf(stderr, "Error: Must specify up_threshold \n");
                 exit(1);
             }
-            if (dn_threshold == 0.0) {
+            if (dn_threshold == 0.0 && model_itask == 0) {
                 fprintf(stderr, "Error: Must specify dn_threshold \n");
                 exit(1);
             }
-            fprintf(stderr, "Error: Must specify nucleation_threshold if not specifying up_threshold and dn_threshold\n");
-            exit(1);
+            if (model_itask == 0) {
+                fprintf(stderr, "Error: Must specify nucleation_threshold if not specifying up_threshold and dn_threshold\n");
+                exit(1);
+            }
         } else if (up_threshold <= dn_threshold) {
             fprintf(stderr, "Error: up_threshold must be greater than dn_threshold\n");
             exit(1);
