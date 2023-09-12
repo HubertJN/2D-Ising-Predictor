@@ -256,7 +256,7 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
     fclose(input_file);
 }
 
-void load_grid(cudaStream_t stream, ising_model_config* launch_struct, int* dev_grid) {
+void load_grid(cudaStream_t stream, ising_model_config* launch_struct, int* host_array, int* dev_grid) {
     /* Load the grid from the input file, this function reads a file line by line into host_grid
     then does an async copy to dev_grid
     Parameters:
@@ -264,39 +264,12 @@ void load_grid(cudaStream_t stream, ising_model_config* launch_struct, int* dev_
         host_grid: pointer to the host grid, Pinned memory
         dev_grid: pointer to the device grid
     */
-    // create pinned host memory
-    int *host_grid;
-    cudaMallocHost(&host_grid, launch_struct->mem_size);
-    if (host_grid == NULL) {
-        fprintf(stderr, "Error: Could not allocate pinned memory\n");
-        exit(1);
-    }
 
-    FILE* input_file = fopen(launch_struct->input_file, "r");
-    if (input_file == NULL) {
-        fprintf(stderr, "Error: Could not open file '%s'\n", launch_struct->input_file);
-        exit(1);
-    }
+    // Read the grid into host_grid
+    readGridsFromFile(launch_struct, host_grid, launch_struct->input_file);
 
-    char* line;
-    size_t len = 0;
-    int line_num = 0;
+    // Copy the grid to dev_grid
+    cudaMemcpy(dev_grid, host_grid, launch_struct->size[0] * launch_struct->size[1] * sizeof(int), cudaMemcpyHostToDevice, stream);
 
-    //reset the file to begining
-    fseek(input_file, 0, SEEK_SET);
-    // Each grid element is on a new line.
-    // TODO: Be smarter about this use a binary
-    while ((getline(&line, &len, input_file)) != -1) {
-        host_grid[line_num] = atoi(line);
-        line_num++;
-    }
-
-    // Copy to the device grid from the pinned memory
-    cudaMemcpyAsync(dev_grid, host_grid, launch_struct->mem_size, cudaMemcpyHostToDevice, stream);
-
-    // Close the file and free the memory
-    fclose(input_file);
-
-    // Free the pinned memory
-    cudaFreeHost(host_grid);
+    return;
 }

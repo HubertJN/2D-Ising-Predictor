@@ -182,7 +182,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Check the number of threads and blocks are supported by the device
-        // Check if there is a sensible stream queue that can be used to make 
+        // Check if there is a sensible stream queue that can be used to make
         // the most of the device
 
     int random_threads = total_threads;

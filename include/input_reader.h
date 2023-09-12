@@ -6,6 +6,7 @@
 
 #include "shared_data.h"
 #include "../include/kvp.h"
+#include "../include/helpers.h"
 
 
 void read_lines(FILE* input_file, int start_line, int end_line);

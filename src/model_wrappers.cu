@@ -38,7 +38,7 @@ void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config
             // Load Grid from file
             if (launch_struct->input_file != NULL) {
                 // If we have initial grid(s) to load, load them, and transfer it to the device 
-                load_grid(stream, launch_struct, device_array);
+                load_grid(stream, launch_struct, host_array, device_array);
                 gpuErrchk( cudaPeekAtLastError() );
                 gpuErrchk( cudaDeviceSynchronize() );
             } 
