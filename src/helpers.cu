@@ -83,7 +83,7 @@ void preComputeNeighbours(ising_model_config *config, int *d_neighbour_list) {
 }
 
 // TODO: Deprecate this with the binary dump from issue #8
-void FoutputGridToFile(ising_model_config *launch_struct, int *host_grid, float *host_mag, int iteration, int stream_ix) {
+void outputGridToTxtFile(ising_model_config *launch_struct, int *host_grid, float *host_mag, int iteration, int stream_ix) {
   /* Output the grid to a file.
       *
       * Parameters:
@@ -163,50 +163,43 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
   const size_t size_sz = sizeof(size_t); //Use size_t type for header data
   const size_t host_mag_sz = sizeof(host_mag[0]);
   const size_t host_grid_sz = sizeof(host_grid[0]);
-  //fprintf(stderr, "Size of size_t: %d\n", size_sz);
 
   size_t next_location = (size_t) file.tellg() + size_sz*2 + host_mag_sz; // + GIT_VERSION_SIZE*sizeof(char);
   
   //Write Size of ints and data, IO verification constant
-  const float io_verify = 3.0/32.0;// An identifiable value - use to check type, endianness etc TODO - match to host_mag type
+  const float io_verify = 3.0/32.0;// An identifiable value - use to check type, endianness etc. Note this should probably match host_mag type
   file.write((char*) & host_mag_sz, size_sz); // Size of mag data
   file.write((char*) & host_grid_sz, size_sz); // Size of grid data
   file.write((char*) &io_verify, host_mag_sz);
  
   //Check file location matches what we expected
   if((size_t)file.tellg() != next_location) write_err=1;
-  //fprintf(stderr, "Next loc %d (%d)\n", next_location, write_err);
 
   //Now write dimension info: n_dims, followed by each dim, and the total number of grids
-  const size_t n_dims = 2; // TODO - n_dims should be got from somewhere higher up!
   size_t tmp;
   next_location += size_sz*(n_dims+3); // + 3 for location info, n_dims, n_grids
   file.write((char*) & next_location, size_sz);
   file.write((char*) & n_dims, size_sz);
-  tmp = launch_struct->size[0]; // todo fix to use n_dims properly
-  file.write((char*) & tmp, size_sz);
-  tmp = launch_struct->size[1];
-  file.write((char*) & tmp, size_sz);
+  for(int i = 0; i< n_dims; i++){
+    tmp = launch_struct->size[i];
+    file.write((char*) & tmp, size_sz);
+  }
   tmp = launch_struct->num_concurrent;
   file.write((char*) & tmp, size_sz);
 
   //fprintf(stderr, "n_dims %d, dims % d %d, n_conc %d\n", n_dims,  launch_struct->size[0],  launch_struct->size[1], launch_struct->num_concurrent);
   //Check file location matches what we expected
   if((size_t)file.tellg() != next_location) write_err=1;
-  //fprintf(stderr, "Next loc %d (%d)\n", next_location, write_err);
-  // todo remove these debugging prints
 
   const size_t total_size = launch_struct->size[0] * launch_struct->size[1];
 
   // First write info on all the grids - index, magnetisation, nucleation state
   const size_t grid_info_count = (size_sz*2 + host_mag_sz) * launch_struct->num_concurrent;
-  //fprintf(stderr, "grid info count %d\n", grid_info_count);
   next_location += grid_info_count + size_sz;
   file.write((char*) & next_location, size_sz);
 
 
   size_t grid_index;
-  //fprintf(stderr, "mag sz %d, grid sz %d\n", host_mag_sz, host_grid_sz);
   for (grid_index=0; grid_index<launch_struct->num_concurrent;grid_index++){
     file.write((char*) & grid_index, size_sz);
     file.write((char*) & host_mag[grid_index], host_mag_sz);
@@ -219,7 +212,6 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
 
   //Check file location matches what we expected
   if((size_t)file.tellg() != next_location) write_err=1;
-  //fprintf(stderr, "Next loc %d (%d)\n", next_location, write_err);
 
   // Then write the actual grids
 
@@ -231,7 +223,6 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
 
   //Check file location matches what we expected
   if((size_t)file.tellg() != next_location) write_err=1;
-  //fprintf(stderr, "Next loc %d\n", next_location);
 
   if(write_err) fprintf(stderr, "File Writing error");
 
@@ -252,7 +243,6 @@ int readGridsFromFile(ising_model_config * config, int * &host_grid, char* filen
   fflush(stderr);
 
   std::fstream file;
-  bool read_err = false;
   file.open(filename, std::ios::in|std::ios::binary);
 
   // Read file header info
@@ -262,7 +252,7 @@ int readGridsFromFile(ising_model_config * config, int * &host_grid, char* filen
   size_t next_location;
 
   //Read Size of ints and data, IO verification constant
-  const float io_verify = 3.0/32.0;// An identifiable value - use to check type, endianness etc TODO - match to host_mag type
+  const float io_verify = 3.0/32.0;// An identifiable value - use to check type, endianness etc
   float io_verify_in;
   file.read((char*) & host_mag_sz, size_sz); // Size of mag data
   file.read((char*) & host_grid_sz, size_sz); // Size of grid data
@@ -289,8 +279,8 @@ int readGridsFromFile(ising_model_config * config, int * &host_grid, char* filen
   // Next location marker
   file.read((char*) & next_location, size_sz);
   
-  size_t n_dims;
-  file.read((char*) & n_dims, size_sz);
+  size_t n_dims_in;
+  file.read((char*) & n_dims_in, size_sz);
 
   size_t tmp1, tmp2; // todo fix for different n_dims?
   file.read((char*) & tmp1, size_sz);
@@ -301,7 +291,7 @@ int readGridsFromFile(ising_model_config * config, int * &host_grid, char* filen
 
   // todo - see above
   // For now, verify against config passed in...??
-  if(n_dims != 2 || tmp1 != config->size[0] || tmp2 != config->size[1] || n_c != config->num_concurrent){
+  if(n_dims_in != n_dims || tmp1 != config->size[0] || tmp2 != config->size[1] || n_c != config->num_concurrent){
     fprintf(stderr, "Data read does not match specified configuration");
     return 2;
   }
