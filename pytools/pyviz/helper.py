@@ -2,10 +2,6 @@ import struct
 import numpy as np
 from pathlib import Path
 import pygame
-import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-from plotly_gif import GIF, capture
 import logging
 
 
@@ -257,7 +253,7 @@ class Type1(Simulation):
         self.BLACK = (0, 0, 0)
         self.WHITE = (255, 255, 255)
         self.block_size = 10
-        self.color_map = [self.BLACK, self.WHITE]
+        self.color_map = [self.BLACK, self.WHITE, self.BLACK] # 0 = black, 1 = white, -1 = black (this gaurds against 0 or -1 being the -ve spin)
         self.igrid = 0
         self.isweep = 0
         
@@ -271,7 +267,8 @@ class Type1(Simulation):
             for ix in range(npix):
                 irow = ix // icol_max
                 icol = ix % icol_max
-                pygame.draw.rect(self.screen, self.color_map[self.all_grids[self.isweep][self.igrid][irow][icol]], 
+                pixel = self.all_grids[self.isweep][self.igrid][irow][icol]
+                pygame.draw.rect(self.screen, self.color_map[pixel], 
                                  (icol*self.block_size, irow*self.block_size, self.block_size, self.block_size))
             self.process_events()
             # Update and limit frame rate
@@ -301,32 +298,12 @@ class Type1(Simulation):
                     iframe += 1
                     advance = False
                 if event.key == pygame.K_UP:
-                    igrid = min(self.igrid+1,self.config.num_concurrent-1)
+                    self.igrid = min(self.igrid+1, self.config['num_concurrent']-1)
                 if event.key == pygame.K_DOWN:
-                    igrid = max(igrid-1,0)
+                    self.igrid = max(self.igrid-1,0)
                 if event.key == pygame.K_w:
                     # TODO: Write current active grid to file
                     print(f"Grid snapshot written to pyviz/dump/gridinput.bin")
 
     def animate_grid_set(self):
         pass
-
-    def create_frames(self):
-        """Creates a list of frames"""
-        frame_list = [
-            go.Frame(
-                data=[go.Image(z=self.image_grids[i,j,:,:]) for j in range(self.config['num_concurrent'])], 
-                layout=go.Layout(annotations=[
-                                                {
-                                                    'text':f"Copy {j+1}, frame {i} <br> mag {self.all_mag_nuc[i][j][0]:.2f}, nuc {int(self.all_mag_nuc[i][j][1])}",
-                                                    'font': {'size': 8},
-                                                    'align': 'center'
-                                                    }
-                                            for j in range(self.config['num_concurrent'])
-                                            ] 
-                                ),
-                traces=[j for j in range(self.config['num_concurrent'])],
-            )
-            for i in range(self.image_grids.shape[0])
-        ]
-        self.figure.frames = frame_list
