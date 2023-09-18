@@ -18,6 +18,11 @@ def write_header(file, info):
     check_bytes = struct.pack(fmt, check_value)
     file.write(check_bytes)
 
+    vers_bytes = bytes(info["code_version"], 'utf-8') + b'\x00' # Add null term
+    print(vers_bytes)
+
+
+    file.write(vers_bytes)
 
 def write_grid_meta(file, info, grid_meta):
 
@@ -115,6 +120,14 @@ def create_info():
     info["grid_fmt_string"] = grid_fmt_string
     dt = np.dtype(grid_fmt_string)
     info["grid_dtype"] = dt
+
+    _file_leader = "VERSION="
+    _leader_len = len(_file_leader)
+    with open("VERSION", 'r') as infile:
+        vers = infile.read()
+
+    vers = "p-"+vers[_leader_len+1:]
+    info["code_version"] = vers[:10]
 
     return info
 
