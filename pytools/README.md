@@ -5,9 +5,9 @@ This is a collection of python notebooks and scripts designed to help with the l
 
 ## Python Envronment
 
-We use [poetry](https://python-poetry.org/), the envronment is defined in pyproject.toml
+We use [poetry](https://python-poetry.org/), the environment is defined in pyproject.toml
 You can install the project dependancies using `poetry install`, [details here](https://python-poetry.org/docs/basic-usage/#installing-with-poetrylock)
-Basic use is to use poetry shell or use the envronment located at `~/.cache/pypoetry/virtualenvs/`.
+Basic use is to use poetry shell or use the environment located at `~/.cache/pypoetry/virtualenvs/`.
 Use `poetry env info` for more info
 
 Note: 
@@ -26,6 +26,6 @@ TODO: More docs
 
 ## pyviz
 
-Pyviz is a collection of helper scripts to load the output and visulise it
+Pyviz is a collection of helper scripts to load the output and visualise it
 
 TODO: More Docs
