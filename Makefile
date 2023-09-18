@@ -53,8 +53,18 @@ all:
 	echo "doing nothing"
 
 .PHONY: clean release debug test
+
+VERSION:
+	@./get_version.sh
+
+# Remember version file be be built if it does not exist, and then Makefile reparsed
+-include VERSION
+DEFINES := -DVERSION=\"$(VERSION)\"
+$(info Version string is ${VERSION})
+
 clean:
 	rm -r $(BUILD_DIR)
+	$(RM) VERSION
 
 release: $(OBJS)
 	$(LD) $(OBJS) -o $@ $(NVFLAGS) $(DEP_FLAGS) 
@@ -65,17 +75,23 @@ debug: $(OBJS)
 test: $(TEST_OBJS)
 	$(LD) -o $(BUILD_DIR)/$(TEST_EXEC) $(TEST_OBJS) ./test/test.cu $(NVFLAGS) -g -G -O0 -DDEBUG $(DEPFLAGS)
 
+# Following target ensures code version is prepped. Could also include anything else to get
+# Python side up and running such as checking graphics capabilities
+py_helpers:
+	@echo "Prepared Python scripts"
+
+
 # Generic build patterns
 
 # Build step for C source
 $(BUILD_DIR)/%.c.o: %.c
 	mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(DEFINES) -c $< -o $@
 
 # Build step for Cuda source
 $(BUILD_DIR)/%.cu.o: %.cu
 	mkdir -p $(dir $@)
-	$(NVCC) $(NVFLAGS) -c $< -o $@ -diag-suppress 2464
+	$(NVCC) $(NVFLAGS) $(DEFINES) -c $< -o $@ -diag-suppress 2464
 
 
 # Include the .d makefiles. The - at the front suppresses the errors of missing

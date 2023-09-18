@@ -29,12 +29,20 @@ def read_headers(file, sz_sz=8):
         print("ERROR: Magic number does not match - check endianness, float size and data file")
         raise IOError("Wrong magic number")
 
+    version = file.read(11)
+    # Version is a byte-string b'...' and final char should be 0. Subscripting -> integer
+    if version[-1] != 0:
+        print("ERROR: Version string truncated or corrupt")
+        raise IOError("Bad version string")
+    version = version[0:-1].decode('UTF-8')
+
     hdr = {}
     hdr["endian"] = endian
     hdr["sz_sz"] = sz_sz
     hdr["mag_sz"] = mag_sz
     hdr["mag_fmt"] = fmt
     hdr["grid_sz"] = grid_sz
+    hdr["code_version"] = version
 
     grid_fmt_string = "i{}".format(grid_sz)
     hdr["grid_fmt_string"] = grid_fmt_string
@@ -200,6 +208,7 @@ if __name__=="__main__":
 
     outnum = 0
     filename = "./output/grid_0_10000_{}.dat".format(outnum)
+    filename = "testfile.dat"
 
     data = read_file(filename)
 
