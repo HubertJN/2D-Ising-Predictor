@@ -1,5 +1,6 @@
 bin/
-output/
+grid_binaries/output/
+grid_binaries/input/
 .vscode/
 __pycache__/
 pyviz/pyviz/__pycache__/
