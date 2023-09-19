@@ -1,5 +1,20 @@
 import struct
 import numpy as np
+from pathlib import Path
+
+
+# Find VERSION file or error on file import
+try:
+    # This makes the assumption version exists at the top level of the repo
+    version_file = Path(__file__).parent.parent.parent / "VERSION"
+    if not version_file.exists():
+        print("VERSION file not found in top level of 2DIsing_Model")
+        raise FileNotFoundError
+except FileNotFoundError as e:
+    # If VERSION file not found, raise error
+    # We could use os to run get_version but probably erroring is more correct
+    raise e
+
 
 def write_header(file, info):
 
@@ -123,7 +138,7 @@ def create_info():
 
     _file_leader = "VERSION="
     _leader_len = len(_file_leader)
-    with open("VERSION", 'r') as infile:
+    with open(version_file, 'r') as infile:
         vers = infile.read()
 
     vers = "p-"+vers[_leader_len+1:]
@@ -195,7 +210,9 @@ def write_file(filename, info, grid_meta, mag_data, grid_data):
  
 
 def example():
-    filename = "./testfile.dat"
+    grid_folder = Path(__file__).parent.parent.parent / "grid_binaries" / "input"
+    assert grid_folder.exists(), "grid_binaries/input/ folder does not exist"
+    filename = grid_folder / "testfile.dat"
  
     info = create_info()
 
