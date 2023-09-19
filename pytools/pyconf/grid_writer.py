@@ -216,6 +216,7 @@ def example():
  
     info = create_info()
 
+    # TODO: This should load test_input_com.dat and then create metadata from that
     # Replace the following two with actual grid size and grid datas
     grid_meta = create_dummy_grid_meta()
     grid_data = create_dummy_grids(info, grid_meta)
@@ -223,6 +224,8 @@ def example():
     mag_data = extract_mag_data(info, grid_meta, grid_data)
  
     write_file(filename, info, grid_meta, mag_data, grid_data)
+
+# TODO: Implement somthing like example here that reads a config and returns a class that can be used to write grids
 
 if __name__ =="__main__":
 
