@@ -1,6 +1,9 @@
 # Pytools
 
-This is a collection of python notebooks and scripts designed to help with the launching and processing of the GPUIsing code. 
+This is a collection of python notebooks and scripts designed to help with the launching and processing of the GPUIsing code.
+
+Tools in general are softed into those used for making inputs in pyconf or visulising outputs in pyviz.
+Tools that may be of general use such as grid_reader and grid_writer are exported from pytools directly.
 
 
 ## Python Envronment
