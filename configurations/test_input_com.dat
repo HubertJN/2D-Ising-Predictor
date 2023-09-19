@@ -1,6 +1,6 @@
 ## New model ##
 model_id=1
-model_itask=1
+model_itask=0
 num_concurrent=5
 size_x=100
 size_y=100
