@@ -11,3 +11,4 @@ inv_temperature=1.5
 field=1.5
 starting_config=3
 nucleation_threshold=1.0
+filename=grid_binaries/input/testfile.dat

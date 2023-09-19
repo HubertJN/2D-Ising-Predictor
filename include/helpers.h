@@ -17,7 +17,7 @@ void preComputeProbs(ising_model_config *config, float* d_Pacc);
 
 void preComputeNeighbours(ising_model_config *config, int *d_neighbour_list);
 
-const char prefix[30]="../output/";
+const char prefix[30]="../grid_binaries/output/";
 
 void outputGridToTxtFile(ising_model_config *config, int *host_grid, float *host_mag, int iteration, int stream_ix);
 
