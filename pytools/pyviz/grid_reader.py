@@ -1,5 +1,6 @@
 import numpy as np
 import struct
+from pathlib import Path
 
 def read_next_location_item(file, sz_sz, endian):
     """Read single value and return it"""
@@ -206,11 +207,20 @@ def read_file(filename):
 
 if __name__=="__main__":
 
-    outnum = 0
-    filename = "./output/grid_0_10000_{}.dat".format(outnum)
-    filename = "testfile.dat"
+    # use the output file
+    # outnum = 0
+    # output_folder = Path(__file__).parent.parent.parent / "grid_binaries" / "output"
+    # assert output_folder.exists(), f"{output_folder} folder does not exist"
+    # output_file = output_folder / f"grid_0_10000_{outnum}.dat"
+    # assert output_file.exists(), f"{output_file} does not exist"
 
-    data = read_file(filename)
+    # use the test file
+    input_folder = Path(__file__).parent.parent.parent / "grid_binaries" / "input"
+    assert input_folder.exists(), f"{input_folder} folder does not exist"
+    input_file = input_folder / "testfile.dat"
+    assert input_file.exists(), f"{input_file} does not exist"
+
+    data = read_file(input_file)
 
     for i in range(data['metadata']['n_conc']):
 
@@ -224,7 +234,7 @@ if __name__=="__main__":
     # Demo non-stream reading, once we've read the header and meta data
     # I.e call read_file_prep and then can read grid by grid, or grab magnetisation etc data
     d_data = {}
-    file = read_file_prep(filename, d_data)
+    file = read_file_prep(input_file, d_data)
     grid1 = read_grid_num(file, d_data["hdr"], d_data["metadata"], 1)
     print(grid1)
 
