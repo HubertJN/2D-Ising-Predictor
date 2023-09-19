@@ -154,6 +154,7 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
   snprintf(filename, sizeof(filename), prefix);
   snprintf(filename+strlen(prefix), sizeof(filename)-strlen(prefix), "grid_%d_%d_%d.dat", stream_ix, grid_size, iteration);
 
+  fprintf(stderr, "Making File: %s\n", filename);
   realpath(filename, filename);
   fprintf(stderr, "Making File: %s\n", filename);
   fflush(stderr);
@@ -194,7 +195,7 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
   tmp = launch_struct->num_concurrent;
   file.write((char*) & tmp, size_sz);
 
-  fprintf(stderr, "n_dims %d, dims % d %d, n_conc %d\n", n_dims,  launch_struct->size[0],  launch_struct->size[1], launch_struct->num_concurrent);
+  //fprintf(stderr, "n_dims %d, dims % d %d, n_conc %d\n", n_dims,  launch_struct->size[0],  launch_struct->size[1], launch_struct->num_concurrent);
   //Check file location matches what we expected
   if((size_t)file.tellg() != next_location) write_err=1;
 
@@ -214,7 +215,7 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
     file.write((char*) &nuc, size_sz);
 
    // Also print this info to the screen
-   fprintf(stderr, "Copy %d, Mag %f, Nucleated %d\n", grid_index+1, host_mag[grid_index], nuc);
+   //fprintf(stderr, "Copy %d, Mag %f, Nucleated %d\n", grid_index+1, host_mag[grid_index], nuc);
   }
 
   //Check file location matches what we expected
