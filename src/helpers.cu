@@ -238,7 +238,7 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
 }
 
 //\todo Update to match writer
-int readGridsFromFile(ising_model_config * config, int * &host_grid, char* filename){
+int readGridsFromFile(ising_model_config * config, int * &host_grid){
   /* Read grids from given file
       *
       * Parameters:
@@ -251,8 +251,10 @@ int readGridsFromFile(ising_model_config * config, int * &host_grid, char* filen
   fprintf(stderr, "Reading grid from file\n");
   fflush(stderr);
 
+  fprintf(stderr, "File: %s\n", config->input_file);
+
   std::fstream file;
-  file.open(filename, std::ios::in|std::ios::binary);
+  file.open(config->input_file, std::ios::in|std::ios::binary);
 
   // Read file header info
   const size_t size_sz = sizeof(size_t); //Use size_t type for header data - todo - add to file and read back...

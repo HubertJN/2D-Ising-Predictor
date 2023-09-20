@@ -1,7 +1,7 @@
 #ifndef SHARED_DATA_H
 #define SHARED_DATA_H
 
-
+const int grid_file_str_len = 256;
 const int n_dims = 2;
 
 // structure to hold the configuration of the ising model, not all parameters are used in all models
@@ -17,7 +17,7 @@ typedef struct ising_model_config {
     int seed;         // seed for the random number generator
     float inv_temperature;  // temperature of the system
     float field;        // magnetic field strength
-    char* input_file; // input file name
+    char input_file[grid_file_str_len]; // input file name
     int starting_config; // starting configuration, 0 for file input, 1 for random, 2 for all up, 3 for all down
     // Specify either parity theshold or up&down threshold
     float nucleation_threshold; // nucleation threshold

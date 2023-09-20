@@ -83,8 +83,8 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
     float dn_threshold = 0.0;         // Magnetisation at which we consider the system to have reached spin up state
     float up_threshold = 0.0;         // Magnetisation at which we consider the system to have reached spin up state
     int num_threads;
-    const int grid_file_str_len = 256;
     char grid_file[grid_file_str_len];
+
     kvp_register_i("model_id", &model_id);
     kvp_register_i("model_itask", &model_itask);
     kvp_register_i("num_concurrent", &num_concurrent);
@@ -266,7 +266,7 @@ void load_grid(cudaStream_t stream, ising_model_config* launch_struct, int* host
     */
 
     // Read the grid into host_grid
-    readGridsFromFile(launch_struct, host_grid, launch_struct->input_file);
+    readGridsFromFile(launch_struct, host_grid);
 
     // Copy the grid to dev_grid
     cudaMemcpy(dev_grid, host_grid, launch_struct->size[0] * launch_struct->size[1] * sizeof(int), cudaMemcpyHostToDevice);
