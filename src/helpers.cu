@@ -248,10 +248,8 @@ int readGridsFromFile(ising_model_config * config, int * &host_grid){
     Returns 1 if there is an error
    */
 
-  fprintf(stderr, "Reading grid from file\n");
+  fprintf(stderr, "Reading grid from file: %s\n", config->input_file);
   fflush(stderr);
-
-  fprintf(stderr, "File: %s\n", config->input_file);
 
   std::fstream file;
   file.open(config->input_file, std::ios::in|std::ios::binary);

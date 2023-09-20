@@ -9,10 +9,15 @@ int main(int argc, char *argv[]) {
 
     // Read the configuration file ===============================================
     char* filename;
+    const char* callpath;
     // Check if command line arguments were provided
     printf("Number of arguments: %d\n", argc);
     if (argc == 2) {
+        callpath = argv[0];
         filename = argv[1];
+        
+        printf("Callpath: %s\n", callpath);
+        printf("Filename: %s\n", filename);
     }
     else {
         printf("Usage: %s [filename] \n", argv[0]);
@@ -26,7 +31,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error: Could not allocate memory\n");
         exit(1);
     }
-    read_input_file(filename, params_array, models);
+    read_input_file(filename, params_array, models, callpath);
     fprintf(stderr, "Number of models: %d\n", sizeof(params_array)/sizeof(params_array[0]));
     
     // Print the models we are going to run

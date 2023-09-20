@@ -1,4 +1,3 @@
-
 #include "../include/input_reader.h"
 
 void read_lines(FILE* input_file, int start_line, int end_line) {
@@ -34,7 +33,7 @@ void get_number_of_models(const char* filename, int* models) {
     fclose(input_file);
 }
 
-void read_input_file(const char* filename, ising_model_config* params_array[], int models) {
+void read_input_file(const char* filename, ising_model_config* params_array[], int models, const char* callpath) {
     FILE* input_file = fopen(filename, "r");
     if (input_file == NULL) {
         fprintf(stderr, "Error: Could not open file '%s'\n", filename);
@@ -84,6 +83,8 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
     float up_threshold = 0.0;         // Magnetisation at which we consider the system to have reached spin up state
     int num_threads;
     char grid_file[grid_file_str_len];
+
+    // Register the kvp variables
 
     kvp_register_i("model_id", &model_id);
     kvp_register_i("model_itask", &model_itask);
@@ -235,6 +236,31 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
         }
         if (inv_temperature == 0.0) {
             fprintf(stderr, "Warning: Inverse temperature not set, using default value, 1.0\n");
+        }
+
+        // Resolve the absolute path of the input file
+        if (strcmp(grid_file, "NONE") != 0) {
+            fprintf(stderr, "%s\n", callpath);
+            // combine the callpath and the input file and resolve the absolute path
+            char *unresolved_path = (char*)malloc(strlen(callpath) + strlen(grid_file) + 5);
+            // check for malloc failure
+            if (unresolved_path == NULL) {
+                fprintf(stderr, "Error: Could not allocate memory\n");
+                exit(1);
+            }
+
+            const char* exe_name = basename(callpath); 
+            strncpy(unresolved_path, callpath, strlen(callpath)-strlen(exe_name));
+            strcat(unresolved_path, "../");
+            strcat(unresolved_path, grid_file);
+            char buf[PATH_MAX];
+            char* abs_path = realpath(unresolved_path, buf);
+            if (abs_path == NULL) {
+                fprintf(stderr, "Error: Could not resolve absolute path of input file\n");
+                exit(1);
+            }
+            fprintf(stderr, "Resolved absolute path of input file to %s\n", abs_path);
+            strcpy(grid_file, abs_path);
         }
         
         // Save the config into the array
