@@ -248,9 +248,10 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
             .seed = seed,
             .inv_temperature = inv_temperature,
             .field = field,
-            .input_file = grid_file,
             .starting_config = starting_config
         };
+
+       strcpy(params_array[i]->input_file, grid_file);
     }
     // Close the file and free the memory
     fclose(input_file);
