@@ -55,19 +55,36 @@ class ConvNet(nn.Module):
     
 device = torch.device('cpu')
 
-net = ConvNet().to(device)
+net_base = ConvNet().to(device)
+net_lcs = ConvNet().to(device)
+net_lcs_p = ConvNet().to(device)
 
-PATH = './model.pth'
+PATH = './model_base.pth'
 checkpoint_model = torch.load(PATH)
-net.load_state_dict(checkpoint_model['model_state_dict'])
-net.eval()
+net_base.load_state_dict(checkpoint_model['model_state_dict'])
+net_base.eval()
+print("Loaded NN")
+
+PATH = './model_lcs.pth'
+checkpoint_model = torch.load(PATH)
+net_lcs.load_state_dict(checkpoint_model['model_state_dict'])
+net_lcs.eval()
+print("Loaded NN")
+
+PATH = './model_lcs_p.pth'
+checkpoint_model = torch.load(PATH)
+net_lcs_p.load_state_dict(checkpoint_model['model_state_dict'])
+net_lcs_p.eval()
 print("Loaded NN")
 
 # Setup class activation map
 features_blobs = []
 def hook_feature(module, input, output):
     features_blobs.append(output.data.cpu().numpy())
-net._modules.get("conv3").register_forward_hook(hook_feature)
+
+net_base._modules.get("conv3").register_forward_hook(hook_feature)
+net_lcs._modules.get("conv3").register_forward_hook(hook_feature)
+net_lcs_p._modules.get("conv3").register_forward_hook(hook_feature)
 
 # get colormap
 ncolors = 256
@@ -91,24 +108,59 @@ grid_data = grid_data.numpy()
 
 # Ising grid
 cluster_choice = 200
-for grid_choice in range(10):
+for grid_choice in range(3):
     grid_index = np.where(committor_data[:,-1] == cluster_choice)
     grid_info = grid_data[grid_index][grid_choice,0]
     img = torch.from_numpy(grid_info.astype(np.float32))
     img = torch.reshape(img, [1,1,64,64])
+
     features_blobs = []
-    logit = net(img)
+    logit = net_base(img)
     features_blobs = np.array(features_blobs)
     CAMs = np.sum(features_blobs[0,0], axis=0)
     CAMs = zoom(CAMs, 64/CAMs.shape[-1])
-    plt.pcolormesh(grid_info, cmap='Greys_r', edgecolors='k', linewidth=0.1)
-    plt.pcolormesh(CAMs, cmap='alpha', linewidth=0)
+    plt.imshow(grid_info, cmap='Greys_r')
+    plt.imshow(CAMs, cmap='alpha')
     plt.title("Class Activation Map", y=1.01)
     plt.xticks([])
     plt.yticks([])
     ax = plt.gca()
     ax.set_box_aspect(1)
     plt.tight_layout()
-    plt.savefig("figures/class_activation_map_{}.pdf".format(grid_choice), bbox_inches='tight')
+    plt.savefig("figures/base_class_activation_map_{}.pdf".format(grid_choice), bbox_inches='tight')
+    print("Figure {} saved".format(grid_choice))
+    plt.close()
+
+    features_blobs = []
+    logit = net_lcs(img)
+    features_blobs = np.array(features_blobs)
+    CAMs = np.sum(features_blobs[0,0], axis=0)
+    CAMs = zoom(CAMs, 64/CAMs.shape[-1])
+    plt.imshow(grid_info, cmap='Greys_r')
+    plt.imshow(CAMs, cmap='alpha')
+    plt.title("Class Activation Map", y=1.01)
+    plt.xticks([])
+    plt.yticks([])
+    ax = plt.gca()
+    ax.set_box_aspect(1)
+    plt.tight_layout()
+    plt.savefig("figures/lcs_class_activation_map_{}.pdf".format(grid_choice), bbox_inches='tight')
+    print("Figure {} saved".format(grid_choice))
+    plt.close()
+
+    features_blobs = []
+    logit = net_lcs_p(img)
+    features_blobs = np.array(features_blobs)
+    CAMs = np.sum(features_blobs[0,0], axis=0)
+    CAMs = zoom(CAMs, 64/CAMs.shape[-1])
+    plt.imshow(grid_info, cmap='Greys_r')
+    plt.imshow(CAMs, cmap='alpha')
+    plt.title("Class Activation Map", y=1.01)
+    plt.xticks([])
+    plt.yticks([])
+    ax = plt.gca()
+    ax.set_box_aspect(1)
+    plt.tight_layout()
+    plt.savefig("figures/lcs_p_class_activation_map_{}.pdf".format(grid_choice), bbox_inches='tight')
     print("Figure {} saved".format(grid_choice))
     plt.close()
