@@ -189,9 +189,14 @@ if evolution==True:
     ax.set_xticks([])
     ax.set_yticks([])
 
-    
     CAM_plot = np.zeros([len(evolution_grid_data), 64, 64])
     evolution_committor = np.zeros([len(evolution_grid_data), 2])
+
+    ising_grid = evolution_grid_data[-3,0]
+    grid_x = np.argmax(np.sum(ising_grid, axis=-2))
+    grid_y = np.argmax(np.sum(ising_grid, axis=-1))
+    evolution_grid_data = np.roll(evolution_grid_data, 32-grid_y, axis=-1)
+    evolution_grid_data = np.roll(evolution_grid_data, 32-grid_x, axis=-2)
 
     for i in range(len(evolution_grid_data)):
         grid_info = evolution_grid_data[i][0]
@@ -199,18 +204,12 @@ if evolution==True:
         img = torch.reshape(img, [1,1,64,64])
 
         features_blobs = []
-        logit = net_base(img)
+        logit = net_lcs(img)
         evolution_committor[i] = [evolution_committor_data[i,0].item(),logit.item()]
         features_blobs = np.array(features_blobs)
         CAMs = np.sum(features_blobs[0,0], axis=0)
         CAMs = zoom(CAMs, 64/CAMs.shape[-1])
         CAM_plot[i] = CAMs
-
-    ising_grid = evolution_grid_data[-3,0]
-    grid_x = np.argmax(np.sum(ising_grid, axis=0))
-    grid_y = np.argmax(np.sum(ising_grid, axis=1))
-    evolution_grid_data = np.roll(evolution_grid_data, 32-grid_y, axis=-1)
-    evolution_grid_data = np.roll(evolution_grid_data, 32-grid_x, axis=-2)
 
     grid_info = evolution_grid_data[0][0]
     CAMs = CAM_plot[0]
