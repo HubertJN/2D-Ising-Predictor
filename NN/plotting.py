@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from scipy.optimize import curve_fit
+from scipy.interpolate import griddata
 import warnings
 import sys
 warnings.filterwarnings("ignore")
@@ -66,20 +67,28 @@ for grid_choice in [6]:
 ##########
 def sigmoid(x, L ,x0, k, b):
     y = L / (1 + np.exp(-k*(x-x0))) + b
-    return (y)
+    return y
 p0_sig_clust = [max(committor_data[:,0]), np.median(committor_data[:,-1]),1,min(committor_data[:,0])]
 p0_sig_perim = [max(committor_data[:,0]), np.median(committor_data[:,-2]),1,min(committor_data[:,0])]
 
-def sigmoid2d(X, L1, L2, x0, y0, k1, k2, b):
+def sigmoid2d(X, L1, L2, L3, x0, y0, xy0, k1, k2, k3, b):
     x, y = X
-    z = L1 / (1 + np.exp(-k1*(x-x0))) * L2 / (1 + np.exp(-k2*(y-y0))) + b
+    z = L1 / (1 + np.exp(-k1*(x-x0))) + L2 / (1 + np.exp(-k2*(y-y0))) + L3 / (1 + np.exp(-k3*(x*y-xy0))) + b
     return z
-p0_sig2d = [max(committor_data[:,0]), max(committor_data[:,0]), np.median(committor_data[:,-1]), np.median(committor_data[:,-2]), 1, 1, min(committor_data[:,0])]
+p0_sig2d = [max(committor_data[:,0]), max(committor_data[:,0]), max(committor_data[:,0]), np.median(committor_data[:,-1]), \
+np.median(committor_data[:,-2]), np.median(committor_data[:,-2]*committor_data[:,-1]), 1, 1, 1, min(committor_data[:,0])]
 
 popt_sig_clust, _ = curve_fit(sigmoid, committor_data[:,-1], committor_data[:,0], p0=p0_sig_clust)
 popt_sig_perim, _ = curve_fit(sigmoid, committor_data[:,-2], committor_data[:,0], p0=p0_sig_perim)
 popt_sig2d, _ = curve_fit(sigmoid2d, [committor_data[:,-1], committor_data[:,-2]], committor_data[:,0], p0=p0_sig2d)
 ##########
+
+# save fit parameters
+#########
+np.save('popt_sig_clust', popt_sig_clust)
+np.save('popt_sig_perim', popt_sig_perim)
+np.save('popt_sig2d', popt_sig2d)
+#########
 
 # committor against cluster size
 ##########
@@ -118,6 +127,7 @@ if show_figures:
     plt.show()
 plt.close()
 ##########
+
 
 # base neural network prediction against actual
 ##########
@@ -321,7 +331,7 @@ max_val = max(prediction_actual_lcs_p[:,0])
 min_val = min(prediction_actual_lcs_p[:,0])
 spacing = np.linspace(min_val, max_val, bins+1)
 for i in range(bins):
-    index = np.where(np.logical_and(prediction_actual_base[:,0] >= spacing[i], prediction_actual_base[:,0] < spacing[i+1]))
+    index = np.where(np.logical_and(prediction_actual_lcs_p[:,0] >= spacing[i], prediction_actual_lcs_p[:,0] < spacing[i+1]))
     std_dev[i] = np.std(sigmoid2d([prediction_actual_lcs_p[index][:,-2], prediction_actual_lcs_p[index][:,-3]], *popt_sig2d))
     mean[i] = np.mean(sigmoid2d([prediction_actual_lcs_p[index][:,-2], prediction_actual_lcs_p[index][:,-3]], *popt_sig2d))
 
@@ -354,7 +364,7 @@ plt.close()
 def f(x, A, B):
     return A*x + B
 
-# residual of base network and cluster fit
+# residual of base network and lcs network
 #########
 # correlation coefficient
 x = prediction_actual_base[:,0]-prediction_actual_base[:,-1]
@@ -377,6 +387,34 @@ plt.text(0.05, 0.95, 'Correlation Coefficient: {}'.format(round(corr_coeff,3)), 
      verticalalignment='top')
 plt.tight_layout()
 plt.savefig('figures/lcs_residuals.pdf', bbox_inches='tight')
+if show_figures:
+    plt.show()
+plt.close()
+##########
+
+# residual of network and cluster-perimeter fit
+#########
+# correlation coefficient
+x = prediction_actual_base[:,0]-prediction_actual_base[:,-1]
+y = prediction_actual_base[:,0]-sigmoid2d([prediction_actual_base[:,-2],prediction_actual_base[:,-3]], *popt_sig2d)
+
+corr_coeff = np.corrcoef(x,y)[0,1]
+
+popt, pcov = curve_fit(f, x, y)
+
+plt.scatter(x, y, s=1, c=soft_blue, label="Data")
+fit_x = np.array([min(x),max(x)])
+plt.plot(fit_x,f(fit_x, *popt), c=soft_red, label="Straight Line Fit")
+plt.title("Validation Residuals of Base Network and LCS-P Fit")
+plt.xlabel("Network")
+plt.ylabel("Fit")
+plt.legend(loc="lower right")
+ax = plt.gca()
+ax.set_box_aspect(1)
+plt.text(0.05, 0.95, 'Correlation Coefficient: {}'.format(round(corr_coeff,3)), transform = ax.transAxes, horizontalalignment='left',
+     verticalalignment='top')
+plt.tight_layout()
+plt.savefig('figures/lcs_p_residuals.pdf', bbox_inches='tight')
 if show_figures:
     plt.show()
 plt.close()
