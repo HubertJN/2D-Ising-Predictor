@@ -123,7 +123,7 @@ popt_sig_perim, _ = curve_fit(sigmoid, committor_data[:,-1], committor_data[:,0]
 popt_sig2d, _ = curve_fit(sigmoid2d, [committor_data[:,-1], committor_data[:,-2]], committor_data[:,0], p0=p0_sig2d)
 
 # fix data
-fix_index = (committor_data[:, 0] >= 0.01) & (committor_data[:, 0] <= 0.99)
+fix_index = (committor_data[:, 0] >= 0) & (committor_data[:, 0] <= 0.99)
 grid_data = grid_data[fix_index]
 committor_data = committor_data[fix_index]
 
