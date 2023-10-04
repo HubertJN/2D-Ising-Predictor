@@ -238,6 +238,7 @@ class Type1(Simulation):
         # hard coded information about the model.
         array_element_size = 4 #bytes
     def array_size(self):
+        pass
 
         
 
