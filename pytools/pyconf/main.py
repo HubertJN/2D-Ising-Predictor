@@ -1,3 +1,5 @@
+from functools import partial
+
 import helper
 
 
@@ -7,12 +9,16 @@ class ConfigOptions():
         self.options = {}
         self.config = ""
         self.gpu = None
+        self.go_up = False
+        self.previous_options = []
+        self.sim_class = helper.SimulationSet()
         pass
     
     def CreateInitalOptions(self):
         self.options['Exit'] = 'Exit'
         self.options['QueryGPU'] = self.QueryGPU
         self.options['ViewConfig'] = self.ViewConfig
+        self.options['CreateConfig'] = self.CreateConfig
 
     def QueryGPU(self):
         self.gpu = helper.get_cuda_device_specs()
@@ -30,6 +36,25 @@ class ConfigOptions():
                     print (f"{key}: {value}")
                 print('\n')
                 ix += 1
+    
+    def CreateConfig(self):
+        self.previous_options.append(self.options)
+        self.options = {
+            'GoBack': self.GoBack,
+            'AddModel': self.AddModel
+        }
+    
+    def AddModel(self):
+        self.previous_options.append(self.options)
+        self.options = {
+            'GoBack': self.GoBack,
+        }
+
+        model_name = input('Please enter the a name for the model: ')
+        
+        for model in self.sim_class.model_types.keys():
+            self.options[model] = partial(self.sim_class.add_model, model, model_name)
+        z 
     
     def ViewConfig(self):
         print(self.config)
@@ -73,8 +98,13 @@ if __name__ == '__main__':
             pass
         elif get_input == 'Exit':
             break
+        elif get_input == 'GoBack':
+            ConfigObj.options = ConfigObj.previous_options.pop()
         else:
             get_input()
+            if ConfigObj.go_up:
+                ConfigObj.go_up = False
+                ConfigObj.options = ConfigObj.previous_options.pop()
 
 
 

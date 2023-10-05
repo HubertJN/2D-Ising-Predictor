@@ -178,15 +178,30 @@ def get_cuda_device_specs() -> List[Dict[str, Any]]:
 
 #===============================================================================
 # Classes that define the simulation type, used to define simulation specific details
+from model_types import Simulation, ModelTypes
+
 
 class SimulationSet():
     
-    def __init__(self, config_list):
-        self.config_list = config_list
+    def __init__(self):
+        self.model_types = ModelTypes
+        self.models = {}
 
-        self.calculate_replications()
-        self.generate_config_file()
-    
+    def add_model(self, model_type, model_name):
+        if model_type in self.model_types.keys():
+            if model_name in self.models.keys():
+                print(f"Model {model_name} already exists.")
+                input =  input("Do you want to overwrite the model? (y/n)")
+                if input == "n":
+                    input = input("Do you want to create a new model? (y/n)")
+                    if input == "y":
+                        model_name = input("Please enter a new name for the model: ")
+                    else:
+                        print("Model not created.")
+                        return
+            self.models[model_name] = self.model_types[model_type]()
+        else:
+            print(f"Model {model_name} not found.")
 
     def calculate_replications(self):
         for model_type in self.config_list:
@@ -218,29 +233,6 @@ class SimulationSet():
         
         pass
 
-
-
-class Simulation():
-
-    def __init__(self):
-        pass
-
-    def array_element_size(self):
-        pass
-
-    def generate_file_names(self):
-        pass
-
-class Type1(Simulation):
-
-    def __init__(self, config):
-        super().__init__()
-        # hard coded information about the model.
-        array_element_size = 4 #bytes
-    def array_size(self):
-        pass
-
-        
 
 #===============================================================================
 
