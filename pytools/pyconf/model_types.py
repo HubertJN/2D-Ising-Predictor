@@ -1,6 +1,20 @@
 class Simulation():
 
     def __init__(self):
+        self.model_config = {
+            'model_id': None,
+            'num_concurrent': None,
+            'nucleation_threshold': None,
+            'grid_size': None,
+            'num_iterations': None,
+            'iterations': None,
+            'iter_per_step': None,
+            'seed': None,
+            'inv_temp': None,
+            'field': None,
+            'starting_config': None,
+        }
+
         pass
     
     def array_element_size(self):
@@ -16,6 +30,8 @@ class Type1(Simulation):
         super().__init__()
         # hard coded information about the model.
         array_element_size = 4 #bytes
+        self.model_config['model_id'] = 1
+        
         
 
     def array_size(self):
@@ -27,7 +43,7 @@ class Type2(Simulation):
         super().__init__()
         # hard coded information about the model.
         array_element_size = 4 #bytes
-        
+        self.model_config['model_id'] = 2 
 
     def array_size(self):
         pass

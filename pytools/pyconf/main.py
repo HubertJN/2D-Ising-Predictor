@@ -41,7 +41,8 @@ class ConfigOptions():
         self.previous_options.append(self.options)
         self.options = {
             'GoBack': self.GoBack,
-            'AddModel': self.AddModel
+            'AddModel': self.AddModel,
+            'UpdateModel': self.UpdateModel,
         }
     
     def AddModel(self):
@@ -54,13 +55,36 @@ class ConfigOptions():
         
         for model in self.sim_class.model_types.keys():
             self.options[model] = partial(self.sim_class.add_model, model, model_name)
-        z 
+        self.go_up = True
     
+    def UpdateModel(self):
+        self.previous_options.append(self.options)
+        self.options = {
+            'GoBack': self.GoBack,
+        }
+        for model in self.sim_class.models.keys():
+            self.options[model] = partial(self.UpdateModelConfig, self.sim_class.models[model])
+    
+    def UpdateModelConfig(self, model):
+        self.previous_options.append(self.options)
+        self.options = {
+            'GoBack': self.GoBack,
+        }
+        for param in model.model_config.keys():
+            self.options[param] = partial(self.UpdateModelParam, model, param)
+
+        pass
+
+    def UpdateModelParam(self, model, param):
+        model.model_config[param] = input(f"Please enter a value for {param}: ")
+        pass
+
+
     def ViewConfig(self):
         print(self.config)
 
     def GoBack(self):
-        return None
+        ConfigObj.options = ConfigObj.previous_options.pop()
 
     def Options(self):
         ix = 1
@@ -98,13 +122,11 @@ if __name__ == '__main__':
             pass
         elif get_input == 'Exit':
             break
-        elif get_input == 'GoBack':
-            ConfigObj.options = ConfigObj.previous_options.pop()
         else:
-            get_input()
             if ConfigObj.go_up:
                 ConfigObj.go_up = False
-                ConfigObj.options = ConfigObj.previous_options.pop()
+                ConfigObj.GoBack()
+            get_input()
 
 
 
