@@ -178,7 +178,7 @@ def get_cuda_device_specs() -> List[Dict[str, Any]]:
 
 #===============================================================================
 # Classes that define the simulation type, used to define simulation specific details
-from model_types import Simulation, ModelTypes
+from .model_types import Simulation, ModelTypes
 
 
 class SimulationSet():

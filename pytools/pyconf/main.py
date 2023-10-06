@@ -1,6 +1,5 @@
 from functools import partial
-
-import helper
+from . import helper
 
 
 class ConfigOptions():
@@ -84,7 +83,7 @@ class ConfigOptions():
         print(self.config)
 
     def GoBack(self):
-        ConfigObj.options = ConfigObj.previous_options.pop()
+        self.options = self.previous_options.pop()
 
     def Options(self):
         ix = 1
@@ -107,15 +106,10 @@ class ConfigOptions():
                 print ('Invalid selection.')
                 continue
         
-            
 
-if __name__ == '__main__':
 
-    ConfigObj = ConfigOptions()
-    ConfigObj.CreateInitalOptions()
-    print ('Welcome to the GASP configuration tool.')
-   
-    while True:
+def event_loop(ConfigObj):
+     while True:
         print ('Please select an option from the menu below.')
         get_input = ConfigObj.Options()
         if get_input == None:
@@ -127,6 +121,15 @@ if __name__ == '__main__':
                 ConfigObj.go_up = False
                 ConfigObj.GoBack()
             get_input()
+
+
+if __name__ == '__main__':
+
+    ConfigObj = ConfigOptions()
+    ConfigObj.CreateInitalOptions()
+    print ('Welcome to the GASP configuration tool.')
+   
+    event_loop(ConfigObj)
 
 
 
