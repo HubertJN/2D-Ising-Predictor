@@ -1,6 +1,7 @@
 class Simulation():
 
-    def __init__(self):
+    def __init__(self, model_name):
+        self.__name__ = model_name
         self.model_config = {
             'model_id': None,
             'num_concurrent': None,
@@ -26,8 +27,8 @@ class Simulation():
 
 class Type1(Simulation):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, model_name):
+        super().__init__(model_name)
         # hard coded information about the model.
         array_element_size = 4 #bytes
         self.model_config['model_id'] = 1
@@ -39,8 +40,8 @@ class Type1(Simulation):
 
 class Type2(Simulation):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, model_name):
+        super().__init__(model_name)
         # hard coded information about the model.
         array_element_size = 4 #bytes
         self.model_config['model_id'] = 2 

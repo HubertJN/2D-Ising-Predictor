@@ -178,7 +178,7 @@ def get_cuda_device_specs() -> List[Dict[str, Any]]:
 
 #===============================================================================
 # Classes that define the simulation type, used to define simulation specific details
-from .model_types import Simulation, ModelTypes
+from model_types import Simulation, ModelTypes
 
 
 class SimulationSet():
@@ -199,7 +199,17 @@ class SimulationSet():
                     else:
                         print("Model not created.")
                         return
-            self.models[model_name] = self.model_types[model_type]()
+            self.models[model_name] = self.model_types[model_type](model_name)
+        else:
+            print(f"Model {model_type} not found.")
+    
+    def duplicate_model(self, model_name, new_model_name):
+        if model_name in self.models.keys():
+            if new_model_name in self.models.keys():
+                print(f"Model {new_model_name} already exists.")
+                print("Model not created.")
+                return
+            self.models[new_model_name] = copy.deepcopy(self.models[model_name])
         else:
             print(f"Model {model_name} not found.")
 
