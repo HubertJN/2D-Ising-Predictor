@@ -174,3 +174,84 @@ def test_add_two_models(MainMenuConfigObj, monkeypatch):
         'ViewConfig': ConfigOptions.ViewConfig,
         'CreateConfig': ConfigOptions.CreateConfig,
     }.keys()
+
+def test_autofill(MainMenuConfigObj, monkeypatch):
+    ConfigObj = MainMenuConfigObj
+    monkeypatch.setattr('builtins.input', lambda _: 'CreateConfig')
+    yeilding_event_loop(ConfigObj)
+    # Next event call requies two input rounds before yielding
+    input_gen = ['AddModel', 'model-name-1']
+    monkeypatch.setattr('builtins.input', lambda _: input_gen.pop(0))
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'Type1')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'UpdateModel')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'model-name-1')
+    yeilding_event_loop(ConfigObj)
+    # Next event call requies many input rounds before yielding
+    input_gen = ['AutoFill', '5', '0.9', '100', '1000', '50', '10', '12', '1', '1', '1']
+    monkeypatch.setattr('builtins.input', lambda _: input_gen.pop(0))
+    yeilding_event_loop(ConfigObj)
+    assert ConfigObj.sim_class.models.get('model-name-1').model_config['model_id'] == 1
+    assert ConfigObj.sim_class.models.get('model-name-1').model_config['num_concurrent'] == '5'
+    assert ConfigObj.sim_class.models.get('model-name-1').model_config['nucleation_threshold'] == '0.9'
+    assert ConfigObj.sim_class.models.get('model-name-1').model_config['grid_size'] == '100'
+    assert ConfigObj.sim_class.models.get('model-name-1').model_config['num_iterations'] == '1000'
+    assert ConfigObj.sim_class.models.get('model-name-1').model_config['iterations'] == '50'
+    assert ConfigObj.sim_class.models.get('model-name-1').model_config['iter_per_step'] == '10'
+    assert ConfigObj.sim_class.models.get('model-name-1').model_config['seed'] == '12'
+    assert ConfigObj.sim_class.models.get('model-name-1').model_config['inv_temp'] == '1'
+    assert ConfigObj.sim_class.models.get('model-name-1').model_config['field'] == '1'
+    assert ConfigObj.sim_class.models.get('model-name-1').model_config['starting_config'] == '1'
+
+# Below this point we need a prebuilt model to test this fixture meets that need
+@pytest.fixture
+def InitObjectConfigObj(MainMenuConfigObj, monkeypatch):
+    """
+    This fixture creates a model object with a model named 'fixture-model'
+    The menu is returned to the main menu
+    """
+    ConfigObj = MainMenuConfigObj
+    monkeypatch.setattr('builtins.input', lambda _: 'CreateConfig')
+    yeilding_event_loop(ConfigObj)
+    # Next event call requies two input rounds before yielding
+    input_gen = ['AddModel', 'fixture-model']
+    monkeypatch.setattr('builtins.input', lambda _: input_gen.pop(0))
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'Type1')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'UpdateModel')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'fixture-model')
+    yeilding_event_loop(ConfigObj)
+    # Next event call requies many input rounds before yielding
+    input_gen = ['AutoFill', '5', '0.9', '100', '1000', '50', '10', '12', '1', '1', '1']
+    monkeypatch.setattr('builtins.input', lambda _: input_gen.pop(0))
+    yeilding_event_loop(ConfigObj) 
+    monkeypatch.setattr('builtins.input', lambda _: 'GoBack')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'GoBack')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'GoBack')
+    yeilding_event_loop(ConfigObj)
+    return ConfigObj
+
+def test_range_fill(InitObjectConfigObj, monkeypatch):
+    ConfigObj = InitObjectConfigObj
+    monkeypatch.setattr('builtins.input', lambda _: 'CreateConfig')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'UpdateModel')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'fixture-model')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'RangeFill')
+    yeilding_event_loop(ConfigObj)
+    input_gen = ['nucleation_threshold', '0', '1', '0.1', 'y', 'y']
+    monkeypatch.setattr('builtins.input', lambda _: input_gen.pop(0))
+    yeilding_event_loop(ConfigObj)
+    assert ConfigObj.sim_class.models.get('fixture-model') == None
+
+    
+
+
