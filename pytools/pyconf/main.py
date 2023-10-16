@@ -2,7 +2,6 @@ from functools import partial
 import helper
 import numpy as np
 
-
 class ConfigOptions():
     def __init__(self):
         # options is a dict that 
@@ -72,7 +71,7 @@ class ConfigOptions():
             'GoBack': self.GoBack,
             'AutoFill': partial(self.AutoFill, model),
             'RangeFill': partial(self.RangeFill, model),
-            'OrthogonalFill': self.OrthogonalFill,
+            'OrthogonalFill': partial(self.OrthogonalFill, model)
         }
         for param in model.model_config.keys():
             # model_id is not editable as it is used to identify the model type and could change the rest of the list
@@ -141,7 +140,7 @@ class ConfigOptions():
                     return
         return (start, end, step)
 
-    def GetSigFig(self, start, end, step):
+    def GetDP(self, start, end, step):
         dp = 0
         if '.' in start:
             dp = len(start.split('.')[-1])
@@ -149,59 +148,24 @@ class ConfigOptions():
             dp = max(dp, len(end.split('.')[-1]))
         elif '.' in step:
             dp = max(dp, len(step.split('.')[-1]))
-        sigfigs = max(len(start.split('.')[0]), len(end.split('.')[0]), len(step.split('.')[0]))+dp+1
-        return sigfigs
+        return dp
 
 
 
     def FillRange(self, model, param):
         # This function will duplicate a given model and update a parameter in a input range
-        start, end, step = self.GetRange(param)
-        # while True:
-        #     start = input(f"Please enter a start value for {param}: ")
-        #     if start in [None, '', ' ']:
-        #         print("Invalid input. Try again.")
-        #         continue
-        #     end = input(f"Please enter a end value for {param}: ")
-        #     if end in [None, '', ' ']:
-        #         print("Invalid input. Try again.")
-        #         continue
-        #     step = input(f"Please enter a step value for {param}: ")
-        #     if step in [None, '', ' ']:
-        #         print("Invalid input. Try again.")
-        #         continue
-            
-        #     else:
-        #         confirm = input(
-        #             f"Please confirm you want to range fill \n \
-        #             {param} from {start} to {end} in steps of {step}. (y/n)"
-        #             )
-        #         if confirm == 'y':
-        #             break
-        #         else:
-        #             confirm = input("Do you want to try again? (y/n)")
-        #             if confirm == 'y':
-        #                 continue
-        #             else:
-        #                 self.GoBack()
-        #                 return
+        start, end, step = self.GetRange(param) 
         
-        # if '.' in start:
-        #     dp = len(start.split('.')[-1])
-        # elif '.' in end:
-        #     dp = max(dp, len(end.split('.')[-1]))
-        # elif '.' in step:
-        #     dp = max(dp, len(step.split('.')[-1]))
-        # sigfigs = max(len(start.split('.')[0]), len(end.split('.')[0]), len(step.split('.')[0]))+dp+1
-        
-        sigfigs = self.GetSigFig(start, end, step)
-
+        dp = self.GetDP(start, end, step)
 
         for value in np.arange(float(start), float(end), float(step)):
             # Convention is model_name-rf-param_name-value
-            name = f"{model.__name__}-rf-{param}-{str(value).replace('.','_')[:sigfigs]}"
+            if np.isclose(value, 0):
+                name = f"{model.__name__}-rf-{param}-{f'{value:.{dp}f}'.replace('.','_').replace('-', '')}" 
+            else:
+                name = f"{model.__name__}-rf-{param}-{f'{value:.{dp}f}'.replace('.','_').replace('-', 'n')}"
             self.sim_class.duplicate_model(model.__name__, name)
-            self.sim_class.models[name].model_config[param] = value
+            self.sim_class.models[name].model_config[param] = round(value, dp)
             # Value to groupby in the config file for postprocessing
             self.sim_class.models[name].model_config['set_name'] = f"{model.__name__}-rf-{param}-{start}-{end}-{step}"
         
@@ -210,10 +174,9 @@ class ConfigOptions():
 
     def OrthogonalFill(self, model):
         # This function will duplicate a given model and orthogonal fill a given parameter set
-        self.previous_options.append(self.options)
         self.options = {
             'GoBack': self.GoBack,
-            'Done': self.FillOrthogonal(model)
+            'Done': partial(self.FillOrthogonal, model)
         }
         
         for param in model.model_config.keys():
@@ -224,11 +187,10 @@ class ConfigOptions():
             # Add parametrs that cannot be range filled here
             if param in ['num_concurrent', 'starting_config']:
                 continue
-            if param in [self.ortho_params]:
+            if param in [self.ortho_params.keys()]:
                 continue
             
             self.options[param] = partial(self.ortho_params.update, {param: []})
-
         pass
 
     def FillOrthogonal(self, model):
@@ -246,25 +208,33 @@ class ConfigOptions():
             
         self.RecursiveFill(model, ortho_num)
         
+        if input(f"Do you want to remove the original model called {model.__name__}? (y/n)") == 'y':
+            self.sim_class.models.pop(model.__name__) 
+        
         self.ortho_params = {}
         pass
     
     
     def RecursiveFill(self, model, n, param_to_set=[], name_str=""):
         if n != 0:
-            param = self.ortho_params.keys()[len(self.ortho_params)-n]
+            param = list(self.ortho_params.keys())[len(self.ortho_params)-n]
             start, end, step = self.ortho_params[param]
-            sigfigs = self.GetSigFig(start, end, step)
+            dp = self.GetDP(start, end, step)
 
             for value in np.arange(float(start), float(end), float(step)):
-                name_to_pass = f"-{param}-{str(value).replace('.','_')[:sigfigs]}",
+                if np.isclose(value, 0):
+                   name_to_pass = f"-{param}-{f'{value:.{dp}f}'.replace('.','_').replace('-', '')}" 
+                else:
+                    name_to_pass = f"-{param}-{f'{value:.{dp}f}'.replace('.','_').replace('-', 'n')}"
                 value_to_pass = [(param, value)]
                 self.RecursiveFill(model, n-1, param_to_set+value_to_pass, name_str+name_to_pass)
         else:
-            name = f"{model.__name__}-rf-{name_str}"
+            name = f"{model.__name__}-of{name_str}"
             self.sim_class.duplicate_model(model.__name__, name)
             for param, value in param_to_set:
-                self.sim_class.models[name].model_config[param] = value
+                start, end, step = self.ortho_params[param]
+                dp = self.GetDP(start, end, step)
+                self.sim_class.models[name].model_config[param] = round(value, dp)
             pass
 
 
@@ -286,7 +256,7 @@ class ConfigOptions():
         print(self.config)
 
     def GoBack(self):
-        self.ortho_params = []
+        self.ortho_params = {}
         self.options = self.previous_options.pop()
 
     def Options(self):
