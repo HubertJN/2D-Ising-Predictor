@@ -31,19 +31,31 @@ class ConfigOptions():
         else:
             ix = 0
             for gpu in self.gpu:
-                print(f"GPU:1{ix}")
+                print(f"GPU:{ix}")
                 for key, value in gpu.items():
                     print (f"{key}: {value}")
                 print('\n')
                 ix += 1
     
+    def FillGPU(self):
+        self.previous_options.append(self.options)
+        self.options = {
+            'GoBack': self.GoBack,
+            'AutoFill': self.AutoFillGPU,
+            'SetFill': self.SetFillGPU,
+        }
+        pass
+
     def CreateConfig(self):
         self.previous_options.append(self.options)
+
         self.options = {
             'GoBack': self.GoBack,
             'AddModel': self.AddModel,
             'UpdateModel': self.UpdateModel,
         }
+        if self.gpu != None and self.sim_class.models != {}:
+            self.options['FillGPU'] = self.FillGPU
     
     def AddModel(self):
         self.previous_options.append(self.options)
@@ -157,6 +169,7 @@ class ConfigOptions():
         start, end, step = self.GetRange(param) 
         
         dp = self.GetDP(start, end, step)
+        set_name = f"{model.__name__}-rf-{param}-{start}-{end}-{step}"
 
         for value in np.arange(float(start), float(end), float(step)):
             # Convention is model_name-rf-param_name-value
@@ -164,10 +177,10 @@ class ConfigOptions():
                 name = f"{model.__name__}-rf-{param}-{f'{value:.{dp}f}'.replace('.','_').replace('-', '')}" 
             else:
                 name = f"{model.__name__}-rf-{param}-{f'{value:.{dp}f}'.replace('.','_').replace('-', 'n')}"
-            self.sim_class.duplicate_model(model.__name__, name)
-            self.sim_class.models[name].model_config[param] = round(value, dp)
+            self.sim_class.duplicate_model(model.__name__, set_name, name)
+            self.sim_class.models[set_name][name].model_config[param] = round(value, dp)
             # Value to groupby in the config file for postprocessing
-            self.sim_class.models[name].model_config['set_name'] = f"{model.__name__}-rf-{param}-{start}-{end}-{step}"
+            self.sim_class.models[set_name][name].model_config['set_name'] = f"{model.__name__}-rf-{param}-{start}-{end}-{step}"
         
         if input(f"Do you want to remove the original model called {model.__name__}? (y/n)") == 'y':
             self.sim_class.models.pop(model.__name__)
@@ -229,12 +242,15 @@ class ConfigOptions():
                 value_to_pass = [(param, value)]
                 self.RecursiveFill(model, n-1, param_to_set+value_to_pass, name_str+name_to_pass)
         else:
+            set_name = f"{model.__name__}-"
+            for key, value in self.ortho_params.items():
+                set_name += f"of-{key}-{value[0]}-{value[1]}-{value[2]}" 
             name = f"{model.__name__}-of{name_str}"
-            self.sim_class.duplicate_model(model.__name__, name)
+            self.sim_class.duplicate_model(model.__name__, set_name, name)
             for param, value in param_to_set:
                 start, end, step = self.ortho_params[param]
                 dp = self.GetDP(start, end, step)
-                self.sim_class.models[name].model_config[param] = round(value, dp)
+                self.sim_class.models[set_name][name].model_config[param] = round(value, dp)
             pass
 
 

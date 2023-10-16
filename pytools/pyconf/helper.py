@@ -203,13 +203,14 @@ class SimulationSet():
         else:
             print(f"Model {model_type} not found.")
     
-    def duplicate_model(self, model_name, new_model_name):
+    def duplicate_model(self, model_name, set_name, new_model_name):
         if model_name in self.models.keys():
             if new_model_name in self.models.keys():
                 print(f"Model {new_model_name} already exists.")
                 print("Model not created.")
                 return
-            self.models[new_model_name] = copy.deepcopy(self.models[model_name])
+            
+            self.models[set_name][new_model_name] = copy.deepcopy(self.models[model_name])
         else:
             print(f"Model {model_name} not found.")
 
