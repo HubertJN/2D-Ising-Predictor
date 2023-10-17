@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.ndimage import zoom
+from scipy.ndimage import gaussian_filter
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.animation as animation
 import sys
@@ -17,7 +18,7 @@ plt.rcParams['figure.dpi'] = 120
 
 # plot or evolution?
 plot = False
-evolution = True
+evolution = False
 
 # 1) Model
 
@@ -99,7 +100,7 @@ ncolors = 256
 color_array = np.zeros([ncolors, 4])
 
 # change alpha values
-color_array[:,-1] = np.linspace(1.0,0.0, ncolors)
+color_array[:,-1] = np.flip(np.linspace(1.0,0.0, ncolors))
 color_array[:,0] = 1
 color_array[:,1] = 0
 color_array[:,2] = 0
@@ -127,16 +128,17 @@ if plot==True:
         img = torch.from_numpy(grid_info.astype(np.float32))
         img = torch.reshape(img, [1,1,64,64])
 
-        features_blobs = []
-        logit = net_base(img)
-        features_blobs = np.array(features_blobs)
-        CAMs = np.sum(features_blobs[0,0], axis=0)
-        CAMs = zoom(CAMs, 64/CAMs.shape[-1])
-        # scale CAM to start at 0 and be positive
-        CAMs = CAMs - np.min(CAMs)
+        img.requires_grad_()
+        scores = net_base(img)
+        score_max_index = scores.argmax()
+        score_max = scores[0,score_max_index]
+        score_max.backward()
+        saliency, _ = torch.max(X.grad.data.abs(),dim=1)
+        smooth_saliency = gaussian_filter(saliency[0], sigma=1)
+
         plt.imshow(grid_info, cmap='Greys_r')
-        plt.imshow(CAMs, cmap='alpha')
-        plt.title("Base Class Activation Map", y=1.01)
+        plt.imshow(smooth_saliency, cmap='alpha')
+        plt.title("Base Saliency Map", y=1.01)
         plt.xticks([])
         plt.yticks([])
         ax = plt.gca()
@@ -146,15 +148,17 @@ if plot==True:
         print("Figure {} saved".format(grid_choice))
         plt.close()
 
-        features_blobs = []
-        logit = net_lcs(img)
-        features_blobs = np.array(features_blobs)
-        CAMs = np.sum(features_blobs[0,0], axis=0)
-        CAMs = zoom(CAMs, 64/CAMs.shape[-1])
-        CAMs = CAMs - np.min(CAMs)
+        img.requires_grad_()
+        scores = net_base(img)
+        score_max_index = scores.argmax()
+        score_max = scores[0,score_max_index]
+        score_max.backward()
+        saliency, _ = torch.max(X.grad.data.abs(),dim=1)
+        smooth_saliency = gaussian_filter(saliency[0], sigma=1)
+
         plt.imshow(grid_info, cmap='Greys_r')
-        plt.imshow(CAMs, cmap='alpha')
-        plt.title("LCS Class Activation Map", y=1.01)
+        plt.imshow(smooth_saliency, cmap='alpha')
+        plt.title("LCS Saliency Map", y=1.01)
         plt.xticks([])
         plt.yticks([])
         ax = plt.gca()
@@ -164,15 +168,17 @@ if plot==True:
         print("Figure {} saved".format(grid_choice))
         plt.close()
 
-        features_blobs = []
-        logit = net_lcs_p(img)
-        features_blobs = np.array(features_blobs)
-        CAMs = np.sum(features_blobs[0,0], axis=0)
-        CAMs = zoom(CAMs, 64/CAMs.shape[-1])
-        CAMs = CAMs - np.min(CAMs)
+        img.requires_grad_()
+        scores = net_base(img)
+        score_max_index = scores.argmax()
+        score_max = scores[0,score_max_index]
+        score_max.backward()
+        saliency, _ = torch.max(X.grad.data.abs(),dim=1)
+        smooth_saliency = gaussian_filter(saliency[0], sigma=1)
+
         plt.imshow(grid_info, cmap='Greys_r')
-        plt.imshow(CAMs, cmap='alpha')
-        plt.title("LCS-P Class Activation Map", y=1.01)
+        plt.imshow(smooth_saliency, cmap='alpha')
+        plt.title("LCS-P Saliency Map", y=1.01)
         plt.xticks([])
         plt.yticks([])
         ax = plt.gca()
@@ -203,28 +209,30 @@ if evolution==True:
         img = torch.from_numpy(grid_info.astype(np.float32))
         img = torch.reshape(img, [1,1,64,64])
 
-        features_blobs = []
-        logit = net_lcs(img)
-        evolution_committor[i] = [evolution_committor_data[i,0].item(),logit.item()]
-        features_blobs = np.array(features_blobs)
-        CAMs = np.sum(features_blobs[0,0], axis=0)
-        CAMs = zoom(CAMs, 64/CAMs.shape[-1])
-        CAM_plot[i] = CAMs
+        img.requires_grad_()
+        scores = net_base(img)
+        score_max_index = scores.argmax()
+        score_max = scores[0,score_max_index]
+        score_max.backward()
+        saliency, _ = torch.max(X.grad.data.abs(),dim=1)
+        smooth_saliency = gaussian_filter(saliency[0], sigma=1)
+
+        smooth_saliency_plot[i] = smooth_saliency
 
     grid_info = evolution_grid_data[0][0]
-    CAMs = CAM_plot[0]
+    smooth_saliency = smooth_saliency_plot[0]
     lattice = ax.imshow(grid_info, cmap='Greys_r', animated=True)
-    heat_map = ax.imshow(CAMs, cmap='alpha', animated=True)
+    heat_map = ax.imshow(smooth_saliency, cmap='alpha', animated=True)
     committor_text = ax.text(0.01, 0.99, 'Committor: {}, Prediction: {}'.format(round(evolution_committor[0,0],4), round(evolution_committor[0,1],4)), transform = ax.transAxes, horizontalalignment='left',
      verticalalignment='top', c='g')
 
     def animate(i):
         i += 1
         grid_info = evolution_grid_data[i][0]
-        CAMs = CAM_plot[i]
+        smooth_saliency = smooth_saliency_plot[0]
         lattice.set_data(grid_info)
         lattice.autoscale()
-        heat_map.set_data(CAMs)
+        heat_map.set_data(smooth_saliency)
         heat_map.autoscale()
         committor_text.set_text('Committor: {}, Prediction: {}'.format(round(evolution_committor[i,0],4), round(evolution_committor[i,1],4)))
         return lattice, heat_map, committor_text
@@ -236,4 +244,3 @@ if evolution==True:
     anim.save('figures/evolution.mp4', writer = writer, dpi=240)
     plt.close()
     #plt.show()
-    
