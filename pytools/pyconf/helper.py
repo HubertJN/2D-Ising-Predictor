@@ -204,6 +204,10 @@ class SimulationSet():
             print(f"Model {model_type} not found.")
     
     def duplicate_model(self, model_name, set_name, new_model_name):
+        
+        if set_name not in self.models.keys():
+            self.models[set_name] = {}
+
         if model_name in self.models.keys():
             if new_model_name in self.models.keys():
                 print(f"Model {new_model_name} already exists.")

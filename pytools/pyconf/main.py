@@ -169,7 +169,7 @@ class ConfigOptions():
         start, end, step = self.GetRange(param) 
         
         dp = self.GetDP(start, end, step)
-        set_name = f"{model.__name__}-rf-{param}-{start}-{end}-{step}"
+        set_name = f"{model.__name__}-rf-{param}-{start.replace('.','_').replace('-', 'n')}-{end.replace('.','_').replace('-', 'n')}-{step.replace('.','_').replace('-', 'n')}"
 
         for value in np.arange(float(start), float(end), float(step)):
             # Convention is model_name-rf-param_name-value
@@ -242,9 +242,9 @@ class ConfigOptions():
                 value_to_pass = [(param, value)]
                 self.RecursiveFill(model, n-1, param_to_set+value_to_pass, name_str+name_to_pass)
         else:
-            set_name = f"{model.__name__}-"
+            set_name = f"{model.__name__}-of"
             for key, value in self.ortho_params.items():
-                set_name += f"of-{key}-{value[0]}-{value[1]}-{value[2]}" 
+                set_name += f"-{key}-{value[0].replace('.','_').replace('-', 'n')}-{value[1].replace('.','_').replace('-', 'n')}-{value[2].replace('.','_').replace('-', 'n')}"
             name = f"{model.__name__}-of{name_str}"
             self.sim_class.duplicate_model(model.__name__, set_name, name)
             for param, value in param_to_set:
