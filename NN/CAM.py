@@ -17,8 +17,8 @@ plt.rcParams["figure.figsize"] = (8,8)
 plt.rcParams['figure.dpi'] = 120
 
 # plot or evolution?
-plot = False
-evolution = False
+plot = True
+evolution = True
 
 # 1) Model
 
@@ -133,7 +133,7 @@ if plot==True:
         score_max_index = scores.argmax()
         score_max = scores[0,score_max_index]
         score_max.backward()
-        saliency, _ = torch.max(X.grad.data.abs(),dim=1)
+        saliency, _ = torch.max(img.grad.data.abs(),dim=1)
         smooth_saliency = gaussian_filter(saliency[0], sigma=1)
 
         plt.imshow(grid_info, cmap='Greys_r')
@@ -153,7 +153,7 @@ if plot==True:
         score_max_index = scores.argmax()
         score_max = scores[0,score_max_index]
         score_max.backward()
-        saliency, _ = torch.max(X.grad.data.abs(),dim=1)
+        saliency, _ = torch.max(img.grad.data.abs(),dim=1)
         smooth_saliency = gaussian_filter(saliency[0], sigma=1)
 
         plt.imshow(grid_info, cmap='Greys_r')
@@ -173,7 +173,7 @@ if plot==True:
         score_max_index = scores.argmax()
         score_max = scores[0,score_max_index]
         score_max.backward()
-        saliency, _ = torch.max(X.grad.data.abs(),dim=1)
+        saliency, _ = torch.max(img.grad.data.abs(),dim=1)
         smooth_saliency = gaussian_filter(saliency[0], sigma=1)
 
         plt.imshow(grid_info, cmap='Greys_r')
@@ -195,7 +195,7 @@ if evolution==True:
     ax.set_xticks([])
     ax.set_yticks([])
 
-    CAM_plot = np.zeros([len(evolution_grid_data), 64, 64])
+    smooth_saliency_plot = np.zeros([len(evolution_grid_data), 64, 64])
     evolution_committor = np.zeros([len(evolution_grid_data), 2])
 
     ising_grid = evolution_grid_data[-3,0]
@@ -214,7 +214,7 @@ if evolution==True:
         score_max_index = scores.argmax()
         score_max = scores[0,score_max_index]
         score_max.backward()
-        saliency, _ = torch.max(X.grad.data.abs(),dim=1)
+        saliency, _ = torch.max(img.grad.data.abs(),dim=1)
         smooth_saliency = gaussian_filter(saliency[0], sigma=1)
 
         smooth_saliency_plot[i] = smooth_saliency
