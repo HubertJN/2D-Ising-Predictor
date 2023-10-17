@@ -177,6 +177,53 @@ def get_cuda_device_specs() -> List[Dict[str, Any]]:
 #===============================================================================
 
 #===============================================================================
+# Calculate GPU Fit
+def get_unused_gpu(gpu_specs, usage_specs):
+    unused_gpu = {}
+    for key in usage_specs.keys():
+        unused_gpu[key] = gpu_specs[key] - usage_specs[key]
+    return unused_gpu
+
+def maximise_models_per_gpu(total_spec, gpu_spec):
+    memory_limit = compare_memory(total_spec['memory'], gpu_spec['free_mem_mb'])
+    multiprocessor_limit = compare_multiprocessors(total_spec['multiprocessors'], gpu_spec['concurrent_threads'])
+    limit = min(memory_limit, multiprocessor_limit)
+    return limit
+
+def get_one_model_percent(total_spec, gpu_spec):
+    limit = maximise_models_per_gpu(total_spec, gpu_spec)
+    return (1/limit) * 100
+
+def percent_to_replications(percent, total_spec, gpu_spec):
+    limit = maximise_models_per_gpu(total_spec, gpu_spec)
+    return int(limit * (percent/100))
+
+def mark_gpu_use(replications, total_spec, usage_spec):
+    memory = total_spec['memory'] * replications
+    multiprocessors = total_spec['multiprocessors'] * replications
+
+    usage_spec['memory'] += memory
+    usage_spec['multiprocessors'] += multiprocessors
+
+def compare_memory(model_mem, gpu_mem):
+    gpu_mem_bytes = gpu_mem * 1024**2
+    max_models = gpu_mem_bytes // model_mem
+    return max_models
+
+def compare_multiprocessors(model_mp, gpu_mp):
+    max_models = gpu_mp // model_mp
+    return max_models
+
+def compare_threads_per_block(model_tpb, gpu_tpb):
+    pass    
+
+def compare_shared_memory(model_sm, gpu_sm):
+    pass
+
+
+#===============================================================================
+
+#===============================================================================
 # Classes that define the simulation type, used to define simulation specific details
 from model_types import Simulation, ModelTypes
 

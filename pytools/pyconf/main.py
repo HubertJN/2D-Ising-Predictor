@@ -12,6 +12,8 @@ class ConfigOptions():
         self.previous_options = []
         self.ortho_params = {}
         self.sim_class = helper.SimulationSet()
+        self.model_weights = {}
+        self.gpu_use = {}
         pass
     
     def CreateInitalOptions(self):
@@ -42,9 +44,84 @@ class ConfigOptions():
         self.options = {
             'GoBack': self.GoBack,
             'AutoFill': self.AutoFillGPU,
-            'SetFill': self.SetFillGPU,
+            'ManualFill': self.ManualFillGPU,
         }
         pass
+
+    def AutoFillGPU(self):
+        pass
+
+    def ManualFillGPU(self):
+        # Set the number of replications for each model sets are automatically shared
+        while True:
+            rep_or_per = input("Do you want to set the number of replications or the percentage of the GPU to use? (r/p)")
+            if rep_or_per not in ['p', 'per', 'percent', '%', 'r', 'rep', 'replication']:
+                break
+
+        for model in self.sim_class.models.keys():
+            single_model_req = self.CalculateSingleModelSize(model)
+            unused_gpu = helper.get_unused_gpu(self.gpu, self.gpu_use)
+            while True:
+                if rep_or_per in ['p', 'per', 'percent', '%']:
+                    percent_max = helper.maximise_models_per_gpu(single_model_req, unused_gpu)
+                    percent_min = helper.get_one_model_percent(single_model_req, self.gpu)
+                    percent_in = input(f"Please enter % GPU use for {model}: ")
+                    if percent_in > percent_max:
+                        print(f"Max GPU usage for {model} is {percent_max}.")
+                        continue
+                    elif percent_in < percent_min:
+                        print(f"Min GPU usage for {model} is {percent_min}")
+                        continue
+                    else:
+                        replications = helper.percent_to_replications(percent_in, single_model_req, unused_gpu)
+                        # Mark the use of the GPU
+                        helper.mark_gpu_use(replications, single_model_req, self.gpu_use)
+                        self.model_weights[model] = replications
+                        break
+                
+                elif rep_or_per in ['r', 'rep', 'replication']:
+                    rep_max = helper.maximise_models_per_gpu(single_model_req, unused_gpu)
+                    rep_in = input(f"Please enter replications for {model}: ")
+                    if rep_in > rep_max:
+                        print(f"Max replications for {model} is {rep_max}.")
+                        continue
+                    elif rep_in < 0:
+                        print(f"Min replications for {model} is 1")
+                        continue
+                    else:
+                        # Mark the use of the GPU
+                        helper.mark_gpu_use(replications, single_model_req, self.gpu_use)
+                        self.model_weights[model] = rep_in
+                        break  
+                else:
+                    print("Invalid input. Try again.")
+            
+    
+        pass
+
+    def CalculateSingleModelSize(self, model_name, set_key=None, totals={}):
+        # Calculate the size of a single model
+        # if model is set then calculate the size of one set rep
+        if set_key != None:
+            model = self.sim_class.models[set_key][model_name]
+        else:
+            model = self.sim_class.models[model_name]
+        if isinstance(model, dict):
+            # Calculate the size of a set rep
+            for _model_name in model.keys():
+                self.CalculateSingeModelSize(_model_name, model_name, totals)
+                pass
+            pass
+        elif isinstance(model, helper.Simulation):
+            # Calculate the size of a single model
+            for key, value in model.get_system_requirements().items():
+                if key in totals.keys():
+                    totals[key] += value
+                else:
+                    totals[key] = value
+        return totals
+        
+
 
     def CreateConfig(self):
         self.previous_options.append(self.options)
