@@ -18,49 +18,11 @@ plt.rcParams['figure.dpi'] = 120
 
 # plot or evolution?
 plot = True
-evolution = True
+evolution = False
 
 # 1) Model
 
-class ConvNet(nn.Module):
-    def __init__(self):
-        super(ConvNet, self).__init__()
-        # fully connected layers
-        self.fc1 = nn.Linear(16*16*16, 1024)
-        self.fc2 = nn.Linear(1024, 512)
-        self.fc3 = nn.Linear(512, 1)
-
-        # pooling
-        self.pool = nn.MaxPool2d(2,2)
-
-        # convolution layers
-        self.conv1 = nn.Conv2d(1, 16, 7, padding=[3,3], padding_mode="circular") # Maybe pad to 10 cause area of cluster
-        self.conv2 = nn.Conv2d(16, 16, 5, padding=[2,2], padding_mode="circular")
-        self.conv3 = nn.Conv2d(16, 16, 3, padding=[1,1], padding_mode="circular")
-
-        # drop out
-        self.drop = nn.Dropout(p=0.1)
-
-    def forward(self, x):
-        # layer 1
-        x = F.leaky_relu(self.conv1(x))
-        x = self.pool(x)
-        # layer 2
-        x = F.leaky_relu(self.conv2(x))
-        x = self.pool(x)
-        # layer 3
-        x = F.leaky_relu(self.conv3(x))
-
-        # flatten
-        x = x.view(-1, 16*16*16)
-        
-        # fully connected layer
-        x = F.leaky_relu(self.fc1(x))
-        x = self.drop(x)
-        x = F.leaky_relu(self.fc2(x))
-        x = self.drop(x)
-        x = self.fc3(x)
-        return x
+from nn_module import ConvNet
     
 device = torch.device('cpu')
 
@@ -144,12 +106,12 @@ if plot==True:
         ax = plt.gca()
         ax.set_box_aspect(1)
         plt.tight_layout()
-        plt.savefig("figures/base_class_activation_map_{}.pdf".format(grid_choice), bbox_inches='tight')
+        plt.savefig("figures/base_saliency_map_{}.pdf".format(grid_choice), bbox_inches='tight')
         print("Figure {} saved".format(grid_choice))
         plt.close()
 
         img.requires_grad_()
-        scores = net_base(img)
+        scores = net_lcs(img)
         score_max_index = scores.argmax()
         score_max = scores[0,score_max_index]
         score_max.backward()
@@ -164,12 +126,12 @@ if plot==True:
         ax = plt.gca()
         ax.set_box_aspect(1)
         plt.tight_layout()
-        plt.savefig("figures/lcs_class_activation_map_{}.pdf".format(grid_choice), bbox_inches='tight')
+        plt.savefig("figures/lcs_saliency_map_{}.pdf".format(grid_choice), bbox_inches='tight')
         print("Figure {} saved".format(grid_choice))
         plt.close()
 
         img.requires_grad_()
-        scores = net_base(img)
+        scores = net_lcs_p(img)
         score_max_index = scores.argmax()
         score_max = scores[0,score_max_index]
         score_max.backward()
@@ -184,7 +146,7 @@ if plot==True:
         ax = plt.gca()
         ax.set_box_aspect(1)
         plt.tight_layout()
-        plt.savefig("figures/lcs_p_class_activation_map_{}.pdf".format(grid_choice), bbox_inches='tight')
+        plt.savefig("figures/lcs_p_saliency_map_{}.pdf".format(grid_choice), bbox_inches='tight')
         print("Figure {} saved".format(grid_choice))
         plt.close()
 

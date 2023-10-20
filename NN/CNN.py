@@ -28,144 +28,17 @@ selection = 7
 
 # 0) Load data
 # Defining class for loading data
-class IsingDataset(Dataset):
-    def __init__(self, data, labels, transform=None):
-        self.img_labels = labels
-        self.img_data = data
-        self.transform = transform
-
-    def __len__(self):
-        return len(self.img_labels)
-
-    def __getitem__(self, idx):
-        image = self.img_data[idx]
-        label = self.img_labels[idx]
-        if self.transform=='train':
-            #image = transforms.functional.rotate(image, 90)/4 + transforms.functional.rotate(image, 180)/4 + transforms.functional.rotate(image, 270)/4 + image/4
-            hflipper = transforms.RandomHorizontalFlip(p=0.5)
-            vflipper = transforms.RandomVerticalFlip(p=0.5)
-            image = transforms.functional.rotate(image, np.random.randint(4)*90)
-            image = hflipper(image)
-            image = vflipper(image)
-            image = torch.roll(image, shifts=(np.random.randint(64),np.random.randint(64)), dims=(-1, -2))
-        if self.transform=='test':
-            None
-            #image = transforms.functional.rotate(image, 90)/4 + transforms.functional.rotate(image, 180)/4 + transforms.functional.rotate(image, 270)/4 + image/4
-        return image, label
+from nn_class import IsingDataset
 
 # Defining function for calculating accuracy
-def test_accuracy(net, testloader, output_label=None, device="cpu"):
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        if np.any(output_label) == None: # if diff_array is not given, then return accuracy and do not store diff_array
-            for i, (images, labels) in enumerate(testloader):
-                images, labels = images.to(device), (labels).to(device)
-                outputs = net(images)
-                predicted = outputs
-                total += labels.size(0)
-                for j, (k, l) in enumerate(zip(predicted,labels)):
-                    diff = abs(k-l[0]).item()
-                    correct += (diff < 0.05)
-                    #correct += (abs(predicted.item() - labels.item()) < 0.01)
-        else: # if diff_array is given, then return accuracy and store diff_array
-            for i, (images, labels) in enumerate(testloader):
-                images, labels = images.to(device), (labels).to(device)
-                outputs = net(images)
-                predicted = outputs
-                total += labels.size(0)
-                for j, (k, l) in enumerate(zip(predicted,labels)):
-                    diff = abs(k-l[selection]).item()
-                    correct += (diff < 10**find_exp(l[selection].item()))
-                    output_label[i*test_batch_size+j, 0] = l[0].item()
-                    output_label[i*test_batch_size+j, 1] = l[1].item()
-                    output_label[i*test_batch_size+j, 2] = l[2].item()
-                    output_label[i*test_batch_size+j, 3] = l[3].item()
-                    output_label[i*test_batch_size+j, 4] = l[4].item()
-                    output_label[i*test_batch_size+j, 5] = l[5].item()
-                    output_label[i*test_batch_size+j, 6] = l[6].item()
-                    output_label[i*test_batch_size+j, 7] = l[7].item()
-                    output_label[i*test_batch_size+j, 8] = l[8].item()
-                    output_label[i*test_batch_size+j, 9] = l[9].item()
-                    output_label[i*test_batch_size+j, 10] = k.item()
-
-    return correct / total, output_label
+from nn_class import test_accuracy
 
 # Defining function for loading data and transformations
-def load_data(grid_dir="./grid_data", committor_dir="./committor_data"):  
-    grid_data = torch.load(grid_dir)
-    committor_data = torch.load(committor_dir)
-
-    grid_train, grid_test, committor_train, committor_test = train_test_split(grid_data, committor_data, test_size=0.2)
-
-    trainset = IsingDataset(grid_train, committor_train, transform='train')
-    testset = IsingDataset(grid_test, committor_test)
-    test_size = len(testset)
-    return trainset, testset, test_size
+from nn_class import load_data
 
 # 1) Model
-class ConvNet(nn.Module):
-    def __init__(self):
-        super(ConvNet, self).__init__()
-        # fully connected layers
-        self.fc1 = nn.Linear(16*16*16, 1024)
-        self.fc2 = nn.Linear(1024, 512)
-        self.fc3 = nn.Linear(512, 1)
-
-        # pooling
-        self.pool = nn.MaxPool2d(2,2)
-
-        # convolution layers
-        self.conv1 = nn.Conv2d(1, 16, 7, padding=[3,3], padding_mode="circular") # Maybe pad to 10 cause area of cluster
-        self.conv2 = nn.Conv2d(16, 16, 5, padding=[2,2], padding_mode="circular")
-        self.conv3 = nn.Conv2d(16, 16, 3, padding=[1,1], padding_mode="circular")
-
-        # drop out
-        self.drop = nn.Dropout(p=0.1)
-
-    def forward(self, x):
-        # layer 1
-        x = F.leaky_relu(self.conv1(x))
-        x = self.pool(x)
-        # layer 2
-        x = F.leaky_relu(self.conv2(x))
-        x = self.pool(x)
-        # layer 3
-        x = F.leaky_relu(self.conv3(x))
-
-        # flatten
-        x = x.view(-1, 16*16*16)
-        
-        # fully connected layer
-        x = F.leaky_relu(self.fc1(x))
-        x = self.drop(x)
-        x = F.leaky_relu(self.fc2(x))
-        x = self.drop(x)
-        x = self.fc3(x)
-        return x
+from nn_class import ConvNet
     
-class LinNet(nn.Module):
-    def __init__(self):
-        super(LinNet, self).__init__()
-        # fully connected layers
-        self.fc1 = nn.Linear(64*64, 64)
-        self.fc2 = nn.Linear(64, 16)
-        self.fc3 = nn.Linear(16, 1)
-
-        # drop out
-        self.drop = nn.Dropout(p=0.2)
-
-    def forward(self, x):
-        # flatten
-        x = x.view(-1, 64*64)
-        # fully connected layer
-        x = F.leaky_relu(self.fc1(x))
-        x = self.drop(x)
-        x = F.leaky_relu(self.fc2(x))
-        x = self.drop(x)
-        x = self.fc3(x)
-        return x
-
 # Device configuration and setting up network
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 device_cpu = torch.device('cpu')
@@ -261,7 +134,6 @@ if run == 1:
             loss.backward()
             optimizer.step()
 
-
         revert_to_checkpoint += 1 # Incrementing checkpoint counter
         test_loss = loss.item()
         loss_arr[epoch-1] = test_loss
@@ -328,56 +200,3 @@ elif selection == 3:
     np.save("prediction_actual_lcs.npy", outputs_labels)
 elif selection == 7:
     np.save("prediction_actual_lcs_p.npy", outputs_labels)
-
-# Setup class activation map
-class_activation = 0
-if class_activation == 1:
-    features_blobs = []
-    def hook_feature(module, input, output):
-        features_blobs.append(output.data.cpu().numpy())
-
-    net_cpu._modules.get("conv3").register_forward_hook(hook_feature)
-
-    params = list(net_cpu.parameters())
-    weight_softmax = np.squeeze(params[0].data.numpy())
-
-    for i, (images, labels) in enumerate(testloader):
-        img = images
-        break
-
-    logit = net_cpu(img)
-
-    features_blobs = np.array(features_blobs)
-
-    CAMs = np.sum(features_blobs[0,0], axis=0)
-    CAMs = zoom(CAMs, 64/CAMs.shape[-1])
-
-    plt.rcParams["font.family"] = "Times New Roman"
-    plt.rcParams["font.size"] = 18
-    plt.rcParams["figure.figsize"] = (8,8)
-    plt.rcParams['figure.dpi'] = 120
-
-    # get colormap
-    ncolors = 256
-    color_array = plt.get_cmap('Greens_r')(range(ncolors))
-
-    # change alpha values
-    color_array[:,-1] = np.linspace(1.0,0.0, ncolors)
-    color_array[:,0] = 1
-    color_array[:,1] = 0
-    color_array[:,2] = 0
-
-    # create a colormap object
-    map_object = LinearSegmentedColormap.from_list(name='alpha',colors=color_array)
-
-    # register this new colormap with matplotlib
-    plt.register_cmap(cmap=map_object)
-
-    plt.imshow(img[0,0], cmap='Greys_r')
-    plt.imshow(CAMs, alpha = 1, cmap='alpha')
-    plt.xticks([])
-    plt.yticks([])
-    ax = plt.gca()
-    ax.set_box_aspect(1)
-    plt.tight_layout()
-    plt.show()
