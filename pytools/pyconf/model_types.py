@@ -74,7 +74,7 @@ class Type1(Simulation):
     def __init__(self, model_name):
         super().__init__(model_name)
         # hard coded information about the model.
-        self.array_element_size = np.itemsize(np.intc) #bytes
+        self.array_element_size = np.array([1,2,3], dtype=np.intc).itemsize #bytes
         self.threads_per_concurrent = 1
         self.model_config['model_id'] = 1
         

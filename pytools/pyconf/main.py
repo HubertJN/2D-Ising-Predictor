@@ -14,6 +14,7 @@ class ConfigOptions():
         self.sim_class = helper.SimulationSet()
         self.model_weights = {}
         self.gpu_use = {}
+        self.optimisable_param = ('num_concurrent', 'grid_size')
         pass
     
     def CreateInitalOptions(self):
@@ -46,17 +47,54 @@ class ConfigOptions():
             'AutoFill': self.AutoFillGPU,
             'ManualFill': self.ManualFillGPU,
         }
+        print("Current GPU use:")
+        print(f"GPU Memory: {(self.gpu_use['memory']/self.gpu['free_mem_mb'])*100}%, {self.gpu_use['memory']}MB of {self.gpu['free_mem_mb']}MB")
+        print(f"GPU Cores: {(self.gpu_use['cores']/self.gpu['multiprocessors'])*100}%, {self.gpu_use['cores']} of {self.gpu['multiprocessors']}")
+        # Print additioanl information here as needed
         pass
 
     def AutoFillGPU(self):
+        print("Autofill not implemented yet.")
         pass
 
     def ManualFillGPU(self):
         # Set the number of replications for each model sets are automatically shared
         while True:
-            rep_or_per = input("Do you want to set the number of replications or the percentage of the GPU to use? (r/p)")
-            if rep_or_per not in ['p', 'per', 'percent', '%', 'r', 'rep', 'replication']:
+            # TODO: Swap ', ' to '\n' when base python version is >=3.12
+            print(f"Options:\n {  [str(i)+': '+opt+', ' for i, opt in enumerate(self.optimisable_param)] }")
+            opt_on = input("Pick an option to fill by: \n")
+
+            if opt_on in self.optimisable_param:
                 break
+            elif opt_on in [str(i) for i in range(len(self.optimisable_param))]:
+                opt_on = self.optimisable_param[int(opt_on)]
+                break
+            else:
+                print("Invalid input. Try again.")
+                continue
+
+        # Precalculate the size of each model then pass to user
+        # Menu entries Should look like:
+        """
+        #: Optimise `Model Name` on `optimisable_param`:
+            Single {model/set} size:
+                Memory: X MB, (at current grid size)
+                Cores: Y,
+            Current Use:
+                Grid Size: (X,Y),
+                Replications: Z,
+                % Memory Use: P1 %
+                % Core Use: P2 %
+            Max Use (Total / Remaining):
+                Grid Size: X.Y <= Nmax / X.Y <= Nrem,
+                Replications: Zmax / Zrem,
+                % Memory Use: P1(Z) % / P1(Zrem) %
+                % Core Use: P2(Z) % / P2(Zrem) %
+        """
+
+        
+
+
 
         for model in self.sim_class.models.keys():
             single_model_req = self.CalculateSingleModelSize(model)
