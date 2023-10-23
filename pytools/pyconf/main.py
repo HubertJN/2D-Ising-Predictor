@@ -14,6 +14,7 @@ class ConfigOptions():
         self.sim_class = helper.SimulationSet()
         self.model_weights = {}
         self.gpu_use = {}
+        self.gpu_free = {}
         self.optimisable_param = ('num_concurrent', 'grid_size')
         pass
     
@@ -40,7 +41,21 @@ class ConfigOptions():
                 print('\n')
                 ix += 1
     
+    def GetCurrentUseGPU(self):
+        # Reset and recalculate
+        self.gpu_use = {}
+
+        for model_key in self.sim_class.models.keys():
+            _totals = self.CalculateTotalModelUse(model_key, totals=self.gpu_use)
+            self.gpu_use['memory'] += _totals['memory']
+            self.gpu_free['memory'] = self.gpu['free_mem_mb'] - self.gpu_use['memory']
+            self.gpu_use['multiprocessors'] += _totals['multiprocessors']
+            self.gpu_free['multiprocessors'] = self.gpu['multiprocessors'] - self.gpu_use['multiprocessors']
+
+        pass
+
     def FillGPU(self):
+        self.GetCurrentUseGPU()
         self.previous_options.append(self.options)
         self.options = {
             'GoBack': self.GoBack,
@@ -91,7 +106,12 @@ class ConfigOptions():
                 % Memory Use: P1(Z) % / P1(Zrem) %
                 % Core Use: P2(Z) % / P2(Zrem) %
         """
-        
+        self.previous_options.append(self.options)
+        self.options = {
+            'GoBack': self.GoBack,
+        }
+        for ix, model in enumerate(self.sim_class.models.keys()):
+            self.MakeOptMenuEntry(ix, model, opt_on) 
         
 
 
@@ -134,7 +154,62 @@ class ConfigOptions():
                 else:
                     print("Invalid input. Try again.")
             
-    
+        pass
+
+    def MakeOptMenuEntry(self, ix, model_key, opt_on):
+        # Calculate the size of a single model
+        is_set = isinstance(self.sim_class.models[model_key], dict)
+        single_model_req = self.CalculateSingleModelSize(model_key)
+        x_dim, y_dim = single_model_req['grid_dims']
+        sum_xy = sum(map(lambda x,y: x*y, single_model_req['grid_dims']))
+        gpu_capacity, mem_limit, core_limit = helper.maximise_models_per_gpu(single_model_req, self.gpu)
+        gpu_free_capacity, free_mem_limit, free_core_limit  = helper.maximise_models_per_gpu(single_model_req, self.gpu_free)
+        
+        total_limit = f"{'core' if core_limit < mem_limit else 'memory'}"
+        free_limit = f"{'core' if free_core_limit < free_mem_limit else 'memory'}"
+
+        all_rep_req = self.CalculateTotalModelUse(model_key)
+        per_cores_in_use = all_rep_req['multiprocessors']
+        per_mem_in_use = all_rep_req['memory']
+
+        # Need to collapse replications and grid size into one number
+        reps = sum(single_model_req['replications'])
+        maximum_grid_size = (self.gpu['free_mem_mb']/single_model_req['replications'])*1024**2 // single_model_req['memory_per_grid_element']
+        # Two parter
+        maximum_grid_remaining = (self.gpu_free['memory']/single_model_req['replications'])*1024**2 // single_model_req['memory_per_grid_element']
+        maximum_grid_remaining += x_dim*y_dim * reps
+
+
+        menu_str = f"\
+        {ix}: Optimise {model_key} on {opt_on}: \n\
+            Single {'model' if is_set else 'set'} size: \n\
+                Memory: {single_model_req['memory']}MB, (at current grid size)\n\
+                Cores: {single_model_req['multiprocessors']}\n\
+            Current Use: \n\
+                Grid Size{' (total space for the whole set)' if is_set else ''}: {sum_xy if is_set else x_dim}{'' if is_set else ', '}{'' if is_set else y_dim },\n\
+                Replications: {single_model_req['replications']},\n\
+                % Memory Use: {(single_model_req['memory']/self.gpu['free_mem_mb'])*100}%\n\
+                % Core Use: {(single_model_req['multiprocessors']/self.gpu['multiprocessors'])*100}%\n\
+            Max Use (Total Possible / Remaining): \n\
+            Note: this is maximising {opt_on} fixing all other parameters. \n\
+            For a empty GPU this model is {total_limit} limited. \n\
+            For the free GPU resources this model is {free_limit} limited. \n\
+                Grid Size: {maximum_grid_size} / {maximum_grid_remaining},\n\
+                Replications: {gpu_capacity} / {gpu_free_capacity},\n\
+            Current Use: \n\
+                % Memory use by model: {per_mem_in_use}\n\
+                % Core use by model: {per_cores_in_use}\n\
+            "
+        
+        if is_set:
+            set_param_list = model_key.split('-')[2:]
+            for param_range in set_param_list:
+                param, start, end, step = param_range.split('-')
+                if param == opt_on:
+                    self.options[menu_str] = lambda _: print(f"Cannot optimise on {opt_on} as it is part of the range.")
+                    return
+        else:
+            self.options[menu_str] = partial(FUNC, ARGS)
         pass
 
     def CalculateSingleModelSize(self, model_name, set_key=None, totals={}):
@@ -159,6 +234,17 @@ class ConfigOptions():
                     totals[key] = value
         return totals
         
+    def CalculateTotalModelUse(self, model_key):
+        # Single use gives us the size of a single model this can be modified
+        # to give totals 
+        single_totals = self.CalculateSingleModelSize(model_key)
+
+        # Calculate the total use of the model expand this to keep up with optimisiables 
+        totals = {}
+        totals['memory'] = single_totals['memory'] * single_totals['replications']
+        totals['multiprocessors'] = single_totals['multiprocessors'] * single_totals['replications']
+
+        return totals
 
 
     def CreateConfig(self):

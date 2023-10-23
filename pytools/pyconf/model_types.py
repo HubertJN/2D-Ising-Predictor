@@ -42,6 +42,7 @@ class Simulation():
         return num_concurrent
 
     def get_threads_per_concurrent(self):
+        # TODO: is this going to raise the correct error?
         assert self.threads_per_concurrent is not None, "Threads per concurrent not set."
         return self.threads_per_concurrent
 
@@ -49,6 +50,10 @@ class Simulation():
         # If a resource is not needed or undefined, set it to None
         sys_req = {}
         # Bytes
+        try:
+            sys_req['grid_dims'] = [self.model_config['grid_size']]
+        except ValueError:
+            sys_req['grid_dims'] = [None]
         try:
             sys_req['memory'] = self.get_array_size() * self.get_array_element_size()
         except ValueError:
@@ -58,6 +63,10 @@ class Simulation():
         except ValueError:
             sys_req['shared_memory'] = [None]
         try:
+            sys_req['replications'] = self.get_num_concurrent()
+        except ValueError:
+            sys_req['replications'] = None
+        try:
             sys_req['multiprocessors'] = self.get_num_concurrent() * self.get_threads_per_concurrent()
         except ValueError:
             sys_req['multiprocessors'] = None
@@ -65,6 +74,10 @@ class Simulation():
             sys_req['threads_per_block'] = self.get_threads_per_concurrent()
         except ValueError:
             sys_req['threads_per_block'] = None
+        try:
+            sys_req['memory_per_grid_element'] = self.get_array_element_size()
+        except ValueError:
+            sys_req['memory_per_grid_element'] = None
         
         return sys_req
 

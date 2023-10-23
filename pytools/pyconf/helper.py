@@ -185,10 +185,19 @@ def get_unused_gpu(gpu_specs, usage_specs):
     return unused_gpu
 
 def maximise_models_per_gpu(total_spec, gpu_spec):
-    memory_limit = compare_memory(total_spec['memory'], gpu_spec['free_mem_mb'])
-    multiprocessor_limit = compare_multiprocessors(total_spec['multiprocessors'], gpu_spec['concurrent_threads'])
+    # This must be kept up to date with potential optimisation parameters
+    # Try except blocks allow for the use of either free memory or total memory
+    try:
+        memory_limit = compare_memory(total_spec['memory'], gpu_spec['free_mem_mb'])
+    except KeyError:
+        memory_limit = compare_memory(total_spec['memory'], gpu_spec['memory'])
+    try:
+        multiprocessor_limit = compare_multiprocessors(total_spec['multiprocessors'], gpu_spec['concurrent_threads'])
+    except KeyError:
+        multiprocessor_limit = compare_multiprocessors(total_spec['multiprocessors'], gpu_spec['multiprocessors'])
+    # The limit is the minimum of the two
     limit = min(memory_limit, multiprocessor_limit)
-    return limit
+    return limit, memory_limit, multiprocessor_limit
 
 def get_one_model_percent(total_spec, gpu_spec):
     limit = maximise_models_per_gpu(total_spec, gpu_spec)
@@ -264,17 +273,6 @@ class SimulationSet():
             self.models[set_name][new_model_name] = copy.deepcopy(self.models[model_name])
         else:
             print(f"Model {model_name} not found.")
-
-    def calculate_replications(self):
-        for model_type in self.config_list:
-            # Read the number/memory requirement of set replications for each model type
-            # Read the models without set replications
-            # Calculate the number of replications needed to fill the memory
-
-            # Check the replications are within multiprocessing limits
-
-            # Assign the replications to the models
-            pass
     
     def recurse_dict(self, config_dict, keys_processed):
         if len(keys_processed) == 0:
