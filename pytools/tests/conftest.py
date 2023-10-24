@@ -41,3 +41,6 @@ def InitObjectConfigObj(MainMenuConfigObj, monkeypatch):
     monkeypatch.setattr('builtins.input', lambda _: 'GoBack')
     yeilding_event_loop(ConfigObj)
     return ConfigObj
+
+@pytest.fixture
+def BlankModel(MainMenuConfigObj, monkeypatch)
