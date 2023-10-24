@@ -46,7 +46,7 @@ class ConfigOptions():
         self.gpu_use = {}
 
         for model_key in self.sim_class.models.keys():
-            _totals = self.CalculateTotalModelUse(model_key, totals=self.gpu_use)
+            _totals = self.CalculateTotalModelUse(model_key)
             self.gpu_use['memory'] += _totals['memory']
             self.gpu_free['memory'] = self.gpu['free_mem_mb'] - self.gpu_use['memory']
             self.gpu_use['multiprocessors'] += _totals['multiprocessors']
@@ -103,8 +103,9 @@ class ConfigOptions():
             Max Use (Total / Remaining):
                 Grid Size: X.Y <= Nmax / X.Y <= Nrem,
                 Replications: Zmax / Zrem,
-                % Memory Use: P1(Z) % / P1(Zrem) %
-                % Core Use: P2(Z) % / P2(Zrem) %
+            Current Use:
+                % Memory Use:  %
+                % Core Use:  %
         """
         self.previous_options.append(self.options)
         self.options = {
@@ -112,47 +113,6 @@ class ConfigOptions():
         }
         for ix, model in enumerate(self.sim_class.models.keys()):
             self.MakeOptMenuEntry(ix, model, opt_on) 
-        
-
-
-
-        for model in self.sim_class.models.keys():
-            single_model_req = self.CalculateSingleModelSize(model)
-            unused_gpu = helper.get_unused_gpu(self.gpu, self.gpu_use)
-            while True:
-                if rep_or_per in ['p', 'per', 'percent', '%']:
-                    percent_max = helper.maximise_models_per_gpu(single_model_req, unused_gpu)
-                    percent_min = helper.get_one_model_percent(single_model_req, self.gpu)
-                    percent_in = input(f"Please enter % GPU use for {model}: ")
-                    if percent_in > percent_max:
-                        print(f"Max GPU usage for {model} is {percent_max}.")
-                        continue
-                    elif percent_in < percent_min:
-                        print(f"Min GPU usage for {model} is {percent_min}")
-                        continue
-                    else:
-                        replications = helper.percent_to_replications(percent_in, single_model_req, unused_gpu)
-                        # Mark the use of the GPU
-                        helper.mark_gpu_use(replications, single_model_req, self.gpu_use)
-                        self.model_weights[model] = replications
-                        break
-                
-                elif rep_or_per in ['r', 'rep', 'replication']:
-                    rep_max = helper.maximise_models_per_gpu(single_model_req, unused_gpu)
-                    rep_in = input(f"Please enter replications for {model}: ")
-                    if rep_in > rep_max:
-                        print(f"Max replications for {model} is {rep_max}.")
-                        continue
-                    elif rep_in < 0:
-                        print(f"Min replications for {model} is 1")
-                        continue
-                    else:
-                        # Mark the use of the GPU
-                        helper.mark_gpu_use(replications, single_model_req, self.gpu_use)
-                        self.model_weights[model] = rep_in
-                        break  
-                else:
-                    print("Invalid input. Try again.")
             
         pass
 
@@ -211,6 +171,44 @@ class ConfigOptions():
         else:
             self.options[menu_str] = partial(FUNC, ARGS)
         pass
+    
+
+    def UpdateModelOptimisableParam(self, menu_str, opt_on, is_set, model_key, grid_max, reps_max):
+        # Show the current optimisable parameter numbers using the selected menu entry
+        print(menu_str.split(':')[1:])
+        # Get the current optimisable parameter
+        while True:
+            if opt_on == 'grid_size':
+                # Get the new grid size
+                x_in = input(f"Please enter a value for grid x: ")
+                y_in = input(f"Please enter a value for grid y: ")
+                grid_xy = x_in*y_in
+                if grid_xy > grid_max:
+                    print(f"Grid size ({grid_xy}={x_in}*{y_in}) too large. Max grid size is {grid_max}")
+                    continue
+                else:
+                    new_value = [x_in, y_in]
+                    break
+            elif opt_on == 'num_concurrent':
+                # Get the new number of concurrent replications
+                reps_in = input(f"Please enter a value for number of concurrent replications: ")
+                if reps_in > reps_max:
+                    print(f"Number of concurrent replications ({reps_in}) too large. Max number of concurrent replications is {reps_max}")
+                    continue
+                else:
+                    new_value = reps_in
+                    break
+        
+        # Update the model
+        if is_set:
+            # Update the set
+            for set_key in self.sim_class.models[model_key].keys():
+                self.sim_class.models[model_key][set_key].model_config[opt_on] = new_value
+            pass
+        else:
+            self.sim_class.models[model_key].model_config[opt_on] = new_value
+            pass
+
 
     def CalculateSingleModelSize(self, model_name, set_key=None, totals={}):
         # Calculate the size of a single model

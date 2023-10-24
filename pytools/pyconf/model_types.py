@@ -52,31 +52,31 @@ class Simulation():
         # Bytes
         try:
             sys_req['grid_dims'] = [self.model_config['grid_size']]
-        except ValueError:
+        except TypeError:
             sys_req['grid_dims'] = [None]
         try:
             sys_req['memory'] = self.get_array_size() * self.get_array_element_size()
-        except ValueError:
+        except TypeError:
             sys_req['memory'] = None
         try:
             sys_req['shared_memory'] = [self.get_array_size() * self.get_array_element_size()]
-        except ValueError:
+        except TypeError:
             sys_req['shared_memory'] = [None]
         try:
             sys_req['replications'] = self.get_num_concurrent()
-        except ValueError:
+        except TypeError:
             sys_req['replications'] = None
         try:
             sys_req['multiprocessors'] = self.get_num_concurrent() * self.get_threads_per_concurrent()
-        except ValueError:
+        except TypeError:
             sys_req['multiprocessors'] = None
         try:
             sys_req['threads_per_block'] = self.get_threads_per_concurrent()
-        except ValueError:
+        except TypeError:
             sys_req['threads_per_block'] = None
         try:
             sys_req['memory_per_grid_element'] = self.get_array_element_size()
-        except ValueError:
+        except TypeError:
             sys_req['memory_per_grid_element'] = None
         
         return sys_req
