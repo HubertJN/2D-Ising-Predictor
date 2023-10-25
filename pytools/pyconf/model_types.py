@@ -62,7 +62,7 @@ class Simulation():
         except TypeError:
             sys_req['grid_dims'] = [None]
         try:
-            sys_req['memory'] = self.get_array_size() * self.get_array_element_size()
+            sys_req['memory'] = self.get_array_size() * self.get_array_element_size() * self.get_num_concurrent()
         except TypeError:
             sys_req['memory'] = None
         try:

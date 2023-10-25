@@ -18,11 +18,10 @@ def test_gpu_fill_blank(BlankModel, monkeypatch):
     input_gen = ['2', '10', 'y']
     monkeypatch.setattr('builtins.input', lambda _: input_gen.pop(0))
     yeilding_event_loop(ConfigObj)
-    
     monkeypatch.setattr('builtins.input', lambda _: '1')
     yeilding_event_loop(ConfigObj)
 
     
     
-    assert False
+    assert ConfigObj.sim_class.models['fixture-model'].model_config['num_concurrent'] == 10
 
