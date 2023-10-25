@@ -1,17 +1,17 @@
 # Fixtures used in CLI testing
 
-import pytest
+from pytest import fixture
 from pytools.pyconf.main import ConfigOptions
 
 from .test_helpers import yeilding_event_loop
 
-@pytest.fixture
+@fixture
 def MainMenuConfigObj():
     ConfigObj = ConfigOptions()
     ConfigObj.CreateInitalOptions()
     return ConfigObj
 
-@pytest.fixture
+@fixture
 def InitObjectConfigObj(MainMenuConfigObj, monkeypatch):
     """
     This fixture creates a model object with a model named 'fixture-model'
@@ -42,5 +42,20 @@ def InitObjectConfigObj(MainMenuConfigObj, monkeypatch):
     yeilding_event_loop(ConfigObj)
     return ConfigObj
 
-@pytest.fixture
-def BlankModel(MainMenuConfigObj, monkeypatch)
+@fixture
+def BlankModel(MainMenuConfigObj, monkeypatch):
+    """
+    This fixture creates a model object with a model named 'fixture-model'
+    The menu is returned to the main menu
+    """
+    ConfigObj = MainMenuConfigObj
+    monkeypatch.setattr('builtins.input', lambda _: '4')
+    yeilding_event_loop(ConfigObj)
+    input_gen = ['2', 'fixture-model']
+    monkeypatch.setattr('builtins.input', lambda _: input_gen.pop(0))
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'Type1')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: '1')
+    yeilding_event_loop(ConfigObj)
+    return ConfigObj

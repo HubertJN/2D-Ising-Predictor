@@ -192,9 +192,9 @@ def maximise_models_per_gpu(total_spec, gpu_spec):
     except KeyError:
         memory_limit = compare_memory(total_spec['memory'], gpu_spec['memory'])
     try:
-        multiprocessor_limit = compare_multiprocessors(total_spec['multiprocessors'], gpu_spec['concurrent_threads'])
+        multiprocessor_limit = compare_multiprocessors(total_spec['cores'], gpu_spec['concurrent_threads'])
     except KeyError:
-        multiprocessor_limit = compare_multiprocessors(total_spec['multiprocessors'], gpu_spec['multiprocessors'])
+        multiprocessor_limit = compare_multiprocessors(total_spec['cores'], gpu_spec['cores'])
     # The limit is the minimum of the two
     limit = min(memory_limit, multiprocessor_limit)
     return limit, memory_limit, multiprocessor_limit

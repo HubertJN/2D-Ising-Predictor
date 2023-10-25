@@ -25,9 +25,9 @@ class Simulation():
     # functions to return the system requirements of the model
     def get_array_size(self):
         if self.model_config['grid_size'] is None:
-            grid_size = None
-        else:
-            grid_size = self.model_config['grid_size'][0] * self.model_config['grid_size'][1]
+            print("Grid Dimensions not set, defaulting to 100x100.")
+            self.model_config['grid_size'] = [100,100]
+        grid_size = self.model_config['grid_size'][0] * self.model_config['grid_size'][1]
         return grid_size
 
     def get_array_element_size(self):
@@ -36,22 +36,29 @@ class Simulation():
 
     def get_num_concurrent(self):
         if self.model_config['num_concurrent'] is None:
-            num_concurrent = None
-        else:
-            num_concurrent = self.model_config['num_concurrent']
+            print("Replications not set, defaulting to 1.")
+            self.model_config['num_concurrent'] = 1
+        num_concurrent = self.model_config['num_concurrent']
         return num_concurrent
 
     def get_threads_per_concurrent(self):
         # TODO: is this going to raise the correct error?
         assert self.threads_per_concurrent is not None, "Threads per concurrent not set."
         return self.threads_per_concurrent
+    
+    def get_grid_dims(self):
+        if self.model_config['grid_size'] is None:
+            print("Grid Dimensions not set, defaulting to 100x100.")
+            self.model_config['grid_size'] = [100,100]
+        grid_dims = self.model_config['grid_size']
+        return grid_dims
 
     def get_system_requirements(self):
         # If a resource is not needed or undefined, set it to None
         sys_req = {}
         # Bytes
         try:
-            sys_req['grid_dims'] = [self.model_config['grid_size']]
+            sys_req['grid_dims'] = [self.get_grid_dims()]
         except TypeError:
             sys_req['grid_dims'] = [None]
         try:
@@ -67,9 +74,9 @@ class Simulation():
         except TypeError:
             sys_req['replications'] = None
         try:
-            sys_req['multiprocessors'] = self.get_num_concurrent() * self.get_threads_per_concurrent()
+            sys_req['cores'] = self.get_num_concurrent() * self.get_threads_per_concurrent()
         except TypeError:
-            sys_req['multiprocessors'] = None
+            sys_req['cores'] = None
         try:
             sys_req['threads_per_block'] = self.get_threads_per_concurrent()
         except TypeError:

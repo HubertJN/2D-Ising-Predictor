@@ -4,7 +4,14 @@ import numpy as np
 
 class ConfigOptions():
     def __init__(self):
-        # options is a dict that 
+        # options is a dict that
+
+        # debug class variables
+        self.call_count_a = 0
+        self.call_count_b = 0
+        self.call_count_c = 0
+        # ========
+
         self.options = {}
         self.config = ""
         self.gpu = None
@@ -26,6 +33,8 @@ class ConfigOptions():
 
     def QueryGPU(self):
         self.gpu = helper.get_cuda_device_specs()
+        for gpu in self.gpu:
+            gpu['free_mem_b'] = gpu['free_mem_mb']*1024**2
         self.options['ViewGPU'] = self.ViewGPU
         print ('GPU information has been queried.')
 
@@ -43,14 +52,17 @@ class ConfigOptions():
     
     def GetCurrentUseGPU(self):
         # Reset and recalculate
-        self.gpu_use = {}
+        self.gpu_use = {
+            'memory': 0,
+            'cores': 0,
+        }
 
         for model_key in self.sim_class.models.keys():
             _totals = self.CalculateTotalModelUse(model_key)
             self.gpu_use['memory'] += _totals['memory']
-            self.gpu_free['memory'] = self.gpu['free_mem_mb'] - self.gpu_use['memory']
-            self.gpu_use['multiprocessors'] += _totals['multiprocessors']
-            self.gpu_free['multiprocessors'] = self.gpu['multiprocessors'] - self.gpu_use['multiprocessors']
+            self.gpu_free['memory'] = self.gpu[0]['free_mem_b'] - self.gpu_use['memory']
+            self.gpu_use['cores'] += _totals['cores']
+            self.gpu_free['cores'] = self.gpu[0]['cuda_cores'] - self.gpu_use['cores']
 
         pass
 
@@ -59,34 +71,32 @@ class ConfigOptions():
         self.previous_options.append(self.options)
         self.options = {
             'GoBack': self.GoBack,
-            'AutoFill': self.AutoFillGPU,
-            'ManualFill': self.ManualFillGPU,
+            'AutoFill': partial(self.FillOn, self.AutoFillGPU),
+            'ManualFill': partial(self.FillOn, self.ManualFillGPU)
         }
         print("Current GPU use:")
-        print(f"GPU Memory: {(self.gpu_use['memory']/self.gpu['free_mem_mb'])*100}%, {self.gpu_use['memory']}MB of {self.gpu['free_mem_mb']}MB")
-        print(f"GPU Cores: {(self.gpu_use['cores']/self.gpu['multiprocessors'])*100}%, {self.gpu_use['cores']} of {self.gpu['multiprocessors']}")
+        print(f"GPU Memory: {(self.gpu_use['memory']/self.gpu[0]['free_mem_b'])*100}%, {self.gpu_use['memory']}B of {self.gpu[0]['free_mem_b']}B")
+        print(f"GPU Cores: {(self.gpu_use['cores']/self.gpu[0]['cuda_cores'])*100}%, {self.gpu_use['cores']} of {self.gpu[0]['cuda_cores']}")
         # Print additioanl information here as needed
         pass
+    
 
-    def AutoFillGPU(self):
-        print("Autofill not implemented yet.")
+    def FillOn(self, passthrough):
+        # Set the number of replications for each model sets are automatically shared
+        self.previous_options.append(self.options)
+        self.options = {
+            'GoBack': self.GoBack,
+        }
+        for param in self.optimisable_param:
+            self.options[param] = partial(passthrough, param)
+        print('Please select a parameter to optimise on:')
         pass
 
-    def ManualFillGPU(self):
-        # Set the number of replications for each model sets are automatically shared
-        while True:
-            # TODO: Swap ', ' to '\n' when base python version is >=3.12
-            print(f"Options:\n {  [str(i)+': '+opt+', ' for i, opt in enumerate(self.optimisable_param)] }")
-            opt_on = input("Pick an option to fill by: \n")
-
-            if opt_on in self.optimisable_param:
-                break
-            elif opt_on in [str(i) for i in range(len(self.optimisable_param))]:
-                opt_on = self.optimisable_param[int(opt_on)]
-                break
-            else:
-                print("Invalid input. Try again.")
-                continue
+    def AutoFillGPU(self, opt_on):
+        print("Autofill not implemented yet.")
+        pass
+    
+    def ManualFillGPU(self, opt_on):
 
         # Precalculate the size of each model then pass to user
         # Menu entries Should look like:
@@ -111,54 +121,52 @@ class ConfigOptions():
         self.options = {
             'GoBack': self.GoBack,
         }
-        for ix, model in enumerate(self.sim_class.models.keys()):
-            self.MakeOptMenuEntry(ix, model, opt_on) 
-            
+        for model in self.sim_class.models.keys():
+            self.MakeOptMenuEntry(model, opt_on)   
         pass
 
-    def MakeOptMenuEntry(self, ix, model_key, opt_on):
+    def MakeOptMenuEntry(self, model_key, opt_on):
         # Calculate the size of a single model
         is_set = isinstance(self.sim_class.models[model_key], dict)
         single_model_req = self.CalculateSingleModelSize(model_key)
-        x_dim, y_dim = single_model_req['grid_dims']
-        sum_xy = sum(map(lambda x,y: x*y, single_model_req['grid_dims']))
-        gpu_capacity, mem_limit, core_limit = helper.maximise_models_per_gpu(single_model_req, self.gpu)
+        x_dim, y_dim = single_model_req['grid_dims'][0] # used when model is not a set
+        sum_xy = sum(map(lambda x: x[0]*x[1], single_model_req['grid_dims'])) # used when model is a set
+        gpu_capacity, mem_limit, core_limit = helper.maximise_models_per_gpu(single_model_req, self.gpu[0])
         gpu_free_capacity, free_mem_limit, free_core_limit  = helper.maximise_models_per_gpu(single_model_req, self.gpu_free)
         
         total_limit = f"{'core' if core_limit < mem_limit else 'memory'}"
         free_limit = f"{'core' if free_core_limit < free_mem_limit else 'memory'}"
-
         all_rep_req = self.CalculateTotalModelUse(model_key)
-        per_cores_in_use = all_rep_req['multiprocessors']
+        per_cores_in_use = all_rep_req['cores']
         per_mem_in_use = all_rep_req['memory']
 
         # Need to collapse replications and grid size into one number
-        reps = sum(single_model_req['replications'])
-        maximum_grid_size = (self.gpu['free_mem_mb']/single_model_req['replications'])*1024**2 // single_model_req['memory_per_grid_element']
+        reps = single_model_req['replications']
+        maximum_grid_size = (self.gpu[0]['free_mem_b']/single_model_req['replications'])*1024**2 // single_model_req['memory_per_grid_element']
         # Two parter
         maximum_grid_remaining = (self.gpu_free['memory']/single_model_req['replications'])*1024**2 // single_model_req['memory_per_grid_element']
         maximum_grid_remaining += x_dim*y_dim * reps
 
 
         menu_str = f"\
-        {ix}: Optimise {model_key} on {opt_on}: \n\
-            Single {'model' if is_set else 'set'} size: \n\
-                Memory: {single_model_req['memory']}MB, (at current grid size)\n\
-                Cores: {single_model_req['multiprocessors']}\n\
-            Current Use: \n\
-                Grid Size{' (total space for the whole set)' if is_set else ''}: {sum_xy if is_set else x_dim}{'' if is_set else ', '}{'' if is_set else y_dim },\n\
-                Replications: {single_model_req['replications']},\n\
-                % Memory Use: {(single_model_req['memory']/self.gpu['free_mem_mb'])*100}%\n\
-                % Core Use: {(single_model_req['multiprocessors']/self.gpu['multiprocessors'])*100}%\n\
-            Max Use (Total Possible / Remaining): \n\
-            Note: this is maximising {opt_on} fixing all other parameters. \n\
-            For a empty GPU this model is {total_limit} limited. \n\
-            For the free GPU resources this model is {free_limit} limited. \n\
-                Grid Size: {maximum_grid_size} / {maximum_grid_remaining},\n\
-                Replications: {gpu_capacity} / {gpu_free_capacity},\n\
-            Current Use: \n\
-                % Memory use by model: {per_mem_in_use}\n\
-                % Core use by model: {per_cores_in_use}\n\
+Optimise {model_key} on {opt_on}: \n\
+    Single {'model' if is_set else 'set'} size: \n\
+        Memory: {single_model_req['memory']}B, (at current grid size)\n\
+        Cores: {single_model_req['cores']}\n\
+    Current Use: \n\
+        Grid Size{' (total space for the whole set)' if is_set else ''}: {sum_xy if is_set else x_dim}{'' if is_set else ', '}{'' if is_set else y_dim },\n\
+        Replications: {single_model_req['replications']},\n\
+        % Memory Use: {(single_model_req['memory']/self.gpu[0]['free_mem_b'])*100}%\n\
+        % Core Use: {(single_model_req['cores']/self.gpu[0]['cuda_cores'])*100}%\n\
+    Max Use (Total Possible / Remaining): \n\
+    Note: this is maximising {opt_on} fixing all other parameters. \n\
+    For a empty GPU this model is {total_limit} limited. \n\
+    For the free GPU resources this model is {free_limit} limited. \n\
+        Grid Size: {maximum_grid_size} / {maximum_grid_remaining},\n\
+        Replications: {gpu_capacity} / {gpu_free_capacity},\n\
+    Current Use: \n\
+        % Memory use by model: {per_mem_in_use}\n\
+        % Core use by model: {per_cores_in_use}\n\
             "
         
         if is_set:
@@ -169,35 +177,51 @@ class ConfigOptions():
                     self.options[menu_str] = lambda _: print(f"Cannot optimise on {opt_on} as it is part of the range.")
                     return
         else:
-            self.options[menu_str] = partial(FUNC, ARGS)
+            self.options[menu_str] = partial(self.UpdateModelOptimisableParam, menu_str, opt_on, is_set, model_key, maximum_grid_size, gpu_capacity)
         pass
     
 
     def UpdateModelOptimisableParam(self, menu_str, opt_on, is_set, model_key, grid_max, reps_max):
         # Show the current optimisable parameter numbers using the selected menu entry
-        print(menu_str.split(':')[1:])
+        print(menu_str)
         # Get the current optimisable parameter
         while True:
             if opt_on == 'grid_size':
                 # Get the new grid size
                 x_in = input(f"Please enter a value for grid x: ")
                 y_in = input(f"Please enter a value for grid y: ")
+                try:
+                    x_in = int(x_in)
+                    y_in = int(y_in)
+                except:
+                    print(f"Invalid input. Please enter an integer.")
+                    continue
+
                 grid_xy = x_in*y_in
                 if grid_xy > grid_max:
                     print(f"Grid size ({grid_xy}={x_in}*{y_in}) too large. Max grid size is {grid_max}")
                     continue
                 else:
                     new_value = [x_in, y_in]
-                    break
             elif opt_on == 'num_concurrent':
                 # Get the new number of concurrent replications
                 reps_in = input(f"Please enter a value for number of concurrent replications: ")
+                try:
+                    reps_in = int(reps_in)
+                except:
+                    print(f"Invalid input. Please enter an integer.")
+                    continue
                 if reps_in > reps_max:
                     print(f"Number of concurrent replications ({reps_in}) too large. Max number of concurrent replications is {reps_max}")
                     continue
                 else:
                     new_value = reps_in
-                    break
+        
+            confirm = input(f"Please confirm you want to set {opt_on} to {new_value}. (y/n)")
+            if confirm in ['y', 'yes', 'Y', 'Yes']:
+                self.previous_options.pop()
+                self.go_up = True
+                break
         
         # Update the model
         if is_set:
@@ -210,10 +234,14 @@ class ConfigOptions():
             pass
 
 
-    def CalculateSingleModelSize(self, model_name, set_key=None, totals={}):
+    def CalculateSingleModelSize(self, model_name, set_key=None, totals=None):
         # Calculate the size of a single model
         # if model is set then calculate the size of one set rep
-        if set_key != None:
+
+        if totals is None:
+            totals = {}
+
+        if set_key is not None:
             model = self.sim_class.models[set_key][model_name]
         else:
             model = self.sim_class.models[model_name]
@@ -240,7 +268,7 @@ class ConfigOptions():
         # Calculate the total use of the model expand this to keep up with optimisiables 
         totals = {}
         totals['memory'] = single_totals['memory'] * single_totals['replications']
-        totals['multiprocessors'] = single_totals['multiprocessors'] * single_totals['replications']
+        totals['cores'] = single_totals['cores'] * single_totals['replications']
 
         return totals
 
