@@ -188,7 +188,7 @@ def maximise_models_per_gpu(total_spec, gpu_spec):
     # This must be kept up to date with potential optimisation parameters
     # Try except blocks allow for the use of either free memory or total memory
     try:
-        memory_limit = compare_memory(total_spec['memory'], gpu_spec['free_mem_mb'])
+        memory_limit = compare_memory(total_spec['memory'], gpu_spec['free_mem_b'])
     except KeyError:
         memory_limit = compare_memory(total_spec['memory'], gpu_spec['memory'])
     try:
@@ -215,7 +215,7 @@ def mark_gpu_use(replications, total_spec, usage_spec):
     usage_spec['multiprocessors'] += multiprocessors
 
 def compare_memory(model_mem, gpu_mem):
-    gpu_mem_bytes = gpu_mem * 1024**2
+    gpu_mem_bytes = gpu_mem
     max_models = gpu_mem_bytes // model_mem
     return max_models
 

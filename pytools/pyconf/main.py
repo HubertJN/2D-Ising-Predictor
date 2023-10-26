@@ -75,8 +75,8 @@ class ConfigOptions():
             'ManualFill': partial(self.FillOn, self.ManualFillGPU)
         }
         print("Current GPU use:")
-        print(f"GPU Memory: {(self.gpu_use['memory']/self.gpu[0]['free_mem_b'])*100}%, {self.gpu_use['memory']}B of {self.gpu[0]['free_mem_b']}B")
-        print(f"GPU Cores: {(self.gpu_use['cores']/self.gpu[0]['cuda_cores'])*100}%, {self.gpu_use['cores']} of {self.gpu[0]['cuda_cores']}")
+        print(f"GPU Memory: {(self.gpu_use['memory']/self.gpu[0]['free_mem_b']):.2%}, {self.gpu_use['memory']:d}B of {int(self.gpu[0]['free_mem_b']):d}B")
+        print(f"GPU Cores: {(self.gpu_use['cores']/self.gpu[0]['cuda_cores']):.2%}%, {self.gpu_use['cores']:d} of {int(self.gpu[0]['cuda_cores']):d}")
         # Print additioanl information here as needed
         pass
     
@@ -96,7 +96,7 @@ class ConfigOptions():
         print("Autofill not implemented yet.")
         pass
     
-    def ManualFillGPU(self, opt_on):
+    def ManualFillGPU(self, opt_on, append_options = True):
 
         # Precalculate the size of each model then pass to user
         # Menu entries Should look like:
@@ -117,7 +117,9 @@ class ConfigOptions():
                 % Memory Use:  %
                 % Core Use:  %
         """
-        self.previous_options.append(self.options)
+        if append_options:
+            self.previous_options.append(self.options)
+        self.GetCurrentUseGPU()
         self.options = {
             'GoBack': self.GoBack,
         }
@@ -141,29 +143,31 @@ class ConfigOptions():
 
 
         # Need to collapse replications and grid size into one number
-        reps = model_req['replications']
-        maximum_grid_size = (self.gpu[0]['free_mem_b']/model_req['replications'])*1024**2 // model_req['memory_per_grid_element']
+        maximum_grid_size = (self.gpu[0]['free_mem_b']/model_req['replications']) // model_req['memory_per_grid_element']
         # Two parter
-        maximum_grid_remaining = (self.gpu_free['memory']/model_req['replications'])*1024**2 // model_req['memory_per_grid_element']
-        maximum_grid_remaining += x_dim*y_dim * reps
+        maximum_grid_remaining = (self.gpu_free['memory']/model_req['replications']) // model_req['memory_per_grid_element']
+        if is_set:
+            maximum_grid_remaining += sum_xy * model_req['replications']
+        else:
+            maximum_grid_remaining += x_dim*y_dim * model_req['replications']
 
 
         menu_str = f"\
 Optimise {model_key} on {opt_on}: \n\
     Single {'set' if is_set else 'model'} size: \n\
-        Memory: {model_req['memory']}B, (at current grid size)\n\
-        Cores: {model_req['cores']}\n\
+        Memory: {model_req['memory']:d}B, (at current grid size)\n\
+        Cores: {model_req['cores']:d}\n\
     Current Use: \n\
-        Grid Size{' (total space for the whole set)' if is_set else ''}: {sum_xy if is_set else x_dim}{'' if is_set else ', '}{'' if is_set else y_dim },\n\
-        Replications: {model_req['replications']},\n\
-        % Memory Use: {(model_req['memory']/self.gpu[0]['free_mem_b'])*100}%\n\
-        % Core Use: {(model_req['cores']/self.gpu[0]['cuda_cores'])*100}%\n\
+        Grid Size{' (total space for the whole set)' if is_set else ''}: {sum_xy if is_set else int(x_dim):d}{'' if is_set else ', '}{'' if is_set else int(y_dim):d},\n\
+        Replications: {model_req['replications']:d},\n\
+        % Memory Use: {(model_req['memory']/self.gpu[0]['free_mem_b']):.2%}\n\
+        % Core Use: {(model_req['cores']/self.gpu[0]['cuda_cores']):.2%}\n\
     Max Use (Total Possible / Remaining): \n\
     Note: this is maximising {opt_on} fixing all other parameters. \n\
     For a empty GPU this model is {total_limit} limited. \n\
     For the free GPU resources this model is {free_limit} limited. \n\
-        Grid Size: {maximum_grid_size} / {maximum_grid_remaining},\n\
-        Replications: {gpu_capacity} / {gpu_free_capacity},\n\
+        Grid Size: {int(maximum_grid_size):d} / {int(maximum_grid_remaining):d},\n\
+        Replications: {int(gpu_capacity):d} / {int(gpu_free_capacity):d},\n\
 "
         
         if is_set:
@@ -216,8 +220,6 @@ Optimise {model_key} on {opt_on}: \n\
         
             confirm = input(f"Please confirm you want to set {opt_on} to {new_value}. (y/n)")
             if confirm in ['y', 'yes', 'Y', 'Yes']:
-                self.previous_options.pop()
-                self.go_up = True
                 break
         
         # Update the model
@@ -225,10 +227,11 @@ Optimise {model_key} on {opt_on}: \n\
             # Update the set
             for set_key in self.sim_class.models[model_key].keys():
                 self.sim_class.models[model_key][set_key].model_config[opt_on] = new_value
-            pass
         else:
             self.sim_class.models[model_key].model_config[opt_on] = new_value
-            pass
+        
+        # Update the GPU use and go back to manual fill menu
+        self.ManualFillGPU(opt_on, append_options=False)
     
     def CalculateSingleModelSize(self, model_name):
         _totals = self.CalculateModelSize(model_name)
