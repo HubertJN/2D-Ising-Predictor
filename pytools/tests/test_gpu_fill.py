@@ -78,6 +78,4 @@ def test_gpu_fill_two_models(BlankModel, AddModel, PopulateModel, monkeypatch):
     # Check that the menu options have changed to reflect the new replications
     assert get_post_menu_options != get_post_menu_options_2
 
-    print(ConfigObj.options.keys())
-    assert False
-
+    assert ConfigObj.gpu_free['cores'] == ConfigObj.gpu[0]['cuda_cores'] - 1000 - 4376
