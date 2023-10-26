@@ -13,7 +13,6 @@ class ConfigOptions():
         # ========
 
         self.options = {}
-        self.config = ""
         self.gpu = None
         self.go_up = False
         self.previous_options = []
@@ -30,6 +29,7 @@ class ConfigOptions():
         self.options['QueryGPU'] = self.QueryGPU
         self.options['ViewConfig'] = self.ViewConfig
         self.options['CreateConfig'] = self.CreateConfig
+        self.options['WriteConfig'] = self.WriteConfig
 
     def QueryGPU(self):
         self.gpu = helper.get_cuda_device_specs()
@@ -158,7 +158,7 @@ Optimise {model_key} on {opt_on}: \n\
         Memory: {model_req['memory']:d}B, (at current grid size)\n\
         Cores: {model_req['cores']:d}\n\
     Current Use: \n\
-        Grid Size{' (total space for the whole set)' if is_set else ''}: {sum_xy if is_set else int(x_dim):d}{'' if is_set else ', '}{'' if is_set else int(y_dim):d},\n\
+        Grid Size{' (total space for the whole set)' if is_set else ''}: {sum_xy if is_set else int(x_dim):d}{'' if is_set else ', '}{'' if is_set else int(y_dim)},\n\
         Replications: {model_req['replications']:d},\n\
         % Memory Use: {(model_req['memory']/self.gpu[0]['free_mem_b']):.2%}\n\
         % Core Use: {(model_req['cores']/self.gpu[0]['cuda_cores']):.2%}\n\
@@ -253,7 +253,7 @@ Optimise {model_key} on {opt_on}: \n\
         if isinstance(model, dict):
             # Calculate the size of a set rep
             for _model_name in model.keys():
-                self.CalculateSingeSize(_model_name, model_name, totals)
+                self.CalculateModelSize(_model_name, model_name, totals)
                 pass
             pass
         elif isinstance(model, helper.Simulation):
@@ -401,6 +401,7 @@ Optimise {model_key} on {opt_on}: \n\
             # Value to groupby in the config file for postprocessing
             self.sim_class.models[set_name][name].model_config['set_name'] = f"{model.__name__}-rf-{param}-{start}-{end}-{step}"
         
+        self.go_up = True
         if input(f"Do you want to remove the original model called {model.__name__}? (y/n)") == 'y':
             self.sim_class.models.pop(model.__name__)
 
@@ -497,7 +498,13 @@ Optimise {model_key} on {opt_on}: \n\
             print(f"{key}: {value}")
 
     def ViewConfig(self):
-        print(self.config)
+        for model in self.sim_class.models.keys():
+            self.ViewModel(self.sim_class.models[model])
+            print('\n')
+    
+    def WriteConfig(self):
+        self.sim_class.write_config()
+        pass
 
     def GoBack(self):
         self.ortho_params = {}

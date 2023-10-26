@@ -28,8 +28,8 @@ def test_add_model(MainMenuConfigObj, monkeypatch):
         'QueryGPU': ConfigOptions.QueryGPU,
         'ViewConfig': ConfigOptions.ViewConfig,
         'CreateConfig': ConfigOptions.CreateConfig,
+        'WriteConfig': ConfigOptions.WriteConfig,
     }.keys()
-    assert ConfigObj.config == ""
     assert ConfigObj.gpu is None
 
     monkeypatch.setattr('builtins.input', lambda _: 'Type1')
@@ -50,8 +50,8 @@ def test_add_model(MainMenuConfigObj, monkeypatch):
         'QueryGPU': ConfigOptions.QueryGPU,
         'ViewConfig': ConfigOptions.ViewConfig,
         'CreateConfig': ConfigOptions.CreateConfig,
+        'WriteConfig': ConfigOptions.WriteConfig,
     }.keys()
-    assert ConfigObj.config == ""
     assert ConfigObj.gpu is None
 
 
@@ -94,6 +94,7 @@ def test_add_two_models(MainMenuConfigObj, monkeypatch):
         'QueryGPU': ConfigOptions.QueryGPU,
         'ViewConfig': ConfigOptions.ViewConfig,
         'CreateConfig': ConfigOptions.CreateConfig,
+        'WriteConfig': ConfigOptions.WriteConfig,
     }.keys()
 
 def test_autofill(MainMenuConfigObj, monkeypatch):
@@ -125,3 +126,6 @@ def test_autofill(MainMenuConfigObj, monkeypatch):
     assert ConfigObj.sim_class.models.get('model-name-1').model_config['inv_temp'] == '1'
     assert ConfigObj.sim_class.models.get('model-name-1').model_config['field'] == '1'
     assert ConfigObj.sim_class.models.get('model-name-1').model_config['starting_config'] == '1'
+
+def test_with_rangefill():
+    pass

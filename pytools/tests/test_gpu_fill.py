@@ -79,3 +79,50 @@ def test_gpu_fill_two_models(BlankModel, AddModel, PopulateModel, monkeypatch):
     assert get_post_menu_options != get_post_menu_options_2
 
     assert ConfigObj.gpu_free['cores'] == ConfigObj.gpu[0]['cuda_cores'] - 1000 - 4376
+
+
+def test_gpu_fill_range_model(BlankModel, PopulateModel, monkeypatch):
+    ConfigObj = BlankModel
+    params = {
+        'num_concurrent': 10,
+        'nucleation_threshold': 0.9,
+        'grid_size': [2000, 2000],
+        'num_iterations': 1000,
+        'iterations': 50,
+        'iter_per_step': 10,
+        'seed': 1,
+        'inv_temp': 1.5,
+        'field': 1.5,
+        'starting_config': 1,
+    }
+    PopulateModel(ConfigObj, 'fixture-model', params)
+    # Make a range over the nucleation_threshold
+    monkeypatch.setattr('builtins.input', lambda _: 'CreateConfig')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'UpdateModel')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'fixture-model')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'RangeFill')
+    yeilding_event_loop(ConfigObj)
+    input_gen = ['nucleation_threshold', '0', '1', '0.1', 'y', 'y']
+    monkeypatch.setattr('builtins.input', lambda _: input_gen.pop(0))
+    yeilding_event_loop(ConfigObj)
+
+    monkeypatch.setattr('builtins.input', lambda _: '1')
+    yeilding_event_loop(ConfigObj)
+    yeilding_event_loop(ConfigObj)
+    yeilding_event_loop(ConfigObj)
+
+    monkeypatch.setattr('builtins.input', lambda _: 'QueryGPU')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'CreateConfig')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'FillGPU')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'ManualFill')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'num_concurrent')
+    yeilding_event_loop(ConfigObj)
+    assert False
+    pass

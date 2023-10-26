@@ -3,6 +3,7 @@ import json
 from typing import Any, Dict, List
 from warnings import warn
 import copy
+from pathlib import Path
 
 #===============================================================================
 # https://gist.github.com/f0k/63a664160d016a491b2cbea15913d549
@@ -273,26 +274,28 @@ class SimulationSet():
             self.models[set_name][new_model_name] = copy.deepcopy(self.models[model_name])
         else:
             print(f"Model {model_name} not found.")
-    
-    def recurse_dict(self, config_dict, keys_processed):
-        if len(keys_processed) == 0:
-            config_dict = {}
-        if len(keys_processed) == len(config_dict):
-            write_to_file(config_dict)
+
+    def write_config(self):
+        print("Writing config file... first name, then path to folder.")
+        filename = input("Please enter a filename: ")
+        if filename[-4:] != ".dat":
+            filename += ".dat"
+        
+        config_dir = input("Please enter a path input y for default: ")
+        if config_dir == "y":
+            config_dir = Path("./configurations/")
         else:
-            config_dict = copy.copy(config_dict)
-            for key, values in config_dict.items():
-                if key not in keys_processed:
-                    keys_processed.append(key)
-                    for value in values:
-                        self.recurse_dict(value, keys_processed)
+            config_dir = Path(config_dir)
         
-        
+        full_path = config_dir / filename
 
-    def generate_config_file(self):
-        
+        with open(full_path, 'w') as f:
+            for model in self.models.values():
+                f.write('## New model ##\n')
+                for key, value in model.model_config.items():
+                    f.write(f'{key}={value}\n')
+                f.write('\n')
         pass
-
 
 #===============================================================================
 
