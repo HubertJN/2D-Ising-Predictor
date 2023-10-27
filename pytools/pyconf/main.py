@@ -143,9 +143,9 @@ class ConfigOptions():
 
 
         # Need to collapse replications and grid size into one number
-        maximum_grid_size = (self.gpu[0]['free_mem_b']/model_req['replications']) // model_req['memory_per_grid_element']
+        maximum_grid_size = (self.gpu[0]['free_mem_b']/model_req['replications']) // single_model_req['memory_per_grid_element']
         # Two parter
-        maximum_grid_remaining = (self.gpu_free['memory']/model_req['replications']) // model_req['memory_per_grid_element']
+        maximum_grid_remaining = (self.gpu_free['memory']/model_req['replications']) // single_model_req['memory_per_grid_element']
         if is_set:
             maximum_grid_remaining += sum_xy * model_req['replications']
         else:
@@ -238,12 +238,12 @@ Optimise {model_key} on {opt_on}: \n\
         _totals['memory'] = _totals['memory'] // _totals['replications']
         _totals['cores'] = _totals['cores'] // _totals['replications']
         # For a set of models
-        # Cores and memory scale with number in the set i.e. replications are larger
+        # Cores scale with number in the set i.e. replications are larger
         # i.e. _totals['X'] = _totals['X'] // (_totals['replications']//set_size)
         # Given _totals['replications']//_totals['set_size'] is an integer we can hack
         if is_set:
-            _totals['memory'] = _totals['memory'] * _totals['set_size']
             _totals['cores'] = _totals['cores'] * _totals['set_size']
+            _totals['memory_per_grid_element'] = _totals['memory_per_grid_element'] // _totals['set_size']
 
         return _totals
 

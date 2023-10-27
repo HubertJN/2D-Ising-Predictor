@@ -170,7 +170,7 @@ def test_gpu_fill_range_multi_model(BlankModel, AddModel, PopulateModel, monkeyp
     params = {
         'num_concurrent': 10,
         'nucleation_threshold': 0.9,
-        'grid_size': [200, 200],
+        'grid_size': [20, 20],
         'num_iterations': 1000,
         'iterations': 50,
         'iter_per_step': 10,
@@ -218,3 +218,73 @@ def test_gpu_fill_range_multi_model(BlankModel, AddModel, PopulateModel, monkeyp
     yeilding_event_loop(ConfigObj)
 
     assert ConfigObj.gpu_use['cores'] == 3000
+
+def test_gpu_fill_ortho_single(BlankModel, PopulateModel, monkeypatch):
+    ConfigObj = BlankModel
+    params = {
+        'num_concurrent': 1,
+        'nucleation_threshold': 0.9,
+        'grid_size': [100, 100],
+        'num_iterations': 1000,
+        'iterations': 50,
+        'iter_per_step': 10,
+        'seed': 1,
+        'inv_temp': 1.5,
+        'field': 1.5,
+        'starting_config': 1,
+    }
+    PopulateModel(ConfigObj, 'fixture-model', params)
+    # Make a range over the nucleation_threshold
+    monkeypatch.setattr('builtins.input', lambda _: 'CreateConfig')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'UpdateModel')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'fixture-model')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'OrthogonalFill')
+    yeilding_event_loop(ConfigObj)
+    input_gen = ['nucleation_threshold', 'field', 'inv_temp', 'Done']
+    monkeypatch.setattr('builtins.input', lambda _: input_gen.pop(0))
+    yeilding_event_loop(ConfigObj)
+    yeilding_event_loop(ConfigObj)
+    yeilding_event_loop(ConfigObj)
+    input_gen = ['Done', '0', '1', '0.1', 'y', '-1', '1', '0.2', 'y', '0', '1', '0.1', 'y', 'y']
+    monkeypatch.setattr('builtins.input', lambda _: input_gen.pop(0))
+    yeilding_event_loop(ConfigObj)
+
+    monkeypatch.setattr('builtins.input', lambda _: '1')
+    yeilding_event_loop(ConfigObj)
+    yeilding_event_loop(ConfigObj)
+    yeilding_event_loop(ConfigObj)
+    
+
+    monkeypatch.setattr('builtins.input', lambda _: 'QueryGPU')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'CreateConfig')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'FillGPU')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'ManualFill')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'num_concurrent')
+    yeilding_event_loop(ConfigObj)
+    input_gen = ['2', '5', 'y']
+    monkeypatch.setattr('builtins.input', lambda _: input_gen.pop(0))
+    yeilding_event_loop(ConfigObj)
+    assert ConfigObj.gpu_use['cores'] == 5000
+    monkeypatch.setattr('builtins.input', lambda _: 'GoBack')
+    yeilding_event_loop(ConfigObj)
+    yeilding_event_loop(ConfigObj)
+
+    monkeypatch.setattr('builtins.input', lambda _: 'ManualFill')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: 'grid_size')
+    yeilding_event_loop(ConfigObj)
+    input_gen = ['2', '1500', '1500', 'y']
+    monkeypatch.setattr('builtins.input', lambda _: input_gen.pop(0))
+    yeilding_event_loop(ConfigObj)
+    assert ConfigObj.gpu_use['memory'] == 45000000000
+    pass
+
+def test_gpu_fill_ortho_multi():
+    pass
