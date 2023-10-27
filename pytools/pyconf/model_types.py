@@ -5,6 +5,7 @@ class Simulation():
         self.__name__ = model_name
         self.model_config = {
             'model_id': None,
+            'model_itask': None,
             'num_concurrent': None,
             'nucleation_threshold': None,
             'grid_size': None,

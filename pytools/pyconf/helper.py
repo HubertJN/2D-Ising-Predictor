@@ -18,6 +18,7 @@ def cli_cache(func):
             return user_input
     return wrapper
 
+
 input = cli_cache(input)
 print = cli_cache(print)
 

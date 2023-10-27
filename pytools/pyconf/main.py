@@ -1,11 +1,13 @@
 from functools import partial
 import helper
 import numpy as np
+import pytest
 
 # Create a debug logger
 import logging
 logging.basicConfig(level=logging.DEBUG, filename='config.log', filemode='w', format='%(filename)s - %(lineno)d - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
 
 input = helper.cli_cache(input)
 print = helper.cli_cache(print)
