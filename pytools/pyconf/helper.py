@@ -3,6 +3,7 @@ import json
 from typing import Any, Dict, List
 from warnings import warn
 import copy
+from pathlib import Path
 
 #===============================================================================
 # https://gist.github.com/f0k/63a664160d016a491b2cbea15913d549
@@ -177,69 +178,124 @@ def get_cuda_device_specs() -> List[Dict[str, Any]]:
 #===============================================================================
 
 #===============================================================================
+# Calculate GPU Fit
+def get_unused_gpu(gpu_specs, usage_specs):
+    unused_gpu = {}
+    for key in usage_specs.keys():
+        unused_gpu[key] = gpu_specs[key] - usage_specs[key]
+    return unused_gpu
+
+def maximise_models_per_gpu(total_spec, gpu_spec):
+    # This must be kept up to date with potential optimisation parameters
+    # Try except blocks allow for the use of either free memory or total memory
+    try:
+        memory_limit = compare_memory(total_spec['memory'], gpu_spec['free_mem_b'])
+    except KeyError:
+        memory_limit = compare_memory(total_spec['memory'], gpu_spec['memory'])
+    try:
+        multiprocessor_limit = compare_multiprocessors(total_spec['cores'], gpu_spec['cuda_cores'])
+    except KeyError:
+        multiprocessor_limit = compare_multiprocessors(total_spec['cores'], gpu_spec['cores'])
+    # The limit is the minimum of the two
+    limit = min(memory_limit, multiprocessor_limit)
+    return limit, memory_limit, multiprocessor_limit
+
+def get_one_model_percent(total_spec, gpu_spec):
+    limit = maximise_models_per_gpu(total_spec, gpu_spec)
+    return (1/limit) * 100
+
+def percent_to_replications(percent, total_spec, gpu_spec):
+    limit = maximise_models_per_gpu(total_spec, gpu_spec)
+    return int(limit * (percent/100))
+
+def mark_gpu_use(replications, total_spec, usage_spec):
+    memory = total_spec['memory'] * replications
+    multiprocessors = total_spec['multiprocessors'] * replications
+
+    usage_spec['memory'] += memory
+    usage_spec['multiprocessors'] += multiprocessors
+
+def compare_memory(model_mem, gpu_mem):
+    gpu_mem_bytes = gpu_mem
+    max_models = gpu_mem_bytes // model_mem
+    return max_models
+
+def compare_multiprocessors(model_mp, gpu_mp):
+    max_models = gpu_mp // model_mp
+    return max_models
+
+def compare_threads_per_block(model_tpb, gpu_tpb):
+    pass    
+
+def compare_shared_memory(model_sm, gpu_sm):
+    pass
+
+
+#===============================================================================
+
+#===============================================================================
 # Classes that define the simulation type, used to define simulation specific details
+from model_types import Simulation, ModelTypes
+
 
 class SimulationSet():
     
-    def __init__(self, config_list):
-        self.config_list = config_list
-
-        self.calculate_replications()
-        self.generate_config_file()
-    
-
-    def calculate_replications(self):
-        for model_type in self.config_list:
-            # Read the number/memory requirement of set replications for each model type
-            # Read the models without set replications
-            # Calculate the number of replications needed to fill the memory
-
-            # Check the replications are within multiprocessing limits
-
-            # Assign the replications to the models
-            pass
-    
-    def recurse_dict(self, config_dict, keys_processed):
-        if len(keys_processed) == 0:
-            config_dict = {}
-        if len(keys_processed) == len(config_dict):
-            write_to_file(config_dict)
-        else:
-            config_dict = copy.copy(config_dict)
-            for key, values in config_dict.items():
-                if key not in keys_processed:
-                    keys_processed.append(key)
-                    for value in values:
-                        self.recurse_dict(value, keys_processed)
-        
-        
-
-    def generate_config_file(self):
-        
-        pass
-
-
-
-class Simulation():
-
     def __init__(self):
-        pass
+        self.model_types = ModelTypes
+        self.models = {}
 
-    def array_element_size(self):
-        pass
-
-    def generate_file_names(self):
-        pass
-
-class Type1(Simulation):
-
-    def __init__(self, config):
-        super().__init__()
-        # hard coded information about the model.
-        array_element_size = 4 #bytes
-    def array_size(self):
-
+    def add_model(self, model_type, model_name):
+        if model_type in self.model_types.keys():
+            if model_name in self.models.keys():
+                print(f"Model {model_name} already exists.")
+                input =  input("Do you want to overwrite the model? (y/n)")
+                if input == "n":
+                    input = input("Do you want to create a new model? (y/n)")
+                    if input == "y":
+                        model_name = input("Please enter a new name for the model: ")
+                    else:
+                        print("Model not created.")
+                        return
+            self.models[model_name] = self.model_types[model_type](model_name)
+        else:
+            print(f"Model {model_type} not found.")
+    
+    def duplicate_model(self, model_name, set_name, new_model_name):
         
+        if set_name not in self.models.keys():
+            self.models[set_name] = {}
+
+        if model_name in self.models.keys():
+            if new_model_name in self.models.keys():
+                print(f"Model {new_model_name} already exists.")
+                print("Model not created.")
+                return
+            
+            self.models[set_name][new_model_name] = copy.deepcopy(self.models[model_name])
+        else:
+            print(f"Model {model_name} not found.")
+
+    def write_config(self):
+        print("Writing config file... first name, then path to folder.")
+        filename = input("Please enter a filename: ")
+        if filename[-4:] != ".dat":
+            filename += ".dat"
+        
+        config_dir = input("Please enter a path input y for default: ")
+        if config_dir == "y":
+            config_dir = Path("./configurations/")
+        else:
+            config_dir = Path(config_dir)
+        
+        full_path = config_dir / filename
+
+        with open(full_path, 'w') as f:
+            for model in self.models.values():
+                f.write('## New model ##\n')
+                for key, value in model.model_config.items():
+                    f.write(f'{key}={value}\n')
+                f.write('\n')
+        pass
 
 #===============================================================================
 
