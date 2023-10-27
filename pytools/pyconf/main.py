@@ -132,7 +132,7 @@ class ConfigOptions():
         is_set = isinstance(self.sim_class.models[model_key], dict)
 
         model_req = self.CalculateModelSize(model_key)
-        single_model_req = self.CalculateSingleModelSize(model_key)
+        single_model_req = self.CalculateSingleModelSize(model_key, is_set)
         x_dim, y_dim = model_req['grid_dims'][0] # used when model is not a set
         sum_xy = sum(map(lambda x: x[0]*x[1], model_req['grid_dims'])) # used when model is a set
         gpu_capacity, mem_limit, core_limit = helper.maximise_models_per_gpu(single_model_req, self.gpu[0])
@@ -172,13 +172,12 @@ Optimise {model_key} on {opt_on}: \n\
         
         if is_set:
             set_param_list = model_key.split('-')[2:]
-            for param_range in set_param_list:
-                param, start, end, step = param_range.split('-')
+            for param in set_param_list:
                 if param == opt_on:
                     self.options[menu_str] = lambda _: print(f"Cannot optimise on {opt_on} as it is part of the range.")
                     return
-        else:
-            self.options[menu_str] = partial(self.UpdateModelOptimisableParam, menu_str, opt_on, is_set, model_key, maximum_grid_size, gpu_capacity)
+        
+        self.options[menu_str] = partial(self.UpdateModelOptimisableParam, menu_str, opt_on, is_set, model_key, maximum_grid_size, gpu_capacity)
         pass
     
 
@@ -233,10 +232,19 @@ Optimise {model_key} on {opt_on}: \n\
         # Update the GPU use and go back to manual fill menu
         self.ManualFillGPU(opt_on, append_options=False)
     
-    def CalculateSingleModelSize(self, model_name):
+    def CalculateSingleModelSize(self, model_name, is_set):
         _totals = self.CalculateModelSize(model_name)
+        # For a single model 
         _totals['memory'] = _totals['memory'] // _totals['replications']
         _totals['cores'] = _totals['cores'] // _totals['replications']
+        # For a set of models
+        # Cores and memory scale with number in the set i.e. replications are larger
+        # i.e. _totals['X'] = _totals['X'] // (_totals['replications']//set_size)
+        # Given _totals['replications']//_totals['set_size'] is an integer we can hack
+        if is_set:
+            _totals['memory'] = _totals['memory'] * _totals['set_size']
+            _totals['cores'] = _totals['cores'] * _totals['set_size']
+
         return _totals
 
     def CalculateModelSize(self, model_name, set_key=None, totals=None):
@@ -252,6 +260,7 @@ Optimise {model_key} on {opt_on}: \n\
             model = self.sim_class.models[model_name]
         if isinstance(model, dict):
             # Calculate the size of a set rep
+            totals['set_size'] = len(model.keys())
             for _model_name in model.keys():
                 self.CalculateModelSize(_model_name, model_name, totals)
                 pass
