@@ -4,6 +4,22 @@ from typing import Any, Dict, List
 from warnings import warn
 import copy
 from pathlib import Path
+import logging 
+import logging
+logging.basicConfig(level=logging.DEBUG, filename='config.log', filemode='w', format='%(filename)s - %(lineno)d - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+def cli_cache(func):
+    def wrapper(*args, **kwargs):
+        logger.debug(f"Input Prompt: {*args, *kwargs}")
+        user_input = func(*args, **kwargs)
+        if user_input is not None:
+            logger.debug(f"User Input: {user_input}")
+            return user_input
+    return wrapper
+
+input = cli_cache(input)
+print = cli_cache(print)
 
 #===============================================================================
 # https://gist.github.com/f0k/63a664160d016a491b2cbea15913d549
@@ -298,6 +314,7 @@ class SimulationSet():
         pass
 
 #===============================================================================
+
 
 if __name__ == '__main__':
     # Running this script directly will print the device specs as a test of this

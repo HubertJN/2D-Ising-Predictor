@@ -2,6 +2,14 @@ from functools import partial
 import helper
 import numpy as np
 
+# Create a debug logger
+import logging
+logging.basicConfig(level=logging.DEBUG, filename='config.log', filemode='w', format='%(filename)s - %(lineno)d - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+input = helper.cli_cache(input)
+print = helper.cli_cache(print)
+
 class ConfigOptions():
     def __init__(self):
         # options is a dict that
@@ -268,10 +276,12 @@ Optimise {model_key} on {opt_on}: \n\
         elif isinstance(model, helper.Simulation):
             # Calculate the size of a single model
             for key, value in model.get_system_requirements().items():
+                logging.debug(f"Adding key: {key}, value: {value}")
                 if key in totals.keys():
                     totals[key] += value
                 else:
                     totals[key] = value
+            logging.debug(f"totals: {totals}")
         return totals
 
     def CreateConfig(self):
@@ -558,12 +568,14 @@ def event_loop(ConfigObj):
 
 
 if __name__ == '__main__':
-
     ConfigObj = ConfigOptions()
     ConfigObj.CreateInitalOptions()
     print ('Welcome to the GASP configuration tool.')
-   
-    event_loop(ConfigObj)
+    try:
+        event_loop(ConfigObj)
+    except Exception as e:
+        logger.debug(ConfigObj.command_history)
+        raise e
 
 
 
