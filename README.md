@@ -20,3 +20,6 @@ To enter the GASP configurator tool run `./gasp.sh --make_config`
 
 GASP configuration tool information can be found [here](./pytools/README.md)
 
+### Run
+
+To launch the model run `./gasp.sh --run <path_to/config_file_name>`

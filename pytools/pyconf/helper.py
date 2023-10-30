@@ -310,12 +310,22 @@ class SimulationSet():
 
         with open(full_path, 'w') as f:
             for model in self.models.values():
-                f.write('## New model ##\n')
-                for key, value in model.model_config.items():
-                    f.write(f'{key}={value}\n')
-                f.write('\n')
+                model_config = model.get('model_config', 'set_not_config')
+                if model_config == 'set_not_config':
+                    for model in model.values():
+                        f.write('## New model ##\n')
+                        for key, value in model.model_config.items():
+                            f.write(f'{key}={value}\n')
+                        f.write('\n')
+                else:
+                    f.write('## New model ##\n')
+                    for key, value in model.model_config.items():
+                        f.write(f'{key}={value}\n')
+                    f.write('\n')
+                
         pass
-
+        
+    
 #===============================================================================
 
 
