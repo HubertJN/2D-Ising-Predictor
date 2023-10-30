@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Tools to make it easier for users to get started with gasp
 
 # Command line arguments
@@ -8,14 +10,14 @@
 # --make: run make
 # --run: run the program
 
-#!/bin/bash
+
 
 POSITIONAL_ARGS=()
 
 while [[ $# -gt 0 ]]; do
   case $1 in
     -h|--help)
-      echo "Usage: gasp.sh [options]"
+      echo "Usage: ./gasp.sh [options]"
       exit
       ;;
     -v|--version)
@@ -41,7 +43,7 @@ while [[ $# -gt 0 ]]; do
       exit
       ;;
     --run)
-      bin/gasp /configurations/$2
+      bin/gasp $2
       exit
       ;;
     -*|--*)

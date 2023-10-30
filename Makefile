@@ -67,7 +67,7 @@ clean:
 	$(RM) VERSION
 
 release: $(OBJS)
-	$(LD) $(OBJS) -o $@ $(NVFLAGS) $(DEP_FLAGS) 
+	$(LD) -o $(BUILD_DIR)/$(TARGET_EXEC) $(OBJS) $(NVFLAGS) -g -G -O0 $(DEPFLAGS) 
 
 debug: $(OBJS)
 	$(LD) -o $(BUILD_DIR)/$(DEBUG_EXEC) $(OBJS) $(NVFLAGS) -g -G -O0 -DDEBUG $(DEPFLAGS) 
