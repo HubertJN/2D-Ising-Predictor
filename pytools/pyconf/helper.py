@@ -302,6 +302,7 @@ class SimulationSet():
         
         config_dir = input("Please enter a path input y for default: ")
         if config_dir == "y":
+            # TODO: Make this assert that the default path exists
             config_dir = Path("./configurations/")
         else:
             config_dir = Path(config_dir)

@@ -1,6 +1,6 @@
-TARGET_EXEC := gpu_arch_test
-DEBUG_EXEC := gpu_arch_test_debug
-TEST_EXEC := gpu_arch_test_test
+TARGET_EXEC := gasp
+DEBUG_EXEC := gasp_debug
+TEST_EXEC := gasp_test
 
 BUILD_DIR = ./bin
 SRC_DIRS := ./src
