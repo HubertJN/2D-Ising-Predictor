@@ -33,7 +33,7 @@ def InitObjectConfigObj(MainMenuConfigObj, monkeypatch):
     monkeypatch.setattr('builtins.input', lambda _: 'fixture-model')
     yeilding_event_loop(ConfigObj)
     # Next event call requies many input rounds before yielding
-    input_gen = ['AutoFill', '5', '0.9', '10', '10', '1000', '50', '10', '12', '1', '1', '1']
+    input_gen = ['AutoFill', '1', '5', '0.9', '10', '10', '1000', '50', '10', '12', '1', '1', '1']
     monkeypatch.setattr('builtins.input', lambda _: input_gen.pop(0))
     yeilding_event_loop(ConfigObj) 
     monkeypatch.setattr('builtins.input', lambda _: 'GoBack')
