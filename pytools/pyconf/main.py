@@ -2,6 +2,8 @@ from functools import partial
 import helper
 import numpy as np
 import os
+from pathlib import Path
+import shutil
 
 # Create a debug logger
 import logging
@@ -578,8 +580,7 @@ if __name__ == '__main__':
         event_loop(ConfigObj)
     except Exception as e:
         logger.debug(f"Exception: \n {e}")
+        Path('./crashes/').mkdir(parents=True, exist_ok=True)
+        import datetime
+        shutil.copy('./config.log', f'./crashes/config-{datetime.datetime.now()}.log')
         raise e
-
-
-
-    
