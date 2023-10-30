@@ -19,8 +19,7 @@ def cli_cache(func):
             return user_input
     return wrapper
 
-
-if os.environ.get('running_in_pytest', False):
+if os.environ.get('running_in_pytest', 'False') == 'False':
     input = cli_cache(input)
     print = cli_cache(print)
 

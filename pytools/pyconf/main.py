@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.DEBUG, filename='config.log', filemode='w', fo
 logger = logging.getLogger(__name__)
 
 
-if os.environ.get('running_in_pytest', False):
+if not os.environ.get('running_in_pytest', False):
     input = helper.cli_cache(input)
     print = helper.cli_cache(print)
 
