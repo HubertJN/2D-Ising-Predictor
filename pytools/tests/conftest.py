@@ -1,9 +1,11 @@
 # Fixtures used in CLI testing
-
+import os
 from pytest import fixture
 from pytools.pyconf.main import ConfigOptions
 
 from .test_helpers import yeilding_event_loop
+
+os.environ['running_in_pytest'] = 'True'
 
 @fixture
 def MainMenuConfigObj():

@@ -1,3 +1,4 @@
+import os
 import ctypes
 import json
 from typing import Any, Dict, List
@@ -5,7 +6,7 @@ from warnings import warn
 import copy
 from pathlib import Path
 import logging 
-import logging
+
 logging.basicConfig(level=logging.DEBUG, filename='config.log', filemode='w', format='%(filename)s - %(lineno)d - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -19,8 +20,9 @@ def cli_cache(func):
     return wrapper
 
 
-input = cli_cache(input)
-print = cli_cache(print)
+if os.environ.get('running_in_pytest', False):
+    input = cli_cache(input)
+    print = cli_cache(print)
 
 #===============================================================================
 # https://gist.github.com/f0k/63a664160d016a491b2cbea15913d549

@@ -1,7 +1,7 @@
 from functools import partial
 import helper
 import numpy as np
-import pytest
+import os
 
 # Create a debug logger
 import logging
@@ -9,8 +9,9 @@ logging.basicConfig(level=logging.DEBUG, filename='config.log', filemode='w', fo
 logger = logging.getLogger(__name__)
 
 
-input = helper.cli_cache(input)
-print = helper.cli_cache(print)
+if os.environ.get('running_in_pytest', False):
+    input = helper.cli_cache(input)
+    print = helper.cli_cache(print)
 
 class ConfigOptions():
     def __init__(self):
@@ -576,7 +577,7 @@ if __name__ == '__main__':
     try:
         event_loop(ConfigObj)
     except Exception as e:
-        logger.debug(ConfigObj.command_history)
+        logger.debug(f"Exception: \n {e}")
         raise e
 
 
