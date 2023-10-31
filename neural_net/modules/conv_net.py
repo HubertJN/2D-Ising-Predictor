@@ -2,9 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class ConvNet(nn.Module):
+class conv_net(nn.Module):
     def __init__(self):
-        super(ConvNet, self).__init__()
+        super(conv_net, self).__init__()
         # fully connected layers
         self.fc1 = nn.Linear(16*16*16, 1024)
         self.fc2 = nn.Linear(1024, 512)

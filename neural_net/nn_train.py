@@ -18,24 +18,21 @@ from torch.utils.data import Dataset
 selection = 0
 
 # 0) Load data
-# Defining class for loading data
-from nn_module import IsingDataset
+# Importing function to load data
+from modules.load_data import load_data
 
-# Defining function for calculating accuracy
-from nn_module import test_accuracy
-
-# Defining function for loading data and transformations
-from nn_module import load_data
+# Importing function for accuracy testing
+from modules.test_accuracy import test_accuracy
 
 # 1) Model
-from nn_module import ConvNet
+from modules.conv_net import conv_net
     
 # Device configuration and setting up network
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device_cpu = torch.device("cpu")
 
-net = ConvNet().to(device)
-net_cpu = ConvNet().to(device_cpu)  
+net = conv_net().to(device)
+net_cpu = conv_net().to(device_cpu)  
 
 # Printing number of parameters
 total_params = sum(p.numel() for p in net.parameters())
@@ -72,7 +69,7 @@ if selection == 0:
     loss_path = "./plotting_data/loss_base.npy"
     prediction_actual_path = "./plotting_data/prediction_actual_base.npy"
 elif selection == 3:
-    PATH = "./model_lcs.pth"
+    PATH = "./models/model_lcs.pth"
     loss_path = "./plotting_data/loss_lcs.npy"
     prediction_actual_path = "./plotting_data/prediction_actual_lcs.npy"
 elif selection == 7:
@@ -113,12 +110,12 @@ if load == 1:
     print("Loaded NN")
 
 # Running training loop
-models = 1
+models = 2
 run = 1
 if run == 1:
     print("Beginning Training Loop")
     while (1):
-        if epoch > num_epochs or revert_break >= 4:
+        if epoch >= num_epochs or revert_break >= 4:
             if (global_min_loss > min_loss):
                 global_min_loss = min_loss
                 np.save(loss_path, loss_arr[:epoch])
@@ -134,7 +131,7 @@ if run == 1:
             lr_power = 0
             if num_model < models:
                 print("Training new model")
-            net.apply(initialize_weights)
+            net.apply(weights_init)
             optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate, weight_decay=weight_decay)
             loss_arr = np.zeros(num_epochs)
             min_loss = np.inf
@@ -151,7 +148,7 @@ if run == 1:
             images = images.to(device)
             # index of labels picks what to train on
             labels = labels[:,selection].to(device)
-            outputs = torch.flatten(net(images, 1))
+            outputs = torch.flatten(net(images))
             loss = criterion(outputs, labels)
     
             # Backward and optimize
@@ -211,6 +208,6 @@ best_model = torch.load(PATH)
 net_cpu.load_state_dict(best_model["model_state_dict"])
 
 net_cpu.eval()
-_, outputs_labels = test_accuracy(net_cpu, testloader, selection, test_batch_size, output_label=outputs_labels)
+outputs_labels = test_accuracy(net_cpu, testloader, selection, test_batch_size, outputs_labels)
 
 np.save(prediction_actual_path, outputs_labels)

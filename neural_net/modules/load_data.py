@@ -2,6 +2,7 @@ import torch
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms
+import numpy as np
 
 def load_data(grid_dir="./training_data/grid_data", committor_dir="./training_data/committor_data"):  
     grid_data = torch.load(grid_dir)
