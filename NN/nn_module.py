@@ -1,6 +1,16 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.utils.data import Dataset
+from sklearn.model_selection import train_test_split
+import torchvision.transforms as transforms
+import numpy as np
+from math import log10, floor
+
+# finding exponent of number
+def find_exp(number) -> int:
+    base10 = log10(abs(number))
+    return floor(base10)
 
 class ConvNet(nn.Module):
     def __init__(self):
@@ -14,14 +24,20 @@ class ConvNet(nn.Module):
         self.pool = nn.MaxPool2d(2,2)
 
         # convolution layers
-        self.conv1 = nn.Conv2d(1, 16, 7, padding=[3,3], padding_mode="circular") # Maybe pad to 10 cause area of cluster
+        self.conv1 = nn.Conv2d(1, 16, 7, padding=[3,3], padding_mode="circular")
         self.conv2 = nn.Conv2d(16, 16, 5, padding=[2,2], padding_mode="circular")
         self.conv3 = nn.Conv2d(16, 16, 3, padding=[1,1], padding_mode="circular")
 
         # drop out
         self.drop = nn.Dropout(p=0.1)
 
+        # resize
+        self.resize = transforms.Resize((64, 64), antialias=False)
+
     def forward(self, x):
+        # resize image
+        x = self.resize(x)
+
         # layer 1
         x = F.leaky_relu(self.conv1(x))
         x = self.pool(x)
@@ -54,7 +70,7 @@ class IsingDataset(Dataset):
     def __getitem__(self, idx):
         image = self.img_data[idx]
         label = self.img_labels[idx]
-        if self.transform=='train':
+        if self.transform=="train":
             #image = transforms.functional.rotate(image, 90)/4 + transforms.functional.rotate(image, 180)/4 + transforms.functional.rotate(image, 270)/4 + image/4
             hflipper = transforms.RandomHorizontalFlip(p=0.5)
             vflipper = transforms.RandomVerticalFlip(p=0.5)
@@ -62,12 +78,12 @@ class IsingDataset(Dataset):
             image = hflipper(image)
             image = vflipper(image)
             image = torch.roll(image, shifts=(np.random.randint(64),np.random.randint(64)), dims=(-1, -2))
-        if self.transform=='test':
+        if self.transform=="test":
             None
             #image = transforms.functional.rotate(image, 90)/4 + transforms.functional.rotate(image, 180)/4 + transforms.functional.rotate(image, 270)/4 + image/4
         return image, label
 
-def test_accuracy(net, testloader, output_label=None, device="cpu"):
+def test_accuracy(net, testloader, selection, test_batch_size, output_label=None, device="cpu"):
     correct = 0
     total = 0
     with torch.no_grad():
@@ -110,7 +126,7 @@ def load_data(grid_dir="./grid_data", committor_dir="./committor_data"):
 
     grid_train, grid_test, committor_train, committor_test = train_test_split(grid_data, committor_data, test_size=0.2)
 
-    trainset = IsingDataset(grid_train, committor_train, transform='train')
-    testset = IsingDataset(grid_test, committor_test)
+    trainset = IsingDataset(grid_train, committor_train, transform="train")
+    testset = IsingDataset(grid_test, committor_test, transform="test")
     test_size = len(testset)
     return trainset, testset, test_size
