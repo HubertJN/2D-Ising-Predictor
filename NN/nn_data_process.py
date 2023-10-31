@@ -36,18 +36,18 @@ def findperimeter(mat, largest_cluster_index):
                 perimeter += (4 - numofneighbour(mat, i, j, largest_cluster_index))
     return perimeter
 
-gridstates = open('/home/eng/phunsc/PhD_Project/2D_Ising_Project/bin/gridstates.bin', 'rb')
-index_file = open('/home/eng/phunsc/PhD_Project/2D_Ising_Project/bin/committor_index.bin', 'rb')
+gridstates = open("../bin/gridstates.bin", "rb")
+index_file = open("../bin/committor_index.bin", "rb")
 byte_prefix = 4*(3)
 ngrids = 8192
 L = 64
 i = 0
 while(1):
-    index = np.fromfile(index_file, dtype=np.int32, count=3, sep='')
+    index = np.fromfile(index_file, dtype=np.int32, count=3, sep="")
     if index.size < 3:
         break
-    committor = np.fromfile(index_file, dtype=np.float64, count=1, sep='')[0]
-    std_dev = np.fromfile(index_file, dtype=np.float64, count=1, sep='')[0]
+    committor = np.fromfile(index_file, dtype=np.float64, count=1, sep="")[0]
+    std_dev = np.fromfile(index_file, dtype=np.float64, count=1, sep="")[0]
     i += 1
 print(i)
 
@@ -64,14 +64,14 @@ one = np.uint32(1)
 blookup = [0, 1]
 
 while(1):
-    index = np.fromfile(index_file, dtype=np.int32, count=3, sep='')
+    index = np.fromfile(index_file, dtype=np.int32, count=3, sep="")
     if index.size < 3:
         break
     index[0] = index[0]/100
-    committor = np.fromfile(index_file, dtype=np.float64, count=1, sep='')[0]
-    std_dev = np.fromfile(index_file, dtype=np.float64, count=1, sep='')[0]
+    committor = np.fromfile(index_file, dtype=np.float64, count=1, sep="")[0]
+    std_dev = np.fromfile(index_file, dtype=np.float64, count=1, sep="")[0]
     gridstates.seek(int(byte_prefix+bytes_per_slice*index[0]+(L*L/8)*(index[1])), os.SEEK_SET)
-    bitgrid = np.fromfile(gridstates, dtype=np.byte, count=64*64, sep='')
+    bitgrid = np.fromfile(gridstates, dtype=np.byte, count=64*64, sep="")
     isite=0
     ising_grids = list(range(L*L))
     for ibyte in range(int(L*L/8)):
@@ -93,8 +93,8 @@ while(1):
     j += 1
 
 try:
-    os.remove('/home/eng/phunsc/PhD_Project/2D_Ising_Project/NN/grid_data')
-    os.remove('/home/eng/phunsc/PhD_Project/2D_Ising_Project/NN/committor_data')
+    os.remove("training_data/grid_data")
+    os.remove("training_data/committor_data")
 except:
     pass
 
@@ -155,8 +155,8 @@ committor_data = torch.from_numpy(committor_data.astype(np.float32))
 # commitor, standard deviation of committor, cluster fit committor, cluster fit committor correcion, perimeter fit committor, perimeter fit correction, cluster-perimeter fit,
 # cluster-perimeter correction, largest cluster size, perimeter of largest cluster
 
-torch.save(grid_data, '/home/eng/phunsc/PhD_Project/2D_Ising_Project/NN/grid_data')
-torch.save(committor_data, '/home/eng/phunsc/PhD_Project/2D_Ising_Project/NN/committor_data')
+torch.save(grid_data, "training_data/grid_data")
+torch.save(committor_data, "training_data/committor_data")
 
 gridstates.close()
 index_file.close()
