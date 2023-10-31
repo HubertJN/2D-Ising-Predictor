@@ -15,7 +15,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 
 # selection index for labels training: 0, 3, 7
-selection = 0
+selection = 3
 
 # 0) Load data
 # Importing function to load data
