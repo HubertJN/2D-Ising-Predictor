@@ -15,38 +15,38 @@ np.set_printoptions(linewidth=np.nan)
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rcParams["font.size"] = 18
 plt.rcParams["figure.figsize"] = (8,8)
-plt.rcParams['figure.dpi'] = 120
-plt.rcParams['axes.linewidth'] = 0.5
+plt.rcParams["figure.dpi"] = 120
+plt.rcParams["axes.linewidth"] = 0.5
 
 # plot or evolution?
 plot = True
-evolution = False
+evolution = True
 
 # 1) Model
 
 from nn_module import ConvNet
     
-device = torch.device('cpu')
+device = torch.device("cpu")
 
 net_base = ConvNet().to(device)
 net_lcs = ConvNet().to(device)
 net_lcs_p = ConvNet().to(device)
 
-PATH = './model_base.pth'
+PATH = "./models/model_base.pth"
 checkpoint_model = torch.load(PATH)
-net_base.load_state_dict(checkpoint_model['model_state_dict'])
+net_base.load_state_dict(checkpoint_model["model_state_dict"])
 net_base.eval()
 print("Loaded NN")
 
-PATH = './model_lcs.pth'
+PATH = "./models/model_lcs.pth"
 checkpoint_model = torch.load(PATH)
-net_lcs.load_state_dict(checkpoint_model['model_state_dict'])
+net_lcs.load_state_dict(checkpoint_model["model_state_dict"])
 net_lcs.eval()
 print("Loaded NN")
 
-PATH = './model_lcs_p.pth'
+PATH = "./models/model_lcs_p.pth"
 checkpoint_model = torch.load(PATH)
-net_lcs_p.load_state_dict(checkpoint_model['model_state_dict'])
+net_lcs_p.load_state_dict(checkpoint_model["model_state_dict"])
 net_lcs_p.eval()
 print("Loaded NN")
 
@@ -60,13 +60,13 @@ color_array[:,1] = 0
 color_array[:,2] = 0
 
 # create a colormap object
-map_object = LinearSegmentedColormap.from_list(name='bw',colors=color_array)
+map_object = LinearSegmentedColormap.from_list(name="bw",colors=color_array)
 plt.register_cmap(cmap=map_object)
 
-committor_data = torch.load("./committor_data")
-grid_data = torch.load("./grid_data")
-evolution_committor_data = torch.load("./evolution_committor_data")
-evolution_grid_data = torch.load("./evolution_grid_data")
+committor_data = torch.load("./training_data/committor_data")
+grid_data = torch.load("./training_data/grid_data")
+evolution_committor_data = torch.load("./training_data/evolution_committor_data")
+evolution_grid_data = torch.load("./training_data/evolution_grid_data")
 
 committor_data = committor_data.numpy()
 grid_data = grid_data.numpy()
@@ -91,7 +91,7 @@ if plot==True:
         smooth_saliency = gaussian_filter(saliency[0], sigma=1)
 
         x,y = np.meshgrid(np.arange(grid_info.shape[1]),np.arange(grid_info.shape[0]))
-        plt.pcolor(x,y,smooth_saliency,norm=colors.LogNorm(vmin=smooth_saliency.min(), vmax=smooth_saliency.max()), cmap='coolwarm', edgecolors='face')
+        plt.pcolor(x,y,smooth_saliency,norm=colors.LogNorm(vmin=smooth_saliency.min(), vmax=smooth_saliency.max()), cmap="coolwarm", edgecolors="face")
         plt.pcolor(x,y,grid_info, cmap="bw", fc="none", edgecolors=None, lw=0.5)
         plt.title("Base Saliency Map", y=1.01)
         plt.xticks([])
@@ -99,7 +99,7 @@ if plot==True:
         ax = plt.gca()
         ax.set_box_aspect(1)
         plt.tight_layout()
-        plt.savefig("figures/base_saliency_map_{}.pdf".format(grid_choice), bbox_inches='tight')
+        plt.savefig("figures/base_saliency_map_{}.pdf".format(grid_choice), bbox_inches="tight")
         print("Figure {} saved".format(grid_choice))
         plt.close()
 
@@ -112,7 +112,7 @@ if plot==True:
         smooth_saliency = gaussian_filter(saliency[0], sigma=1)
 
         x,y = np.meshgrid(np.arange(grid_info.shape[1]),np.arange(grid_info.shape[0]))
-        plt.pcolor(x,y,smooth_saliency,norm=colors.LogNorm(vmin=smooth_saliency.min(), vmax=smooth_saliency.max()), cmap='coolwarm', edgecolors='face')
+        plt.pcolor(x,y,smooth_saliency,norm=colors.LogNorm(vmin=smooth_saliency.min(), vmax=smooth_saliency.max()), cmap="coolwarm", edgecolors="face")
         plt.pcolor(x,y,grid_info, cmap="bw", fc="none", edgecolors=None, lw=0.5)
         plt.title("LCS Saliency Map", y=1.01)
         plt.xticks([])
@@ -120,7 +120,7 @@ if plot==True:
         ax = plt.gca()
         ax.set_box_aspect(1)
         plt.tight_layout()
-        plt.savefig("figures/lcs_saliency_map_{}.pdf".format(grid_choice), bbox_inches='tight')
+        plt.savefig("figures/lcs_saliency_map_{}.pdf".format(grid_choice), bbox_inches="tight")
         print("Figure {} saved".format(grid_choice))
         plt.close()
 
@@ -133,7 +133,7 @@ if plot==True:
         smooth_saliency = gaussian_filter(saliency[0], sigma=1)
 
         x,y = np.meshgrid(np.arange(grid_info.shape[1]),np.arange(grid_info.shape[0]))
-        plt.pcolor(x,y,smooth_saliency,norm=colors.LogNorm(vmin=smooth_saliency.min(), vmax=smooth_saliency.max()), cmap='coolwarm', edgecolors='face')
+        plt.pcolor(x,y,smooth_saliency,norm=colors.LogNorm(vmin=smooth_saliency.min(), vmax=smooth_saliency.max()), cmap="coolwarm", edgecolors="face")
         plt.pcolor(x,y,grid_info, cmap="bw", fc="none", edgecolors=None, lw=0.5)
         plt.title("LCS-P Saliency Map", y=1.01)
         plt.xticks([])
@@ -141,7 +141,7 @@ if plot==True:
         ax = plt.gca()
         ax.set_box_aspect(1)
         plt.tight_layout()
-        plt.savefig("figures/lcs_p_saliency_map_{}.pdf".format(grid_choice), bbox_inches='tight')
+        plt.savefig("figures/lcs_p_saliency_map_{}.pdf".format(grid_choice), bbox_inches="tight")
         print("Figure {} saved".format(grid_choice))
         plt.close()
 
@@ -180,10 +180,10 @@ if evolution==True:
     grid_info = evolution_grid_data[0][0]
     smooth_saliency = smooth_saliency_plot[0]
     x,y = np.meshgrid(np.arange(grid_info.shape[1]),np.arange(grid_info.shape[0]))
-    heat_map = ax.pcolor(x,y,smooth_saliency,norm=colors.LogNorm(vmin=smooth_saliency.min(), vmax=smooth_saliency.max()), cmap='coolwarm', edgecolors='face')
+    heat_map = ax.pcolor(x,y,smooth_saliency,norm=colors.LogNorm(vmin=smooth_saliency.min(), vmax=smooth_saliency.max()), cmap="coolwarm", edgecolors="face")
     lattice = ax.pcolor(x,y,grid_info, cmap="bw", fc="none", edgecolors=None, lw=0.5)
-    committor_text = ax.text(0.01, 0.99, 'Committor: {}, Prediction: {}'.format(round(evolution_committor[0,0],4), round(evolution_committor[0,1],4)), transform = ax.transAxes, horizontalalignment='left',
-     verticalalignment='top', c='g')
+    committor_text = ax.text(0.01, 0.99, "Committor: {}, Prediction: {}".format(round(evolution_committor[0,0],4), round(evolution_committor[0,1],4)), transform = ax.transAxes, horizontalalignment="left",
+     verticalalignment="top", c="g")
 
     def animate(i):
         i += 1
@@ -194,13 +194,13 @@ if evolution==True:
         heat_map.autoscale()
         lattice.set_array(grid_info.flatten())
         lattice.autoscale()
-        committor_text.set_text('Committor: {}, Prediction: {}'.format(round(evolution_committor[i,0],4), round(evolution_committor[i,1],4)))
+        committor_text.set_text("Committor: {}, Prediction: {}".format(round(evolution_committor[i,0],4), round(evolution_committor[i,1],4)))
         return lattice, heat_map, committor_text
 
     anim = animation.FuncAnimation(fig=fig, func=animate, interval=500, blit=True, frames=(len(evolution_grid_data)-1), repeat=False)
     #writergif = animation.PillowWriter(fps=1) 
-    #anim.save('figures/evolution.gif', writer=writergif)
+    #anim.save("figures/evolution.gif", writer=writergif)
     writer = animation.FFMpegWriter(fps=4)
-    anim.save('figures/evolution.mp4', writer = writer, dpi=360)
+    anim.save("figures/evolution.mp4", writer = writer, dpi=360)
     plt.close()
     #plt.show()

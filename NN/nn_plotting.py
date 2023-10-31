@@ -12,7 +12,7 @@ np.set_printoptions(linewidth=np.nan)
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rcParams["font.size"] = 18
 plt.rcParams["figure.figsize"] = (8,8)
-plt.rcParams['figure.dpi'] = 120
+plt.rcParams["figure.dpi"] = 120
 
 # SHOW FIGURES?
 show_figures = False
@@ -20,20 +20,20 @@ show_figures = False
 # bins in plots for std_dev
 bins = 75
 
-prediction_actual_base = np.load("prediction_actual_base.npy")
-loss_base = np.load("loss_base.npy")
+prediction_actual_base = np.load("./plotting_data/prediction_actual_base.npy")
+loss_base = np.load("./plotting_data/loss_base.npy")
 loss_base = loss_base[loss_base > 0.0001]
 
-prediction_actual_lcs = np.load("prediction_actual_lcs.npy")
-loss_lcs = np.load("loss_lcs.npy")
+prediction_actual_lcs = np.load("./plotting_data/prediction_actual_lcs.npy")
+loss_lcs = np.load("./plotting_data/loss_lcs.npy")
 loss_lcs = loss_lcs[loss_lcs > 0.0001]
 
-prediction_actual_lcs_p = np.load("prediction_actual_lcs_p.npy")
-loss_lcs_p = np.load("loss_lcs_p.npy")
+prediction_actual_lcs_p = np.load("./plotting_data/prediction_actual_lcs_p.npy")
+loss_lcs_p = np.load("./plotting_data/loss_lcs_p.npy")
 loss_lcs_p = loss_lcs_p[loss_lcs_p > 0.0001]
 
-committor_data = torch.load("./committor_data")
-grid_data = torch.load("./grid_data")
+committor_data = torch.load("./training_data/committor_data")
+grid_data = torch.load("./training_data/grid_data")
 
 committor_data = committor_data.numpy()
 grid_data = grid_data.numpy()
@@ -50,7 +50,7 @@ cluster_choice = 200
 for grid_choice in [6]:
     grid_index = np.where(committor_data[:,-1] == cluster_choice)
     grid_info = grid_data[grid_index][grid_choice,0]
-    plt.pcolormesh(grid_info, cmap='Greys_r', edgecolors='k', linewidth=0.1)
+    plt.pcolormesh(grid_info, cmap="Greys_r", edgecolors="k", linewidth=0.1)
     plt.title("Ising Grid", y=1.01)
     #plt.title("{}".format(grid_choice))
     plt.xticks([])
@@ -58,7 +58,7 @@ for grid_choice in [6]:
     ax = plt.gca()
     ax.set_box_aspect(1)
     plt.tight_layout()
-    plt.savefig("figures/ising_grid.pdf", bbox_inches='tight')
+    plt.savefig("./figures/ising_grid.pdf", bbox_inches="tight")
     if show_figures:
         plt.show()
     plt.close()
@@ -85,9 +85,9 @@ popt_sig2d, _ = curve_fit(sigmoid2d, [committor_data[:,-1], committor_data[:,-2]
 
 # save fit parameters
 #########
-np.save('popt_sig_clust', popt_sig_clust)
-np.save('popt_sig_perim', popt_sig_perim)
-np.save('popt_sig2d', popt_sig2d)
+np.save("./plotting_data/popt_sig_clust", popt_sig_clust)
+np.save("./plotting_data/popt_sig_perim", popt_sig_perim)
+np.save("./plotting_data/popt_sig2d", popt_sig2d)
 #########
 
 # committor against cluster size
@@ -102,7 +102,7 @@ plt.legend(loc="lower right")
 ax = plt.gca()
 ax.set_box_aspect(1)
 plt.tight_layout()
-plt.savefig('figures/data_dist_clust.pdf', bbox_inches='tight')
+plt.savefig("./figures/data_dist_clust.pdf", bbox_inches="tight")
 if show_figures:
     plt.show()
 plt.close()
@@ -122,7 +122,7 @@ plt.legend(loc="lower right")
 ax = plt.gca()
 ax.set_box_aspect(1)
 plt.tight_layout()
-plt.savefig('figures/data_dist_perim.pdf', bbox_inches='tight')
+plt.savefig("./figures/data_dist_perim.pdf", bbox_inches="tight")
 if show_figures:
     plt.show()
 plt.close()
@@ -159,10 +159,10 @@ plt.xlabel("Actual")
 plt.ylabel("Mean Predicted")
 ax = plt.gca()
 ax.set_box_aspect(1)
-plt.text(0.05, 0.95, 'Standard Deviation: {}'.format(round(std_dev_total,3)), transform = ax.transAxes, horizontalalignment='left',
-     verticalalignment='top')
+plt.text(0.05, 0.95, "Standard Deviation: {}".format(round(std_dev_total,3)), transform = ax.transAxes, horizontalalignment="left",
+     verticalalignment="top")
 plt.tight_layout()
-plt.savefig('figures/base_net_validation.pdf', bbox_inches='tight')
+plt.savefig("./figures/base_net_validation.pdf", bbox_inches="tight")
 if show_figures:
     plt.show()
 plt.close()
@@ -198,10 +198,10 @@ plt.xlabel("Actual")
 plt.ylabel("Mean Predicted")
 ax = plt.gca()
 ax.set_box_aspect(1)
-plt.text(0.05, 0.95, 'Standard Deviation: {}'.format(round(std_dev_total,3)), transform = ax.transAxes, horizontalalignment='left',
-     verticalalignment='top')
+plt.text(0.05, 0.95, "Standard Deviation: {}".format(round(std_dev_total,3)), transform = ax.transAxes, horizontalalignment="left",
+     verticalalignment="top")
 plt.tight_layout()
-plt.savefig('figures/lcs_net_validation_combination.pdf', bbox_inches='tight')
+plt.savefig("./figures/lcs_net_validation_combination.pdf", bbox_inches="tight")
 if show_figures:
     plt.show()
 plt.close()
@@ -237,10 +237,10 @@ plt.xlabel("Actual")
 plt.ylabel("Mean Predicted")
 ax = plt.gca()
 ax.set_box_aspect(1)
-plt.text(0.05, 0.95, 'Standard Deviation: {}'.format(round(std_dev_total,3)), transform = ax.transAxes, horizontalalignment='left',
-     verticalalignment='top')
+plt.text(0.05, 0.95, "Standard Deviation: {}".format(round(std_dev_total,3)), transform = ax.transAxes, horizontalalignment="left",
+     verticalalignment="top")
 plt.tight_layout()
-plt.savefig('figures/lcs_p_net_validation_combination.pdf', bbox_inches='tight')
+plt.savefig("./figures/lcs_p_net_validation_combination.pdf", bbox_inches="tight")
 if show_figures:
     plt.show()
 plt.close()
@@ -275,10 +275,10 @@ plt.xlabel("Actual")
 plt.ylabel("Mean Fit")
 ax = plt.gca()
 ax.set_box_aspect(1)
-plt.text(0.05, 0.95, 'Standard Deviation: {}'.format(round(std_dev_total,3)), transform = ax.transAxes, horizontalalignment='left',
-     verticalalignment='top')
+plt.text(0.05, 0.95, "Standard Deviation: {}".format(round(std_dev_total,3)), transform = ax.transAxes, horizontalalignment="left",
+     verticalalignment="top")
 plt.tight_layout()
-plt.savefig('figures/cluster_validation.pdf', bbox_inches='tight')
+plt.savefig("./figures/cluster_validation.pdf", bbox_inches="tight")
 if show_figures:
     plt.show()
 plt.close()
@@ -313,10 +313,10 @@ plt.xlabel("Actual")
 plt.ylabel("Mean Fit")
 ax = plt.gca()
 ax.set_box_aspect(1)
-plt.text(0.05, 0.95, 'Standard Deviation: {}'.format(round(std_dev_total,3)), transform = ax.transAxes, horizontalalignment='left',
-     verticalalignment='top')
+plt.text(0.05, 0.95, "Standard Deviation: {}".format(round(std_dev_total,3)), transform = ax.transAxes, horizontalalignment="left",
+     verticalalignment="top")
 plt.tight_layout()
-plt.savefig('figures/perimeter_validation.pdf', bbox_inches='tight')
+plt.savefig("./figures/perimeter_validation.pdf", bbox_inches="tight")
 if show_figures:
     plt.show()
 plt.close()
@@ -351,10 +351,10 @@ plt.xlabel("Actual")
 plt.ylabel("Mean Sigmoid Fit")
 ax = plt.gca()
 ax.set_box_aspect(1)
-plt.text(0.05, 0.95, 'Standard Deviation: {}'.format(round(std_dev_total,3)), transform = ax.transAxes, horizontalalignment='left',
-     verticalalignment='top')
+plt.text(0.05, 0.95, "Standard Deviation: {}".format(round(std_dev_total,3)), transform = ax.transAxes, horizontalalignment="left",
+     verticalalignment="top")
 plt.tight_layout()
-plt.savefig('figures/sigmoid_2d_validation.pdf', bbox_inches='tight')
+plt.savefig("./figures/sigmoid_2d_validation.pdf", bbox_inches="tight")
 if show_figures:
     plt.show()
 plt.close()
@@ -383,10 +383,10 @@ plt.ylabel("Fit")
 plt.legend(loc="lower right")
 ax = plt.gca()
 ax.set_box_aspect(1)
-plt.text(0.05, 0.95, 'Correlation Coefficient: {}'.format(round(corr_coeff,3)), transform = ax.transAxes, horizontalalignment='left',
-     verticalalignment='top')
+plt.text(0.05, 0.95, "Correlation Coefficient: {}".format(round(corr_coeff,3)), transform = ax.transAxes, horizontalalignment="left",
+     verticalalignment="top")
 plt.tight_layout()
-plt.savefig('figures/lcs_residuals.pdf', bbox_inches='tight')
+plt.savefig("./figures/lcs_residuals.pdf", bbox_inches="tight")
 if show_figures:
     plt.show()
 plt.close()
@@ -411,10 +411,10 @@ plt.ylabel("Fit")
 plt.legend(loc="lower right")
 ax = plt.gca()
 ax.set_box_aspect(1)
-plt.text(0.05, 0.95, 'Correlation Coefficient: {}'.format(round(corr_coeff,3)), transform = ax.transAxes, horizontalalignment='left',
-     verticalalignment='top')
+plt.text(0.05, 0.95, "Correlation Coefficient: {}".format(round(corr_coeff,3)), transform = ax.transAxes, horizontalalignment="left",
+     verticalalignment="top")
 plt.tight_layout()
-plt.savefig('figures/lcs_p_residuals.pdf', bbox_inches='tight')
+plt.savefig("./figures/lcs_p_residuals.pdf", bbox_inches="tight")
 if show_figures:
     plt.show()
 plt.close()
@@ -439,10 +439,10 @@ plt.ylabel("Fit")
 plt.legend(loc="lower right")
 ax = plt.gca()
 ax.set_box_aspect(1)
-plt.text(0.05, 0.95, 'Correlation Coefficient: {}'.format(round(corr_coeff,3)), transform = ax.transAxes, horizontalalignment='left',
-     verticalalignment='top')
+plt.text(0.05, 0.95, "Correlation Coefficient: {}".format(round(corr_coeff,3)), transform = ax.transAxes, horizontalalignment="left",
+     verticalalignment="top")
 plt.tight_layout()
-plt.savefig('figures/lcs_p_residuals.pdf', bbox_inches='tight')
+plt.savefig("./figures/lcs_p_residuals.pdf", bbox_inches="tight")
 if show_figures:
     plt.show()
 plt.close()
@@ -457,7 +457,7 @@ plt.ylabel("MSE Loss")
 ax = plt.gca()
 ax.set_box_aspect(1)
 plt.tight_layout()
-plt.savefig('figures/base_loss.pdf', bbox_inches='tight')
+plt.savefig("./figures/base_loss.pdf", bbox_inches="tight")
 if show_figures:
     plt.show()
 plt.close()
@@ -472,7 +472,7 @@ plt.ylabel("MSE Loss")
 ax = plt.gca()
 ax.set_box_aspect(1)
 plt.tight_layout()
-plt.savefig('figures/lcs_loss.pdf', bbox_inches='tight')
+plt.savefig("./figures/lcs_loss.pdf", bbox_inches="tight")
 if show_figures:
     plt.show()
 plt.close()
@@ -487,7 +487,7 @@ plt.ylabel("MSE Loss")
 ax = plt.gca()
 ax.set_box_aspect(1)
 plt.tight_layout()
-plt.savefig('figures/lcs_p_loss.pdf', bbox_inches='tight')
+plt.savefig("./figures/lcs_p_loss.pdf", bbox_inches="tight")
 if show_figures:
     plt.show()
 plt.close()
