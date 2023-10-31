@@ -15,7 +15,7 @@ plt.rcParams["figure.figsize"] = (8,8)
 plt.rcParams['figure.dpi'] = 120
 
 # SHOW FIGURES?
-show_figures = True
+show_figures = False
 
 # bins in plots for std_dev
 bins = 75

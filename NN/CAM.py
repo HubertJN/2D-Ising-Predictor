@@ -19,8 +19,8 @@ plt.rcParams['figure.dpi'] = 120
 plt.rcParams['axes.linewidth'] = 0.5
 
 # plot or evolution?
-plot = False
-evolution = True
+plot = True
+evolution = False
 
 # 1) Model
 
@@ -50,28 +50,9 @@ net_lcs_p.load_state_dict(checkpoint_model['model_state_dict'])
 net_lcs_p.eval()
 print("Loaded NN")
 
-# Setup class activation map
-features_blobs = []
-def hook_feature(module, input, output):
-    features_blobs.append(output.data.cpu().numpy())
-
-net_base._modules.get("conv3").register_forward_hook(hook_feature)
-net_lcs._modules.get("conv3").register_forward_hook(hook_feature)
-net_lcs_p._modules.get("conv3").register_forward_hook(hook_feature)
-
-# get colormap
+# create color map to have only outline for up spins
 ncolors = 256
 color_array = np.zeros([ncolors, 4])
-
-# change alpha values
-color_array[:,-1] = np.flip(np.linspace(1.0,0.0, ncolors))
-color_array[:,0] = 1
-color_array[:,1] = 0
-color_array[:,2] = 0
-
-# create a colormap object
-map_object = LinearSegmentedColormap.from_list(name='alpha',colors=color_array)
-plt.register_cmap(cmap=map_object)
 
 color_array[:,-1] = np.flip(np.linspace(1.0,0.0, ncolors))
 color_array[:,0] = 0

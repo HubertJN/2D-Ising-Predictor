@@ -4,7 +4,7 @@
 int main() {
 
     // Set filenames
-    const char *filename1 = "committor_index.bin";
+    const char *filename1 = "evolution_index.bin";
 
     // open write cluster file
     FILE *ptr1 = fopen(filename1,"rwb"); // open for write if not available for append 

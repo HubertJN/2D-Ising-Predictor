@@ -36,7 +36,7 @@ class ConvNet(nn.Module):
 
     def forward(self, x):
         # resize image
-        x = self.resize(x)
+        #x = self.resize(x)
 
         # layer 1
         x = F.leaky_relu(self.conv1(x))
@@ -63,12 +63,14 @@ class IsingDataset(Dataset):
         self.img_labels = labels
         self.img_data = data
         self.transform = transform
+        self.resize = transforms.Resize((64, 64), antialias=False)
 
     def __len__(self):
         return len(self.img_labels)
 
     def __getitem__(self, idx):
         image = self.img_data[idx]
+        image = self.resize(image)
         label = self.img_labels[idx]
         if self.transform=="train":
             #image = transforms.functional.rotate(image, 90)/4 + transforms.functional.rotate(image, 180)/4 + transforms.functional.rotate(image, 270)/4 + image/4
