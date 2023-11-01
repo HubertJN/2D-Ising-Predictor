@@ -112,7 +112,7 @@ def test_autofill(MainMenuConfigObj, monkeypatch):
     monkeypatch.setattr('builtins.input', lambda _: 'model-name-1')
     yeilding_event_loop(ConfigObj)
     # Next event call requies many input rounds before yielding
-    input_gen = ['AutoFill', '1', '5', '0.9', '10', '10', '1000', '50', '10', '12', '1', '1', '1']
+    input_gen = ['AutoFill', '1', '5', '0.9', '10', '10', '1000', '10', '12', '1', '1', '1']
     monkeypatch.setattr('builtins.input', lambda _: input_gen.pop(0))
     yeilding_event_loop(ConfigObj)
     assert ConfigObj.sim_class.models.get('model-name-1').model_config['model_id'] == 1
@@ -120,8 +120,7 @@ def test_autofill(MainMenuConfigObj, monkeypatch):
     assert ConfigObj.sim_class.models.get('model-name-1').model_config['num_concurrent'] == '5'
     assert ConfigObj.sim_class.models.get('model-name-1').model_config['nucleation_threshold'] == '0.9'
     assert ConfigObj.sim_class.models.get('model-name-1').model_config['grid_size'] == ['10', '10']
-    assert ConfigObj.sim_class.models.get('model-name-1').model_config['num_iterations'] == '1000'
-    assert ConfigObj.sim_class.models.get('model-name-1').model_config['iterations'] == '50'
+    assert ConfigObj.sim_class.models.get('model-name-1').model_config['iterations'] == '1000'
     assert ConfigObj.sim_class.models.get('model-name-1').model_config['iter_per_step'] == '10'
     assert ConfigObj.sim_class.models.get('model-name-1').model_config['seed'] == '12'
     assert ConfigObj.sim_class.models.get('model-name-1').model_config['inv_temp'] == '1'

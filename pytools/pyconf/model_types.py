@@ -9,7 +9,6 @@ class Simulation():
             'num_concurrent': None,
             'nucleation_threshold': None,
             'grid_size': None,
-            'num_iterations': None,
             'iterations': None,
             'iter_per_step': None,
             'seed': None,
