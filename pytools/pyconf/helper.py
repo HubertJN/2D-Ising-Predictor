@@ -310,20 +310,37 @@ class SimulationSet():
 
         with open(full_path, 'w') as f:
             for model in self.models.values():
-                model_config = model.get('model_config', 'set_not_config')
+                if type(model) == dict:
+                    model_config = model.get('model_config', 'set_not_config')
+                elif isinstance(model, Simulation):
+                    model_config = 'model'
+
                 if model_config == 'set_not_config':
                     for model in model.values():
                         f.write('## New model ##\n')
                         for key, value in model.model_config.items():
-                            f.write(f'{key}={value}\n')
+                            self.write_correctly(f, key, value)
                         f.write('\n')
                 else:
                     f.write('## New model ##\n')
                     for key, value in model.model_config.items():
-                        f.write(f'{key}={value}\n')
-                    f.write('\n')
-                
+                        self.write_correctly(f, key, value)
+                    f.write('\n') 
         pass
+
+    def write_correctly(self, f, key, value):
+        # if the key is in the list of keys that need to be written differently then pick the correct method
+        if key in ['grid_size']:
+            if key == 'grid_size':
+                f.write(f'size_x={value[0]}\n')
+                f.write(f'size_y={value[1]}\n')
+        else:
+            f.write(f'{key}={value}\n')
+
+            
+
+
+
         
     
 #===============================================================================

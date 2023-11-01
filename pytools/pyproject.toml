@@ -27,3 +27,6 @@ addopts = "-ra -q"
 testpaths = [
     "./tests",
 ]
+#markers = [
+#    "configfile: mark a test as requiring a config test.",
+#]

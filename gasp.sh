@@ -27,11 +27,15 @@ while [[ $# -gt 0 ]]; do
     --python_init)
       cd pytools/
       poetry shell
-      cd -
+      cd ..
       exit # past argument
       ;;
     --pytest)
       pytest
+      exit
+      ;;
+    --test_logfile)
+      python3 invoke_pytest.py $2
       exit
       ;;
     --make_config)
