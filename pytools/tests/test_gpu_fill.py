@@ -90,7 +90,7 @@ def test_gpu_fill_range_single_model(BlankModel, PopulateModel, monkeypatch):
         'iterations': 1000,
         'iter_per_step': 10,
         'seed': 1,
-        'inv_temp': 1.5,
+        'inv_temperature': 1.5,
         'field': 1.5,
         'starting_config': 1,
     }
@@ -137,7 +137,7 @@ def test_gpu_fill_range_multi_model(BlankModel, AddModel, PopulateModel, monkeyp
         'iterations': 1000,
         'iter_per_step': 10,
         'seed': 1,
-        'inv_temp': 1.5,
+        'inv_temperature': 1.5,
         'field': 1.5,
         'starting_config': 1,
     }
@@ -172,7 +172,7 @@ def test_gpu_fill_range_multi_model(BlankModel, AddModel, PopulateModel, monkeyp
         'iterations': 1000,
         'iter_per_step': 10,
         'seed': 1,
-        'inv_temp': 1.5,
+        'inv_temperature': 1.5,
         'field': 1.5,
         'starting_config': 1,
     }
@@ -225,7 +225,7 @@ def test_gpu_fill_ortho_single(BlankModel, PopulateModel, monkeypatch):
         'iterations': 1000,
         'iter_per_step': 10,
         'seed': 1,
-        'inv_temp': 1.5,
+        'inv_temperature': 1.5,
         'field': 1.5,
         'starting_config': 1,
     }
@@ -239,7 +239,7 @@ def test_gpu_fill_ortho_single(BlankModel, PopulateModel, monkeypatch):
     yeilding_event_loop(ConfigObj)
     monkeypatch.setattr('builtins.input', lambda _: 'OrthogonalFill')
     yeilding_event_loop(ConfigObj)
-    input_gen = ['nucleation_threshold', 'field', 'inv_temp', 'Done']
+    input_gen = ['nucleation_threshold', 'field', 'inv_temperature', 'Done']
     monkeypatch.setattr('builtins.input', lambda _: input_gen.pop(0))
     yeilding_event_loop(ConfigObj)
     yeilding_event_loop(ConfigObj)

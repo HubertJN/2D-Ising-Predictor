@@ -35,7 +35,7 @@ def test_orthogonal_fill(InitObjectConfigObj, monkeypatch):
     yeilding_event_loop(ConfigObj)
     monkeypatch.setattr('builtins.input', lambda _: 'OrthogonalFill')
     yeilding_event_loop(ConfigObj)
-    input_gen = ['nucleation_threshold', 'field', 'inv_temp', 'Done']
+    input_gen = ['nucleation_threshold', 'field', 'inv_temperature', 'Done']
     monkeypatch.setattr('builtins.input', lambda _: input_gen.pop(0))
     yeilding_event_loop(ConfigObj)
     yeilding_event_loop(ConfigObj)
@@ -46,27 +46,27 @@ def test_orthogonal_fill(InitObjectConfigObj, monkeypatch):
     # Check original model is deleted
     assert ConfigObj.sim_class.models.get('fixture-model') == None
     # Check new models are created (non exhaustive)
-    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temp-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-n1_0-inv_temp-0_0') != None
-    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temp-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-n1_0-inv_temp-0_0').model_config['nucleation_threshold'] == 0
-    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temp-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-n1_0-inv_temp-0_0').model_config['field'] == -1.0
-    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temp-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-n1_0-inv_temp-0_0').model_config['inv_temp'] == 0
-    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temp-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_9-field-n1_0-inv_temp-0_0') != None
-    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temp-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_9-field-n1_0-inv_temp-0_0').model_config['nucleation_threshold'] == 0.9
-    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temp-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_9-field-n1_0-inv_temp-0_0').model_config['field'] == -1.0
-    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temp-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_9-field-n1_0-inv_temp-0_0').model_config['inv_temp'] == 0
-    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temp-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-n1_0-inv_temp-0_9') != None
-    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temp-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-n1_0-inv_temp-0_9').model_config['nucleation_threshold'] == 0
-    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temp-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-n1_0-inv_temp-0_9').model_config['field'] == -1.0
-    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temp-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-n1_0-inv_temp-0_9').model_config['inv_temp'] == 0.9
-    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temp-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-0_8-inv_temp-0_0') != None
-    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temp-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-0_8-inv_temp-0_0').model_config['nucleation_threshold'] == 0
-    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temp-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-0_8-inv_temp-0_0').model_config['field'] == 0.8
-    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temp-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-0_8-inv_temp-0_0').model_config['inv_temp'] == 0   
-    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temp-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-n1_0-inv_temp-0_0') != None
-    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temp-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_9-field-0_8-inv_temp-0_9').model_config['nucleation_threshold'] == 0.9
-    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temp-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_9-field-0_8-inv_temp-0_9').model_config['field'] == 0.8
-    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temp-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_9-field-0_8-inv_temp-0_9').model_config['inv_temp'] == 0.9
-    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temp-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-0_0-inv_temp-0_0') != None
-    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temp-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-0_0-inv_temp-0_0').model_config['nucleation_threshold'] == 0.0
-    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temp-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-0_0-inv_temp-0_0').model_config['field'] == 0.0
-    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temp-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-0_0-inv_temp-0_0').model_config['inv_temp'] == 0.0
+    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temperature-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-n1_0-inv_temperature-0_0') != None
+    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temperature-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-n1_0-inv_temperature-0_0').model_config['nucleation_threshold'] == 0
+    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temperature-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-n1_0-inv_temperature-0_0').model_config['field'] == -1.0
+    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temperature-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-n1_0-inv_temperature-0_0').model_config['inv_temperature'] == 0
+    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temperature-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_9-field-n1_0-inv_temperature-0_0') != None
+    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temperature-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_9-field-n1_0-inv_temperature-0_0').model_config['nucleation_threshold'] == 0.9
+    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temperature-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_9-field-n1_0-inv_temperature-0_0').model_config['field'] == -1.0
+    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temperature-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_9-field-n1_0-inv_temperature-0_0').model_config['inv_temperature'] == 0
+    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temperature-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-n1_0-inv_temperature-0_9') != None
+    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temperature-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-n1_0-inv_temperature-0_9').model_config['nucleation_threshold'] == 0
+    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temperature-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-n1_0-inv_temperature-0_9').model_config['field'] == -1.0
+    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temperature-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-n1_0-inv_temperature-0_9').model_config['inv_temperature'] == 0.9
+    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temperature-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-0_8-inv_temperature-0_0') != None
+    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temperature-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-0_8-inv_temperature-0_0').model_config['nucleation_threshold'] == 0
+    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temperature-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-0_8-inv_temperature-0_0').model_config['field'] == 0.8
+    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temperature-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-0_8-inv_temperature-0_0').model_config['inv_temperature'] == 0   
+    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temperature-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-n1_0-inv_temperature-0_0') != None
+    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temperature-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_9-field-0_8-inv_temperature-0_9').model_config['nucleation_threshold'] == 0.9
+    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temperature-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_9-field-0_8-inv_temperature-0_9').model_config['field'] == 0.8
+    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temperature-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_9-field-0_8-inv_temperature-0_9').model_config['inv_temperature'] == 0.9
+    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temperature-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-0_0-inv_temperature-0_0') != None
+    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temperature-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-0_0-inv_temperature-0_0').model_config['nucleation_threshold'] == 0.0
+    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temperature-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-0_0-inv_temperature-0_0').model_config['field'] == 0.0
+    assert ConfigObj.sim_class.models.get('fixture-model-of-nucleation_threshold-0-1-0_1-field-n1-1-0_2-inv_temperature-0-1-0_1').get('fixture-model-of-nucleation_threshold-0_0-field-0_0-inv_temperature-0_0').model_config['inv_temperature'] == 0.0

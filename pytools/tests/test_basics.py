@@ -96,7 +96,7 @@ size_y=2000\
 iterations=None\
 iter_per_step=None\
 seed=None\
-inv_temp=None\
+inv_temperature=None\
 field=None\
 starting_config=None\
 \
@@ -109,7 +109,7 @@ size_y=200\
 iterations=None\
 iter_per_step=None\
 seed=None\
-inv_temp=None\
+inv_temperature=None\
 field=None\
 starting_config=None\
 "

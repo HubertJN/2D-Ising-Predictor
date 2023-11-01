@@ -12,7 +12,7 @@ class Simulation():
             'iterations': None,
             'iter_per_step': None,
             'seed': None,
-            'inv_temp': None,
+            'inv_temperature': None,
             'field': None,
             'starting_config': None,
         }
