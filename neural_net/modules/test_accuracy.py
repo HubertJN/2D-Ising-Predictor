@@ -11,9 +11,9 @@ def test_accuracy(net, testloader, selection, test_batch_size, output_label, dev
     correct = 0
     total = 0
     with torch.no_grad():
-        for i, (images, labels) in enumerate(testloader):
-            images, labels = images.to(device), (labels).to(device)
-            outputs = net(images)
+        for i, (images, extra, labels) in enumerate(testloader):
+            images, extra, labels = images.to(device), extra.to(device), labels.to(device)
+            outputs = net(images, extra)
             predicted = outputs
             total += labels.size(0)
             for j, (k, l) in enumerate(zip(predicted,labels)):

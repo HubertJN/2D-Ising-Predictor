@@ -10,6 +10,11 @@ class conv_net(nn.Module):
         self.fc2 = nn.Linear(1024, 512)
         self.fc3 = nn.Linear(512, 1)
 
+        # decision layers
+        self.d1 = nn.Linear(3, 100)
+        self.d2 = nn.Linear(100, 100)
+        self.d3 = nn.Linear(100, 1)
+
         # pooling
         self.pool = nn.MaxPool2d(2,2)
 
@@ -22,7 +27,7 @@ class conv_net(nn.Module):
         self.drop = nn.Dropout(p=0.1)
 
 
-    def forward(self, x):
+    def forward(self, x, y):
         # layer 1
         x = F.leaky_relu(self.conv1(x))
         x = self.pool(x)
@@ -41,4 +46,14 @@ class conv_net(nn.Module):
         x = F.leaky_relu(self.fc2(x))
         x = self.drop(x)
         x = self.fc3(x)
-        return x
+
+        # combine and flatten
+        z = torch.cat((x,y), dim=-1)
+        z = z.view(-1, 3)
+
+        # final decision layer
+        z = F.leaky_relu(self.d1(z))
+        z = F.leaky_relu(self.d2(z))
+        z = self.d3(z)
+
+        return z

@@ -29,6 +29,7 @@ class ising_dataset(Dataset):
         image = self.img_data[idx]
         image = self.resize(image)
         label = self.img_labels[idx]
+        extra = torch.tensor((0.54, 0.07))
         if self.transform=="train":
             #image = transforms.functional.rotate(image, 90)/4 + transforms.functional.rotate(image, 180)/4 + transforms.functional.rotate(image, 270)/4 + image/4
             hflipper = transforms.RandomHorizontalFlip(p=0.5)
@@ -40,4 +41,4 @@ class ising_dataset(Dataset):
         if self.transform=="test":
             None
             #image = transforms.functional.rotate(image, 90)/4 + transforms.functional.rotate(image, 180)/4 + transforms.functional.rotate(image, 270)/4 + image/4
-        return image, label
+        return image, extra, label

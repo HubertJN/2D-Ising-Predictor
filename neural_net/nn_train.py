@@ -15,7 +15,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 
 # selection index for labels training: 0, 3, 7
-selection = 3
+selection = 0
 
 # 0) Load data
 # Importing function to load data
@@ -98,7 +98,7 @@ reset = 1
 loss_arr = np.zeros(num_epochs)
 
 # Loading model
-load = 0
+load = 1
 if load == 1:
     checkpoint_model = torch.load(PATH)
     net.load_state_dict(checkpoint_model["model_state_dict"])
@@ -111,7 +111,7 @@ if load == 1:
 
 # Running training loop
 models = 2
-run = 1
+run = 0
 if run == 1:
     print("Beginning Training Loop")
     while (1):
@@ -144,11 +144,13 @@ if run == 1:
 
         epoch += 1
 
-        for i, (images, labels) in enumerate(trainloader):
+        for i, (images, extra, labels) in enumerate(trainloader):
             images = images.to(device)
+            extra = extra.to(device)
+
             # index of labels picks what to train on
             labels = labels[:,selection].to(device)
-            outputs = torch.flatten(net(images))
+            outputs = torch.flatten(net(images, extra))
             loss = criterion(outputs, labels)
     
             # Backward and optimize
