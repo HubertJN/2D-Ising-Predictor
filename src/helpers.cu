@@ -1,5 +1,7 @@
 #include <iostream>
 #include <fstream>
+#include <filesystem>
+#include <string>
 
 #include "../include/helpers.h"
 
@@ -95,12 +97,20 @@ void outputGridToTxtFile(ising_model_config *launch_struct, int *host_grid, floa
   fflush(stderr);
   // Output the grid to a file
   char filename[100];
+  char pathname[100];
   int grid_size = launch_struct->size[0]*launch_struct->size[1];
 
-  snprintf(filename, sizeof(filename), prefix);
-  snprintf(filename+strlen(prefix), sizeof(filename)-strlen(prefix), "grid_%d_%d_%d.txt", stream_ix, grid_size, iteration);
+  namespace fs = std::filesystem;
+  fs::path pathname_path;
 
-  realpath(filename, filename);
+  pathname_path = fs::current_path();
+  path_search(pathname_path, pathname);
+
+  snprintf(filename, sizeof(filename), prefix);
+  snprintf(filename+strlen(prefix), sizeof(filename)-strlen(prefix), "grid_%d_%d_%d.dat", stream_ix, grid_size, iteration);
+
+  snprintf(pathname+strlen(pathname), sizeof(pathname)-strlen(filename), "/%s", filename);
+  strcpy(filename, pathname);
   fprintf(stderr, "Making File: %s\n", filename);
   fflush(stderr);
 
@@ -133,6 +143,18 @@ void outputGridToTxtFile(ising_model_config *launch_struct, int *host_grid, floa
 
 }
 
+// function that finds path to GPU-Arch-Test provided gasp is run from within repo
+int path_search(std::filesystem::path pathname_path, char* pathname) {
+  if (pathname_path.filename() == "GPU-Arch-Test") {
+    std::string pathname_str = pathname_path.string();
+    strcpy(pathname, pathname_str.c_str());
+    fprintf(stderr, "%s\n", pathname);
+    return 0;
+  }
+  pathname_path = pathname_path.parent_path();
+  path_search(pathname_path, pathname);
+  return 1;
+}
 
 // \todo Swap mag for committor, remove nucleation info
 // \todo Add extra check info
@@ -147,15 +169,24 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
  
   fprintf(stderr, "Outputting grid to file\n");
   fflush(stderr);
+
   // Output the grid to a file
   char filename[100];
+  char pathname[100];
   int grid_size = launch_struct->size[0]*launch_struct->size[1];
 
+  namespace fs = std::filesystem; // define namespace for finding current working directory and path
+  fs::path pathname_path;
+
+  pathname_path = fs::current_path();
+  path_search(pathname_path, pathname); // recursive search to find path to GPU-Arch-Test
+
   snprintf(filename, sizeof(filename), prefix);
-  snprintf(filename+strlen(prefix), sizeof(filename)-strlen(prefix), "grid_%d_%d_%d.dat", stream_ix, grid_size, iteration);
-  
+  snprintf(filename+strlen(prefix), sizeof(filename)-strlen(prefix), "grid_%d_%d_%d.dat", stream_ix, grid_size, iteration); // creates full filename
+
   fprintf(stderr, "Making File: %s\n", filename);
-  realpath(filename, filename);
+  snprintf(pathname+strlen(pathname), sizeof(pathname)-strlen(filename), "/%s", filename); // Combines path with filename for final path to file to write to
+  strcpy(filename, pathname); 
   fprintf(stderr, "Making File: %s\n", filename);
   fflush(stderr);
 
@@ -232,7 +263,7 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
   //Check file location matches what we expected
   if((size_t)file.tellg() != next_location) write_err=1;
 
-  if(write_err) fprintf(stderr, "File Writing error");
+  if(write_err) fprintf(stderr, "File Writing error\n");
 
   file.close();
 }
