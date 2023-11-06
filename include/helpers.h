@@ -1,6 +1,9 @@
 #ifndef HELPERS_H
 #define HELPERS_H
-
+#include <iostream>
+#include <fstream>
+#include <filesystem>
+#include <string>
 #include <stdio.h>
 #include <stdlib.h>
 #include <cuda.h>

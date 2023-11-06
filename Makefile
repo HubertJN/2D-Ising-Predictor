@@ -63,11 +63,11 @@ DEFINES := -DVERSION=\"$(VERSION)\"
 $(info Version string is ${VERSION})
 
 clean:
-	rm -r $(BUILD_DIR)
-	$(RM) VERSION
+	rm -r $(BUILD_DIR) || true
+	$(RM) VERSION || true
 
 release: $(OBJS)
-	$(LD) -o $(BUILD_DIR)/$(TARGET_EXEC) $(OBJS) $(NVFLAGS) -g -G -O0 $(DEPFLAGS) 
+	$(LD) -o $(BUILD_DIR)/$(TARGET_EXEC) $(OBJS) $(NVFLAGS) -s -O0 $(DEPFLAGS) 
 
 debug: $(OBJS)
 	$(LD) -o $(BUILD_DIR)/$(DEBUG_EXEC) $(OBJS) $(NVFLAGS) -g -G -O0 -DDEBUG $(DEPFLAGS) 
@@ -91,7 +91,7 @@ $(BUILD_DIR)/%.c.o: %.c
 # Build step for Cuda source
 $(BUILD_DIR)/%.cu.o: %.cu
 	mkdir -p $(dir $@)
-	$(NVCC) $(NVFLAGS) $(DEFINES) -c $< -o $@ -diag-suppress 2464
+	$(NVCC) $(NVFLAGS) -g -G $(DEFINES) -c $< -o $@ -diag-suppress 2464
 
 
 # Include the .d makefiles. The - at the front suppresses the errors of missing

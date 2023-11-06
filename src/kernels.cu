@@ -1,8 +1,5 @@
 #include "../include/kernels.h"
 
-
-
-
 __global__ void init_rng(curandState *state, unsigned int seed, int n)
 {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
@@ -122,6 +119,7 @@ __global__ void mc_sweep(curandState *state, const int L_x, const int L_y, const
 
       // The store back to global memory, not the branch or the RNG generation
       // seems to be the killer here.
+
       if (curand_uniform(&localState) < d_Pacc[index] ) {
           // accept
           loc_grid[my_idx] = -1*spin;

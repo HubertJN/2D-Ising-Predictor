@@ -1,7 +1,8 @@
 #ifndef KERNELS_H
 #define KERNELS_H
 
-
+#include <stdio.h>
+#include <stdlib.h>
 #include <curand_kernel.h>
 #include <float.h>
 

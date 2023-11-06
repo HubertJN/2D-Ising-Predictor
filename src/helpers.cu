@@ -1,8 +1,3 @@
-#include <iostream>
-#include <fstream>
-#include <filesystem>
-#include <string>
-
 #include "../include/helpers.h"
 
 cudaError_t err;  // cudaError_t is a type defined in cuda.h

@@ -50,6 +50,12 @@ while [[ $# -gt 0 ]]; do
       bin/gasp $2
       exit
       ;;
+    --debug) $2
+      make debug
+      echo "Running cuda-gdb bin/gasp_debug, once in the debugger type \`run" $2"\` to run the program"
+      cuda-gdb bin/gasp_debug
+      exit
+      ;;
     -*|--*)
       echo "Unknown option $1"
       exit 1
