@@ -22,12 +22,6 @@ def test_accuracy(net, testloader, selection, test_batch_size, output_label, dev
                 output_label[i*test_batch_size+j, 1] = l[1].item()
                 output_label[i*test_batch_size+j, 2] = l[2].item()
                 output_label[i*test_batch_size+j, 3] = l[3].item()
-                output_label[i*test_batch_size+j, 4] = l[4].item()
-                output_label[i*test_batch_size+j, 5] = l[5].item()
-                output_label[i*test_batch_size+j, 6] = l[6].item()
-                output_label[i*test_batch_size+j, 7] = l[7].item()
-                output_label[i*test_batch_size+j, 8] = l[8].item()
-                output_label[i*test_batch_size+j, 9] = l[9].item()
-                output_label[i*test_batch_size+j, 10] = k.item()
+                output_label[i*test_batch_size+j, 4] = k.item()
 
     return output_label
