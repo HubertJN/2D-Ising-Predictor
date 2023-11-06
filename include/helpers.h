@@ -20,6 +20,9 @@ void preComputeProbs(ising_model_config *config, float* d_Pacc);
 
 void preComputeNeighbours(ising_model_config *config, int *d_neighbour_list);
 
+// This needs to be set to whatever the containing folder is called
+const char project_name[30]="2DIsing_Model";
+// this is fine
 const char prefix[30]="grid_binaries/output/";
 
 void outputGridToTxtFile(ising_model_config *config, int *host_grid, float *host_mag, int iteration, int stream_ix);
@@ -27,6 +30,8 @@ void outputGridToTxtFile(ising_model_config *config, int *host_grid, float *host
 void outputGridToFile(ising_model_config *config, int *host_grid, float *host_mag, int iteration, int stream_ix);
 
 int readGridsFromFile(ising_model_config * config, int *&host_grid);
+
+int path_search(std::filesystem::path pathname_path, char* pathname);
 
 #endif // HELPERS_H
 

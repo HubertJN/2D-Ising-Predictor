@@ -51,7 +51,7 @@ void preComputeNeighbours(ising_model_config *config, int *d_neighbour_list) {
   int *h_neighbour_list = (int *)malloc(neighbour_list_size*sizeof(int));
 
   int grid_index;
-  for (grid_index=0;grid_index<config->size[0]*config->size[1];grid_index++){
+  for (grid_index=0; grid_index<config->size[0]*config->size[1]; grid_index++){
 
     int row = grid_index/config->size[0];
     int col = grid_index%config->size[0];
@@ -140,7 +140,7 @@ void outputGridToTxtFile(ising_model_config *launch_struct, int *host_grid, floa
 
 // function that finds path to GPU-Arch-Test provided gasp is run from within repo
 int path_search(std::filesystem::path pathname_path, char* pathname) {
-  if (pathname_path.filename() == "GPU-Arch-Test") {
+  if (pathname_path.filename() == "2DIsing_Model") {
     std::string pathname_str = pathname_path.string();
     strcpy(pathname, pathname_str.c_str());
     fprintf(stderr, "%s\n", pathname);
@@ -166,22 +166,50 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
   fflush(stderr);
 
   // Output the grid to a file
-  char filename[100];
-  char pathname[100];
+  char filename[PATH_MAX];
   int grid_size = launch_struct->size[0]*launch_struct->size[1];
 
-  namespace fs = std::filesystem; // define namespace for finding current working directory and path
-  fs::path pathname_path;
 
-  pathname_path = fs::current_path();
-  path_search(pathname_path, pathname); // recursive search to find path to GPU-Arch-Test
-
-  snprintf(filename, sizeof(filename), prefix);
-  snprintf(filename+strlen(prefix), sizeof(filename)-strlen(prefix), "grid_%d_%d_%d.dat", stream_ix, grid_size, iteration); // creates full filename
-
-  fprintf(stderr, "Making File: %s\n", filename);
-  snprintf(pathname+strlen(pathname), sizeof(pathname)-strlen(filename), "/%s", filename); // Combines path with filename for final path to file to write to
-  strcpy(filename, pathname); 
+  // Get current working directory
+  char cwd[PATH_MAX];
+   if (getcwd(cwd, sizeof(cwd)) != NULL) {
+       printf("Current working dir: %s\n", cwd);
+   } else {
+       perror("getcwd() error");
+   }
+  // compare to expected path from git repo
+  // test last 3 chars are "bin"
+  if (strcmp(cwd+strlen(cwd)-3, "bin") == 0) {
+    // filepath is ../prefix
+    snprintf(filename, sizeof(filename), "../%s", prefix);
+  }
+  // test last 11 chars are "2DIsing_Model"
+  else if (strcmp(cwd+strlen(cwd)-11, "2DIsing_Model") == 0) {
+    snprintf(filename, sizeof(filename), "./%s", prefix);
+  }
+  // test if last chars are "GASP"
+  else if (strcmp(cwd+strlen(cwd)-4, "GASP") == 0) {
+    snprintf(filename, sizeof(filename), "./%s", prefix); 
+  }
+  // exit if not running from within repo
+  else {
+    fprintf(stderr, "Error: not running from any expected location, please launch from bin or main repo\n");
+    exit(EXIT_FAILURE);
+  }
+  
+  
+  // resolve the path using realpath
+  char buffer[PATH_MAX];
+  char *res = realpath(filename, buffer);
+  if (res) {
+    snprintf(filename, sizeof(filename), buffer);
+  } else {
+    char* errStr = strerror(errno);
+    fprintf(stderr, "filepath error: %s\n", errStr);
+    perror("realpath");
+    exit(EXIT_FAILURE);
+  }
+  snprintf(filename+strlen(buffer), sizeof(filename)-strlen(buffer), "/grid_%d_%d_%d.dat", stream_ix, grid_size, iteration);
   fprintf(stderr, "Making File: %s\n", filename);
   fflush(stderr);
 

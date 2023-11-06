@@ -88,6 +88,7 @@ __global__ void mc_sweep(curandState *state, const int L_x, const int L_y, const
 
   int idx = threadIdx.x+blockIdx.x*blockDim.x;
   int index;
+  float shrink;
 
   if (idx < ngrids) {
 
@@ -97,7 +98,7 @@ __global__ void mc_sweep(curandState *state, const int L_x, const int L_y, const
     int N = L_x*L_y;
     // Avoid rounding errors after creating random numbers by ensuring out max
     // is upto 1.0f not up to 1.0f + FLT_EPSILON
-    float shrink = (1.0f - FLT_EPSILON)*(float)N;
+    shrink = (1.0f - FLT_EPSILON)*(float)N;
 
     // Pointer to local grid
     int *loc_grid = &d_ising_grids[idx*N]; // pointer to device global memory 
@@ -111,16 +112,16 @@ __global__ void mc_sweep(curandState *state, const int L_x, const int L_y, const
       spin = loc_grid[my_idx];
 
       // use neighbour list to get neighbours from constant memory
-      n1 = loc_grid[d_neighbour_list[my_idx] + 0];
-      n2 = loc_grid[d_neighbour_list[my_idx] + 1];
-      n3 = loc_grid[d_neighbour_list[my_idx] + 2];
-      n4 = loc_grid[d_neighbour_list[my_idx] + 3];
+      n1 = loc_grid[d_neighbour_list[my_idx + 0]];
+      n2 = loc_grid[d_neighbour_list[my_idx + 1]];
+      n3 = loc_grid[d_neighbour_list[my_idx + 2]];
+      n4 = loc_grid[d_neighbour_list[my_idx + 3]];
       index = ((spin+1) >> 1) + (n1+n2+n3+n4) + 4;
 
       // The store back to global memory, not the branch or the RNG generation
       // seems to be the killer here.
 
-      if (curand_uniform(&localState) < d_Pacc[index] ) {
+      if ( curand_uniform(&localState) < d_Pacc[index] ) {
           // accept
           loc_grid[my_idx] = -1*spin;
       } 
