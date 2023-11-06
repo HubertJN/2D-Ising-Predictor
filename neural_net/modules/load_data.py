@@ -4,14 +4,14 @@ from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 import numpy as np
 
-def load_data(grid_dir="./training_data/grid_data", committor_dir="./training_data/committor_data"):  
-    grid_data = torch.load(grid_dir)
-    committor_data = torch.load(committor_dir)
+def load_data(image_dir="./training_data/image_data", label_dir="./training_data/label_data"):  
+    image_data = torch.load(image_dir)
+    label_data = torch.load(label_dir)
 
-    grid_train, grid_test, committor_train, committor_test = train_test_split(grid_data, committor_data, test_size=0.2)
+    image_train, image_test, label_train, label_test = train_test_split(image_data, label_data, test_size=0.2)
 
-    trainset = ising_dataset(grid_train, committor_train, transform="train")
-    testset = ising_dataset(grid_test, committor_test, transform="test")
+    trainset = ising_dataset(image_train, label_train, transform="train")
+    testset = ising_dataset(image_test, label_test, transform="test")
     test_size = len(testset)
     return trainset, testset, test_size
 
