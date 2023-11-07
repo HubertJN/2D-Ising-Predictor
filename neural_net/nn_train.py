@@ -14,8 +14,14 @@ import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 
-# selection index for labels training: 0, 3, 7
-selection = 0
+# selection index for labels training: base, cluster, cluster_perimeter
+selection = "base"
+# True or False
+checkpoint = True # Use checkpoint system?
+reset = True # Reset if loss to high?
+load = False # Load network?
+run = True # Run training?
+models = 2 # How many models to train
 
 # 0) Load data
 # Importing function to load data
@@ -51,7 +57,7 @@ criterion = nn.MSELoss(reduction="mean")
 optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
 # Loading data
-trainset, testset, test_size = load_data()
+trainset, testset, test_size = load_data(selection=selection)
 trainloader = torch.utils.data.DataLoader(trainset, shuffle=True, num_workers=2, batch_size=train_batch_size)
 testloader = torch.utils.data.DataLoader(testset, shuffle=False, num_workers=2, batch_size=test_batch_size)
 
@@ -64,18 +70,18 @@ net.apply(weights_init)
 
 # 3) Training loop
 
-if selection == 0:
+if selection == "base":
     PATH = "./models/model_base.pth"
     loss_path = "./plotting_data/loss_base.npy"
     prediction_actual_path = "./plotting_data/prediction_actual_base.npy"
-elif selection == 3:
+elif selection == "cluster":
     PATH = "./models/model_lcs.pth"
-    loss_path = "./plotting_data/loss_lcs.npy"
-    prediction_actual_path = "./plotting_data/prediction_actual_lcs.npy"
-elif selection == 7:
+    loss_path = "./plotting_data/loss_cluster.npy"
+    prediction_actual_path = "./plotting_data/prediction_actual_cluster.npy"
+elif selection == "cluster_perimeter":
     PATH = "./models/model_lcs_p.pth"
-    loss_path = "./plotting_data/loss_lcs_p.npy"
-    prediction_actual_path = "./plotting_data/prediction_actual_lcs_p.npy"
+    loss_path = "./plotting_data/loss_cluster_perimeter.npy"
+    prediction_actual_path = "./plotting_data/prediction_actual_cluster_perimeter.npy"
 
 # Initializing counters
 accuracy = 0
@@ -88,18 +94,12 @@ global_min_loss = np.inf
 lr_power = 0
 num_model = 0
 
-# checkpoint system
-checkpoint = 1
-
-# reset system
-reset = 1
-
 # storage for loss
 loss_arr = np.zeros(num_epochs)
 
 # Loading model
-load = 1
-if load == 1:
+
+if load == True:
     checkpoint_model = torch.load(PATH)
     net.load_state_dict(checkpoint_model["model_state_dict"])
     optimizer.load_state_dict(checkpoint_model["optimizer_state_dict"])
@@ -110,9 +110,8 @@ if load == 1:
     print("Loaded NN")
 
 # Running training loop
-models = 2
-run = 0
-if run == 1:
+
+if run == True:
     print("Beginning Training Loop")
     while (1):
         if epoch >= num_epochs or revert_break >= 4:
@@ -149,7 +148,7 @@ if run == 1:
             extra = extra.to(device)
 
             # index of labels picks what to train on
-            labels = labels[:,selection].to(device)
+            labels = labels[:,0].to(device)
             outputs = torch.flatten(net(images, extra))
             loss = criterion(outputs, labels)
     
@@ -163,7 +162,7 @@ if run == 1:
         loss_arr[epoch-1] = test_loss
 
         # Test loss for reset
-        if test_loss > 0.1 and epoch == 5 and reset == 1: # Resetting optimizer if accuracy is too low
+        if test_loss > 0.1 and epoch == 5 and reset == True: # Resetting optimizer if accuracy is too low
             epoch = 1
             net.apply(initialize_weights)
             optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate, weight_decay=weight_decay)
@@ -187,7 +186,7 @@ if run == 1:
         print (f"Epoch [{epoch:03d}/{num_epochs}], Loss: {test_loss:.8f}, Minimum Loss: {min_loss:.6f}, Learning Rate: {lr:.10f}")
         
         # If no improvement after x epochs, revert to previous checkpoint
-        if revert_to_checkpoint == 10 and checkpoint == 1 and epoch > 5:
+        if revert_to_checkpoint == 10 and checkpoint == True and epoch > 5:
             revert_to_checkpoint = 0
             revert_limit += 1
             revert_break += 1
@@ -210,6 +209,6 @@ best_model = torch.load(PATH)
 net_cpu.load_state_dict(best_model["model_state_dict"])
 
 net_cpu.eval()
-outputs_labels = test_accuracy(net_cpu, testloader, selection, test_batch_size, outputs_labels)
+outputs_labels = test_accuracy(net_cpu, testloader, test_batch_size, outputs_labels)
 
 np.save(prediction_actual_path, outputs_labels)
