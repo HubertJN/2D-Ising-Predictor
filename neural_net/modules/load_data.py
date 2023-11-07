@@ -4,7 +4,16 @@ from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 import numpy as np
 
-def load_data(image_dir="./training_data/image_data", label_dir="./training_data/label_data"):  
+def load_data(selection="base"):  
+    if selection == "base":
+        image_dir = "./training_data/image_data_base"
+        label_dir = "./training_data/label_data_base"
+    elif selection == "cluster":
+        image_dir = "./training_data/image_data_cluster"
+        label_dir = "./training_data/label_data_cluster"
+    elif selection == "cluster_perimeter":
+        image_dir = "./training_data/image_data_cluster_perimeter"
+        label_dir = "./training_data/label_data_cluster_perimeter"
     image_data = torch.load(image_dir)
     label_data = torch.load(label_dir)
 
