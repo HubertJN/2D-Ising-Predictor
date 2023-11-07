@@ -7,7 +7,7 @@ def find_exp(number) -> int:
     base10 = log10(abs(number))
     return floor(base10)
 
-def test_accuracy(net, testloader, selection, test_batch_size, output_label, device="cpu"):
+def test_accuracy(net, testloader, test_batch_size, output_label, device="cpu"):
     correct = 0
     total = 0
     with torch.no_grad():
@@ -17,7 +17,7 @@ def test_accuracy(net, testloader, selection, test_batch_size, output_label, dev
             predicted = outputs
             total += labels.size(0)
             for j, (k, l) in enumerate(zip(predicted,labels)):
-                diff = abs(k-l[selection]).item()
+                diff = abs(k-l[0]).item()
                 output_label[i*test_batch_size+j, 0] = l[0].item()
                 output_label[i*test_batch_size+j, 1] = l[1].item()
                 output_label[i*test_batch_size+j, 2] = l[2].item()
