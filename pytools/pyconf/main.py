@@ -499,15 +499,39 @@ Optimise {model_key} on {opt_on}: \n\
 
 
     def UpdateModelParam(self, model, param):
+        # TODO: Add a type coercion logic to make sure parameters are the correct type
+
+        # Handle properties in list as a special case
         if param in ['grid_size']:
             if param == 'grid_size':
                 _input_x = input(f"Please enter a value for x {param}: ")
                 _input_y = input(f"Please enter a value for y {param}: ")
-                _input = [_input_x, _input_y]
-
+                _input = [int(_input_x), int(_input_y)]
         else:
             _input = input(f"Please enter a value for {param}: ")
-        
+            if param in [
+                'model_id',
+                'model_itask',
+                'num_concurrent', 
+                'iterations', 
+                'iter_per_step', 
+                'seed', 'starting_config'
+                ]:
+                # These parameters are ints
+                _input = int(_input)
+            elif param in [
+                'inv_temperature', 
+                'field',
+                'nucleation_threshold', 
+                ]:
+                # Thes parameters are floats
+                _input = float(_input)
+            elif param in ['']:
+                # These parameters are strings
+                _input = str(_input)
+            else:
+                # Unhandled parameter type
+                logging.WARNING(f"Unhandled parameter type: {param}")
 
         if _input in [None, '', ' ']:
             print(f'Skipping {param}')

@@ -284,3 +284,34 @@ def test_gpu_fill_ortho_single(BlankModel, PopulateModel, monkeypatch):
 
 def test_gpu_fill_ortho_multi():
     pass
+
+def test_gpu_fill_range_crash(MainMenuConfigObj, monkeypatch):
+    ConfigObj = MainMenuConfigObj
+    monkeypatch.setattr('builtins.input', lambda _: '2')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: '4')
+    yeilding_event_loop(ConfigObj)
+    input_gen = ['2', 'test-model']
+    monkeypatch.setattr('builtins.input', lambda _: input_gen.pop(0))
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: '2')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: '3')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: '2')
+    yeilding_event_loop(ConfigObj)
+    input_gen = ['2', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1']
+    monkeypatch.setattr('builtins.input', lambda _: input_gen.pop(0))
+    yeilding_event_loop(ConfigObj)
+    # Three Gobacks to main menu
+    monkeypatch.setattr('builtins.input', lambda _: '1')
+    yeilding_event_loop(ConfigObj)
+    yeilding_event_loop(ConfigObj)
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: '4')
+    yeilding_event_loop(ConfigObj)
+    monkeypatch.setattr('builtins.input', lambda _: '4')
+    yeilding_event_loop(ConfigObj)
+
+
+    pass
