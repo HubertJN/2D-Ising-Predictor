@@ -21,7 +21,7 @@ checkpoint = True # Use checkpoint system?
 reset = True # Reset if loss to high?
 load = False # Load network?
 run = True # Run training?
-models = 2 # How many models to train
+models = 1 # How many models to train
 
 # 0) Load data
 # Importing function to load data
@@ -164,7 +164,7 @@ if run == True:
         # Test loss for reset
         if test_loss > 0.1 and epoch == 5 and reset == True: # Resetting optimizer if accuracy is too low
             epoch = 1
-            net.apply(initialize_weights)
+            net.apply(weights_init)
             optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate, weight_decay=weight_decay)
             print("Network not converging")
             print("Re-initialising weights and restarting training")
