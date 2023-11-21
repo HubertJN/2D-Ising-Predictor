@@ -48,21 +48,21 @@ void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config
             break;
         case 1:
             // Random
-            init_rand_grids<<<launch_struct->num_blocks, launch_struct->num_concurrent, 0, stream>>>(state, launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, device_array);
+            init_rand_grids<<<launch_struct->num_blocks, launch_struct->num_threads, 0, stream>>>(state, launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, device_array);
             gpuErrchk( cudaPeekAtLastError() );
             gpuErrchk( cudaDeviceSynchronize() );
             break;
         case 2:
             // All up
             fprintf(stderr, "All up\n");
-            init_ud_grids<<<launch_struct->num_blocks, launch_struct->num_concurrent, 0, stream>>>(launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, device_array, 1);
+            init_ud_grids<<<launch_struct->num_blocks, launch_struct->num_threads, 0, stream>>>(launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, device_array, 1);
             gpuErrchk( cudaPeekAtLastError() );
             gpuErrchk( cudaDeviceSynchronize() );
             fprintf(stderr, "All are up\n");
             break;
         case 3:
             // All down
-            init_ud_grids<<<launch_struct->num_blocks, launch_struct->num_concurrent, 0, stream>>>(launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, device_array, -1);
+            init_ud_grids<<<launch_struct->num_blocks, launch_struct->num_threads, 0, stream>>>(launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, device_array, -1);
             gpuErrchk( cudaPeekAtLastError() );
             gpuErrchk( cudaDeviceSynchronize() );
             break;
@@ -112,7 +112,7 @@ void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config
 
     // Launch kernel
     for (int i = 0; i < launch_struct->iterations; i+=launch_struct->iter_per_step){
-        mc_sweep<<<launch_struct->num_blocks, launch_struct->num_concurrent, 0, stream>>>(state, launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, device_array, launch_struct->inv_temperature, launch_struct->field, launch_struct->iter_per_step, d_neighbour_list, d_Pacc);
+        mc_sweep<<<launch_struct->num_blocks, launch_struct->num_threads, 0, stream>>>(state, launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, device_array, launch_struct->inv_temperature, launch_struct->field, launch_struct->iter_per_step, d_neighbour_list, d_Pacc);
         gpuErrchk( cudaPeekAtLastError() );
         gpuErrchk( cudaStreamSynchronize(stream) );
         gpuErrchk( cudaMemcpy(host_array, device_array, launch_struct->mem_size, cudaMemcpyDeviceToHost));
@@ -121,7 +121,7 @@ void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config
         gpuErrchk( cudaDeviceSynchronize() );
         
         // Compute energy and magnetisation (GPU)
-        compute_magnetisation<<<launch_struct->num_blocks, launch_struct->num_concurrent, 0, stream>>>(launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, device_array, d_magnetisation);
+        compute_magnetisation<<<launch_struct->num_blocks, launch_struct->num_threads, 0, stream>>>(launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, device_array, d_magnetisation);
         gpuErrchk( cudaPeekAtLastError() );
         gpuErrchk( cudaStreamSynchronize(stream) );
         gpuErrchk( cudaMemcpy(h_magnetisation, d_magnetisation, launch_struct->num_concurrent * sizeof(float), cudaMemcpyDeviceToHost));

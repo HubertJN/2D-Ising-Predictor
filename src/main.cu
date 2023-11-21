@@ -159,9 +159,14 @@ int main(int argc, char *argv[]) {
         switch (params_array[i]->model_id)
         {
         case 1:
-            //Concurrency style 1: Many models fit in a single block's shared memory
+            //Concurrency style 1: Models are stored in device memory
             nThreads = params_array[i]->num_concurrent;
             nBlocks = (nThreads + max_threads_per_block - 1) / max_threads_per_block;
+            nThreads = nThreads / nBlocks +1;
+            if (nThreads > max_threads_per_block) {
+                fprintf(stderr, "Error: Too many threads per block for model %d\n", i);
+                exit(1);
+            }
             prob_size = 10;
             break;
         case 2:
@@ -181,7 +186,7 @@ int main(int argc, char *argv[]) {
 
         // Update the total number of blocks and threads
         total_blocks += nBlocks;
-        total_threads += nThreads;
+        total_threads += nThreads*nBlocks;
         // for each model launch add a stream
         nStreams++;
     }
@@ -190,18 +195,19 @@ int main(int argc, char *argv[]) {
         // Check if there is a sensible stream queue that can be used to make
         // the most of the device
 
-    int random_threads = total_threads;
-    int random_blocks = (random_threads + max_threads_per_block - 1) / max_threads_per_block;
+    // Arguably this should max out at the number of blocks that can be run on the device
+    int random_blocks = (total_threads + max_threads_per_block - 1) / max_threads_per_block;
+    int random_threads = total_threads/random_blocks;
+   
+
     
     curandState *dev_states;
     // Give each potential thread a random state
-    cudaMalloc((void **)&dev_states, random_threads * sizeof(curandState));
+    cudaMalloc((void **)&dev_states, total_threads * sizeof(curandState));
     
-    init_rng<<<random_blocks, random_threads>>>(dev_states, time(NULL), random_threads);
+    init_rng<<<random_blocks, random_threads>>>(dev_states, time(NULL), total_threads);
     cudaDeviceSynchronize();
     // ============================================================================
-
-
 
     // Create streams and allocate memory for grids on device =====================
 

@@ -108,18 +108,24 @@ __global__ void mc_sweep(curandState *state, const int L_x, const int L_y, const
     for (imove=0;imove<N*nsweeps;imove++){
 
       my_idx = __float2int_rd(shrink*curand_uniform(&localState));
+      
+
+      if (my_idx < 0 || my_idx >= N) {
+          printf("Illegal index: my_idx = %d, N = %d\n", my_idx, N);
+      }
 
       spin = loc_grid[my_idx];
 
       // use neighbour list to get neighbours from constant memory
-      n1 = loc_grid[d_neighbour_list[my_idx + 0]];
-      n2 = loc_grid[d_neighbour_list[my_idx + 1]];
-      n3 = loc_grid[d_neighbour_list[my_idx + 2]];
-      n4 = loc_grid[d_neighbour_list[my_idx + 3]];
+      n1 = loc_grid[d_neighbour_list[my_idx*4 + 0]];
+      n2 = loc_grid[d_neighbour_list[my_idx*4 + 1]];
+      n3 = loc_grid[d_neighbour_list[my_idx*4 + 2]];
+      n4 = loc_grid[d_neighbour_list[my_idx*4 + 3]];
       index = ((spin+1) >> 1) + (n1+n2+n3+n4) + 4;
 
       // The store back to global memory, not the branch or the RNG generation
       // seems to be the killer here.
+
 
       if ( curand_uniform(&localState) < d_Pacc[index] ) {
           // accept
