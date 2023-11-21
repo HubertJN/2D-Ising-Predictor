@@ -116,16 +116,16 @@ def test_autofill(MainMenuConfigObj, monkeypatch):
     monkeypatch.setattr('builtins.input', lambda _: input_gen.pop(0))
     yeilding_event_loop(ConfigObj)
     assert ConfigObj.sim_class.models.get('model-name-1').model_config['model_id'] == 1
-    assert ConfigObj.sim_class.models.get('model-name-1').model_config['model_itask'] == '1'
-    assert ConfigObj.sim_class.models.get('model-name-1').model_config['num_concurrent'] == '5'
-    assert ConfigObj.sim_class.models.get('model-name-1').model_config['nucleation_threshold'] == '0.9'
-    assert ConfigObj.sim_class.models.get('model-name-1').model_config['grid_size'] == ['10', '10']
-    assert ConfigObj.sim_class.models.get('model-name-1').model_config['iterations'] == '1000'
-    assert ConfigObj.sim_class.models.get('model-name-1').model_config['iter_per_step'] == '10'
-    assert ConfigObj.sim_class.models.get('model-name-1').model_config['seed'] == '12'
-    assert ConfigObj.sim_class.models.get('model-name-1').model_config['inv_temperature'] == '1'
-    assert ConfigObj.sim_class.models.get('model-name-1').model_config['field'] == '1'
-    assert ConfigObj.sim_class.models.get('model-name-1').model_config['starting_config'] == '1'
+    assert ConfigObj.sim_class.models.get('model-name-1').model_config['model_itask'] == 1
+    assert ConfigObj.sim_class.models.get('model-name-1').model_config['num_concurrent'] == 5
+    assert ConfigObj.sim_class.models.get('model-name-1').model_config['nucleation_threshold'] == 0.9
+    assert ConfigObj.sim_class.models.get('model-name-1').model_config['grid_size'] == [10, 10]
+    assert ConfigObj.sim_class.models.get('model-name-1').model_config['iterations'] == 1000
+    assert ConfigObj.sim_class.models.get('model-name-1').model_config['iter_per_step'] == 10
+    assert ConfigObj.sim_class.models.get('model-name-1').model_config['seed'] == 12
+    assert ConfigObj.sim_class.models.get('model-name-1').model_config['inv_temperature'] == 1.
+    assert ConfigObj.sim_class.models.get('model-name-1').model_config['field'] == 1.
+    assert ConfigObj.sim_class.models.get('model-name-1').model_config['starting_config'] == 1
 
 def test_with_rangefill():
     pass
