@@ -1,5 +1,6 @@
 from functools import partial
 import helper
+from model_types import Simulation
 import numpy as np
 import os
 from pathlib import Path
@@ -547,9 +548,12 @@ Optimise {model_key} on {opt_on}: \n\
 
     def ViewConfig(self):
         for model in self.sim_class.models.keys():
-            self.ViewModel(self.sim_class.models[model])
-            print('\n')
-    
+            if isinstance(model, Simulation):
+                self.ViewModel(self.sim_class.models[model])
+                print('\n')
+            else:
+                # This is a set of models we need to print the model with parameter ranges
+                print(f"Set: Range/Ortho display not implemented yet")
     def WriteConfig(self):
         self.sim_class.write_config()
         pass

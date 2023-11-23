@@ -83,6 +83,7 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
     float up_threshold = 0.0;         // Magnetisation at which we consider the system to have reached spin up state
     int num_threads;
     char grid_file[grid_file_str_len];
+    char set_name[set_name_str_len];
 
     // Register the kvp variables
 
@@ -101,6 +102,7 @@ void read_input_file(const char* filename, ising_model_config* params_array[], i
     kvp_register_string("input_file", grid_file, grid_file_str_len);
     kvp_register_i("starting_config", &starting_config);
     kvp_register_f("nucleation_threshold", &nucleation_threshold);
+    kvp_register_string("set_name", set_name, set_name_str_len);
     
     fprintf(stderr, "found %d models\n", models);
     for (int i = 0; i < models; i++) {

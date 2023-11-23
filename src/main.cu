@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cuda.h>
+#include <pthread.h>
 
 #include "../include/input_reader.h"
 #include "../include/model_wrappers.h"
+#include "../include/shared_data.h"
 
 int main(int argc, char *argv[]) {
 
@@ -68,89 +70,25 @@ int main(int argc, char *argv[]) {
     // get specs of the device
     int max_threads_per_block = deviceProp.maxThreadsPerBlock;
     int max_shared_memory_per_block = deviceProp.sharedMemPerBlock;
-    int max_blocks_per_multiprocessor = deviceProp.maxThreadsPerMultiProcessor / max_threads_per_block;
-    int max_threads_per_multiprocessor = max_blocks_per_multiprocessor * max_threads_per_block;
+    int L2_cache_size = deviceProp.l2CacheSize;
+    int num_multiprocessors = deviceProp.multiProcessorCount;
 
     // Print device specs
     fprintf(stderr, "Device name: %s\n", deviceProp.name);
     fprintf(stderr, "Max threads per block: %d\n", max_threads_per_block);
     fprintf(stderr, "Max shared memory per block: %d\n", max_shared_memory_per_block);
-    fprintf(stderr, "Max blocks per multiprocessor: %d\n", max_blocks_per_multiprocessor);
-    fprintf(stderr, "Max threads per multiprocessor: %d\n", max_threads_per_multiprocessor);
 
 
-    // Run compatibility checks between selected device and model configurations
-
-    // TODO: Write those checks
-    /*
-    LOOP:
-        Check for running mode overriden by user
-            set user defined mode
-            get number of threads supported by the model
-            check user input is valid
-                Check if the model can be run in shared memory
-                Check if the model has a supported number of threads
-                ...
-
-        Check if multiple models can be run in a single block
-            set concurrency style launch
-        Check if the model can be run in block
-            set full block style launch
-            get number of threads supported by the model
-        Check if the model can be run in multiple blocks
-            set multi block style launch
-            get number of threads supported by grids
-        Check model can be run on device memory
-            set device memory style launch
-            get number of threads supported by the model
-    END LOOP
-    */
-
-    // use the checks to set the number of blocks and threads
-    
-    /* Pseudo code for setting the number of blocks and threads
-    total_blocks = 0
-    total_threads = 0
-    LOOP 
-        Concurrancy style lauhches: 
-            // Many models fit in a single blocks shared memory
-            n_threads = number of concurrent models
-            n_blocks = n_threads / max number of models per block
-            n_streams ++
-
-        Full block style launches:
-            // Each model fills a blocks shared memory
-            n_blocks = number of concurrent models
-            n_threads = number of concurrent models * number of threads each model needs
-            n_streams ++
-        
-        Multi block style launches:
-        // Each model will not fit in a single blocks shared memory
-            Style 1:
-                // grid is split into multiple blocks
-                n_blocks = grid size / block memory size
-                n_threads = n_blocks * number of threads supported by each block
-            Style 2:
-                // grid is stored in device memory
-                n_threads = number of threads supported by the model
-                n_blocks = n_threads / max number of threads per block
-
-            n_streams += concurrent models
-            // multiply by the number of concurrent models
-            
-        
-        // apply these to the model parameters to be used in the kernel launch
-        // keep a running total of the number of blocks and threads for all launches
-        total_blocks += n_blocks
-        total_threads += n_threads
-    END LOOP
-    */
+    size_t mem_size;
     int nBlocks;
     int nThreads;
+    int min_blocks;
+    int max_blocks;
     int prob_size;
     int nStreams = 0;
     int total_blocks = 0;
     int total_threads = 0;
+    int cache_limit;
     // Loop over all concurrent models
     for (int i = 0; i < models; i++) {
         nBlocks = 0;
@@ -159,16 +97,42 @@ int main(int argc, char *argv[]) {
         switch (params_array[i]->model_id)
         {
         case 1:
+            mem_size = params_array[i] -> size[0] * params_array[i] -> size[1] * params_array[i] -> element_size;
+            params_array[i] -> mem_size = mem_size;
+            // Cache Limit is the number of grids that can fit the the L2 cache
+            cache_limit =  L2_cache_size / params_array[i]->mem_size;
             //Concurrency style 1: Models are stored in device memory
             nThreads = params_array[i]->num_concurrent;
-            nBlocks = (nThreads + max_threads_per_block - 1) / max_threads_per_block;
-            nThreads = nThreads / nBlocks +1;
+
+            // We want a minimum of 128 threads per block i.e. 4 warps and a maximum of 1024 threads per block i.e. 32 warps
+            // We want to launch N*SM blocks per model
+
+            min_blocks = (nThreads + max_threads_per_block - 1) / max_threads_per_block;
+            max_blocks = (nThreads + 128 - 1) / 128;
+
+            if (num_multiprocessors > max_blocks) {
+                nBlocks = max_blocks;
+                nThreads = 128;
+            }
+            else {
+                nBlocks = (nThreads/128) / (num_multiprocessors * cache_limit);
+                if (nBlocks < min_blocks) {
+                    nBlocks = min_blocks;
+                    nThreads = max_threads_per_block;
+                }
+                else {
+                    nThreads = 128*cache_limit*num_multiprocessors;
+                }
+            }
+
+
             if (nThreads > max_threads_per_block) {
                 fprintf(stderr, "Error: Too many threads per block for model %d\n", i);
                 exit(1);
             }
-            prob_size = 10;
+            prob_size = 10; // The length of the precomputed proabibilities array
             break;
+
         case 2:
             // Concurrency style 2: Each model fills a block's shared memory
             nBlocks = params_array[i]->num_concurrent;
@@ -218,12 +182,11 @@ int main(int argc, char *argv[]) {
     }
 
     // Loop over the models, load grids where required, and allocate memory for the grids on the device
-    size_t mem_size; 
     int* h_data[nStreams];
     int* d_data[nStreams];
     // LOOP
     for (int i=0; i < nStreams; i++) {
-        mem_size = params_array[i] -> size[0] * params_array[i] -> size[1] * params_array[i] -> element_size * params_array[i] -> num_concurrent;
+        mem_size = params_array[i] -> mem_size * params_array[i] -> num_concurrent;
         params_array[i] -> mem_size = mem_size;
         // Allocate required space on host and device
         cudaMalloc(&d_data[i], mem_size);
@@ -232,12 +195,25 @@ int main(int argc, char *argv[]) {
     //LOOP END
     // ============================================================================
 
+    // Threaded CPU code ==========================================================
+    pthread_t threads[nStreams];
+    // Create an array of pointers to structs to pass to the threads
+    struct model_thread_data* thread_structs[nStreams];
+
     // Queue memcopys and CUDA kernels on multiple streams ========================
     for (int i=0; i < nStreams; i++) {
+        //create a thread for each model
         // Switch to select the correct launch wrapper
         switch(params_array[i] -> model_id) {
             case 1:
-                launch_mc_sweep(stream[i], dev_states, params_array[i], h_data[i], d_data[i], i);
+                thread_structs[i] = (model_thread_data*)malloc(sizeof(model_thread_data));
+                thread_structs[i] -> stream = stream[i];
+                thread_structs[i] -> dev_states = dev_states;
+                thread_structs[i] -> params_array = params_array[i];
+                thread_structs[i] -> h_data = h_data[i];
+                thread_structs[i] -> d_data = d_data[i];
+                thread_structs[i] -> idx = i;
+                pthread_create(&threads[i], NULL, launch_mc_sweep, thread_structs[i]);
                 break;
             default:
                 fprintf(stderr, "Invalid model selection.\n");
@@ -245,7 +221,11 @@ int main(int argc, char *argv[]) {
         }
     }
     // ============================================================================
-
+    // Wait for all threads to finish =============================================
+    for (int i=0; i < nStreams; i++) {
+        pthread_join(threads[i], NULL);
+    }
+    // End of threaded CPU code ===================================================
 
     // Copy results back to host ==================================================
     for (int i=0; i < nStreams; i++) {

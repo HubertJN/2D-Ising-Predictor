@@ -14,7 +14,7 @@ void init_model(ising_model_config* launch_struct) {
     return;
 }
 
-void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config* launch_struct, int *host_array, int *device_array, int stream_ix) {
+void* launch_mc_sweep(void *arg) {
     /*
       * This launches the original model. Single thread per grid.
       *
@@ -29,6 +29,15 @@ void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config
       *    state: curandState array to use
       *    launch_struct: struct containing launch parameters
     */
+
+    // Unpack cpu thread struct
+    struct model_thread_data *thread_data = (struct model_thread_data*)arg;
+    cudaStream_t stream = thread_data->stream;
+    curandState *state = thread_data->dev_states;
+    ising_model_config* launch_struct = thread_data->params_array;
+    int *host_array = thread_data->h_data;
+    int *device_array = thread_data->d_data;
+    int stream_ix = thread_data->idx;
 
     // Allocate memory for device array
     //cudaMalloc((void **)&device_array, launch_struct->element_size * launch_struct->size[0] * launch_struct->size[1]);

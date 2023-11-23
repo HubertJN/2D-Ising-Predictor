@@ -1,7 +1,10 @@
 #ifndef SHARED_DATA_H
 #define SHARED_DATA_H
 
+#include <curand_kernel.h>
+
 const int grid_file_str_len = 256;
+const int set_name_str_len = 256;
 const int n_dims = 2;
 
 // structure to hold the configuration of the ising model, not all parameters are used in all models
@@ -31,5 +34,13 @@ typedef struct ising_model_config {
     size_t mem_size;     // size of all grids required in bytes
     int prob_size;    // size of the probability array
 } ising_model_config;
+struct model_thread_data{
+    cudaStream_t stream;
+    curandState_t *dev_states;
+    ising_model_config *params_array;
+    int* h_data;
+    int* d_data;
+    int idx;
+};
 
 #endif
