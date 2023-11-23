@@ -136,6 +136,7 @@ void* launch_mc_sweep(void *arg) {
         gpuErrchk( cudaMemcpy(h_magnetisation, d_magnetisation, launch_struct->num_concurrent * sizeof(float), cudaMemcpyDeviceToHost));
         gpuErrchk( cudaPeekAtLastError() );
         // Write to file (CPU)
+        //TODO: Need to make this thread safe issue #29
         outputGridToFile(launch_struct, host_array, h_magnetisation, i, stream_ix);
         // Check for full nucleation or resolved fates
         int full_nucleation = 0;
