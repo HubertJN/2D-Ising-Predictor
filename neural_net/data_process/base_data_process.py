@@ -70,7 +70,7 @@ except:
     pass
 
 # fix data
-fix_index = (label_data[:, -1] >= 0) & (label_data[:, -1] <= 0.99)
+fix_index = (label_data[:, -1] > 0) & (label_data[:, -1] <= 0.99)
 image_data = image_data[fix_index]
 label_data = label_data[fix_index]
 
