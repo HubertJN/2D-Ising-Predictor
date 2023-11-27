@@ -3,25 +3,26 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class conv_net(nn.Module):
-    def __init__(self):
+    def __init__(self, channels=32, linear_nodes=100):
         super(conv_net, self).__init__()
+
         # fully connected layers
-        self.fc1 = nn.Linear(16*16*16, 1024)
-        self.fc2 = nn.Linear(1024, 512)
-        self.fc3 = nn.Linear(512, 1)
+        self.fc1 = nn.Linear(16*16*channels, linear_nodes)
+        self.fc2 = nn.Linear(linear_nodes, linear_nodes)
+        self.fc3 = nn.Linear(linear_nodes, 1)
 
         # decision layers
-        self.d1 = nn.Linear(3, 100)
-        self.d2 = nn.Linear(100, 100)
-        self.d3 = nn.Linear(100, 1)
+        #self.d1 = nn.Linear(3, 100)
+        #self.d2 = nn.Linear(100, 100)
+        #self.d3 = nn.Linear(100, 1)
 
         # pooling
         self.pool = nn.MaxPool2d(2,2)
 
         # convolution layers
-        self.conv1 = nn.Conv2d(1, 16, 7, padding=[3,3], padding_mode="circular")
-        self.conv2 = nn.Conv2d(16, 16, 5, padding=[2,2], padding_mode="circular")
-        self.conv3 = nn.Conv2d(16, 16, 3, padding=[1,1], padding_mode="circular")
+        self.conv1 = nn.Conv2d(1, channels, 7, padding=[3,3], padding_mode="circular")
+        self.conv2 = nn.Conv2d(channels, channels, 5, padding=[2,2], padding_mode="circular")
+        self.conv3 = nn.Conv2d(channels, channels, 3, padding=[1,1], padding_mode="circular")
 
         # drop out
         self.drop = nn.Dropout(p=0.1)
@@ -38,7 +39,7 @@ class conv_net(nn.Module):
         x = F.leaky_relu(self.conv3(x))
 
         # flatten
-        x = x.view(-1, 16*16*16)
+        x = torch.flatten(x, start_dim=1)
         
         # fully connected layer
         x = F.leaky_relu(self.fc1(x))
@@ -48,12 +49,13 @@ class conv_net(nn.Module):
         x = self.fc3(x)
 
         # combine and flatten
-        z = torch.cat((x,y), dim=-1)
-        z = z.view(-1, 3)
+        #z = torch.cat((x,y), dim=-1)
+        #z = z.view(-1, 3)
 
         # final decision layer
-        z = F.leaky_relu(self.d1(z))
-        z = F.leaky_relu(self.d2(z))
-        z = self.d3(z)
+        #z = F.leaky_relu(self.d1(z))
+        #z = F.leaky_relu(self.d2(z))
+        #z = self.d3(z)
 
-        return z
+        #return z
+        return x
