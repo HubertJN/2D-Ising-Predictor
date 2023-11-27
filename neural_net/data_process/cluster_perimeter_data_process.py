@@ -12,7 +12,7 @@ byte_prefix = 4*(3)
 ngrids = 8192
 lx = 64
 ly = 64
-ld_arr_size = 4
+ld_arr_size = 6
 
 # count how many samples
 i = 0
@@ -91,11 +91,12 @@ while(1):
     largest_cluster_index = np.argmax(area)
     perimeter = findperimeter(clusters, largest_cluster_index)
     image_data[j] = ising_grids
-    label_data[j, 0] = 0 # label
+    label_data[j, 0] = committor # label
     label_data[j, 1] = 0.54 # inverse temperature $$(tmp)$$
     label_data[j, 2] = 0.07 # field strength $$(tmp)$$
-    label_data[j, 3] = float(index[2]) # cluster size
-    label_data[j, 4] = committor # committor
+    label_data[j, 3] = float(perimeter) # perimeter $$(tmp)$$
+    label_data[j, 4] = float(index[2]) # cluster size
+    label_data[j, 5] = committor # committor
     cluster_data[j] = float(index[2])
     perimeter_data[j] = float(perimeter)
     j += 1

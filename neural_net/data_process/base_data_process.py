@@ -10,7 +10,7 @@ byte_prefix = 4*(3)
 ngrids = 8192
 lx = 64
 ly = 64
-ld_arr_size = 5
+ld_arr_size = 6
 
 # count how many samples
 i = 0
@@ -58,8 +58,9 @@ while(1):
     label_data[j, 0] = committor # label
     label_data[j, 1] = 0.54 # inverse temperature $$(tmp)$$
     label_data[j, 2] = 0.07 # field strength $$(tmp)$$
-    label_data[j, 3] = float(index[2]) # cluster size
-    label_data[j, 4] = committor # committor
+    label_data[j, 3] = 0.0 # perimeter $$(tmp)$$
+    label_data[j, 4] = float(index[2]) # cluster size
+    label_data[j, 5] = committor # committor
     j += 1
 
 try:
