@@ -94,7 +94,8 @@ while(1):
     label_data[j, 0] = 0 # label
     label_data[j, 1] = 0.54 # inverse temperature $$(tmp)$$
     label_data[j, 2] = 0.07 # field strength $$(tmp)$$
-    label_data[j, 3] = committor # committor
+    label_data[j, 3] = float(index[2]) # cluster size
+    label_data[j, 4] = committor # committor
     cluster_data[j] = float(index[2])
     perimeter_data[j] = float(perimeter)
     j += 1
