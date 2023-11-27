@@ -206,7 +206,7 @@ if run == True:
 
 
 test_batch_size = 1
-outputs_labels = np.zeros([test_size, 6])
+outputs_labels = np.zeros([test_size, 7])
 testloader = torch.utils.data.DataLoader(testset, shuffle=False, num_workers=2, batch_size=test_batch_size)
 
 best_model = torch.load(PATH)

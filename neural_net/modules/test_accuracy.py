@@ -27,6 +27,7 @@ def test_accuracy(net, testloader, test_batch_size, output_label, device="cpu", 
                 output_label[i*test_batch_size+j, 2] = l[2].item()
                 output_label[i*test_batch_size+j, 3] = l[3].item()
                 output_label[i*test_batch_size+j, 4] = l[4].item()
-                output_label[i*test_batch_size+j, 5] = k.item()
+                output_label[i*test_batch_size+j, 5] = l[5].item()
+                output_label[i*test_batch_size+j, 6] = k.item()
     test_loss_avg = sum(test_loss)/len(test_loss)
     return output_label, test_loss_avg
