@@ -15,13 +15,13 @@ import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 
 # selection index for labels training: base, cluster, cluster_perimeter
-selection = "base"
+selection = "cluster_perimeter"
 # True or False
 checkpoint = True # Use checkpoint system?
 reset = True # Reset if loss to high?
 load = False # Load network?
 run = True # Run training?
-models = 1 # How many models to train
+models = 3 # How many models to train
 
 # 0) Load data
 # Importing function to load data
@@ -60,6 +60,10 @@ optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate, weight_decay=we
 trainset, testset, test_size = load_data(selection=selection)
 trainloader = torch.utils.data.DataLoader(trainset, shuffle=True, num_workers=2, batch_size=train_batch_size)
 testloader = torch.utils.data.DataLoader(testset, shuffle=False, num_workers=2, batch_size=test_batch_size)
+
+trainset_subset = torch.utils.data.Subset(trainset, np.random.randint(0, len(trainset), 10000))
+trainloader = torch.utils.data.DataLoader(trainset_subset, shuffle=True, num_workers=2, batch_size=train_batch_size)
+
 
 # Initialise weights
 def weights_init(m):
@@ -202,13 +206,13 @@ if run == True:
 
 
 test_batch_size = 1
-outputs_labels = np.zeros([test_size, 5])
+outputs_labels = np.zeros([test_size, 6])
 testloader = torch.utils.data.DataLoader(testset, shuffle=False, num_workers=2, batch_size=test_batch_size)
 
 best_model = torch.load(PATH)
 net_cpu.load_state_dict(best_model["model_state_dict"])
 
 net_cpu.eval()
-outputs_labels = test_accuracy(net_cpu, testloader, test_batch_size, outputs_labels)
+outputs_labels, _ = test_accuracy(net_cpu, testloader, test_batch_size, outputs_labels)
 
 np.save(prediction_actual_path, outputs_labels)
