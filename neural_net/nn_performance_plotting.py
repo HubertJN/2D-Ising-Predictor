@@ -40,6 +40,7 @@ plt.legend()
 plt.title("Performance of NN with respect to Number of Parameters")
 #plt.xlim(0,500)
 #plt.ylim(0.0, 0.005)
+plt.yscale("log")
 plt.show()
 
 plt.rcParams['axes.prop_cycle'] = plt.rcParamsDefault['axes.prop_cycle']
