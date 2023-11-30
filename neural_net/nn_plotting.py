@@ -45,12 +45,12 @@ image_data_cluster = image_data_cluster.numpy()
 label_data_cluster_perimeter = label_data_cluster_perimeter.numpy()
 image_data_cluster_perimeter = image_data_cluster_perimeter.numpy()
 
-image_data_base = image_data_base[label_data_base[:, -1].argsort()]
-label_data_base = label_data_base[label_data_base[:, -1].argsort()]
-image_data_cluster = image_data_cluster[label_data_cluster[:, -1].argsort()]
-label_data_cluster = label_data_cluster[label_data_cluster[:, -1].argsort()]
-image_data_cluster_perimeter = image_data_cluster_perimeter[label_data_cluster_perimeter[:, -1].argsort()]
-label_data_cluster_perimeter = label_data_cluster_perimeter[label_data_cluster_perimeter[:, -1].argsort()]
+image_data_base = image_data_base[label_data_base[:, -2].argsort()]
+label_data_base = label_data_base[label_data_base[:, -2].argsort()]
+image_data_cluster = image_data_cluster[label_data_cluster[:, -2].argsort()]
+label_data_cluster = label_data_cluster[label_data_cluster[:, -2].argsort()]
+image_data_cluster_perimeter = image_data_cluster_perimeter[label_data_cluster_perimeter[:, -2].argsort()]
+label_data_cluster_perimeter = label_data_cluster_perimeter[label_data_cluster_perimeter[:, -2].argsort()]
 
 # colors
 soft_red = "#ed9688"
@@ -71,7 +71,7 @@ def sigmoid2d(X, L1, L2, L3, x0, y0, xy0, k1, k2, k3, b):
     return z
 ##########
 
-# save fit parameters
+# load fit parameters
 #########
 popt_sig_clust = np.load("./data_process/popt_sig_clust.npy")
 popt_sig2d = np.load("./data_process/popt_sig2d.npy")
@@ -79,8 +79,8 @@ popt_sig2d = np.load("./data_process/popt_sig2d.npy")
 
 # committor against cluster size
 ##########
-plt.scatter(label_data_cluster[:,-1], label_data_cluster[:,0], s=1, c=soft_blue, label="Data")
-plt.plot(label_data_cluster[:,-1], sigmoid(label_data_cluster[:,-1], *popt_sig_clust), c=soft_red, label="Sigmoid Fit")
+plt.scatter(label_data_cluster[:,-2], label_data_cluster[:,-1], s=1, c=soft_blue, label="Data")
+plt.plot(label_data_cluster[:,-2], sigmoid(label_data_cluster[:,-2], *popt_sig_clust), c=soft_red, label="Sigmoid Fit")
 plt.legend()
 plt.title("Test Data Distribution")
 plt.xlabel("Largest Cluster Size")
@@ -125,7 +125,7 @@ plt.xlabel("Actual")
 plt.ylabel("Mean Predicted")
 ax = plt.gca()
 ax.set_box_aspect(1)
-plt.text(0.05, 0.95, "Standard Deviation: {}".format(round(std_dev_total,3)), transform = ax.transAxes, horizontalalignment="left",
+plt.text(0.05, 0.95, "Standard Deviation: {:.3f}".format(std_dev_total,3), transform = ax.transAxes, horizontalalignment="left",
      verticalalignment="top")
 plt.tight_layout()
 plt.savefig("./figures/base_net_validation.pdf", bbox_inches="tight")
@@ -139,16 +139,16 @@ plt.close()
 # calculations
 std_dev = np.zeros(bins)
 mean = np.zeros(bins)
-max_val = max(prediction_actual_cluster[:,0])
-min_val = min(prediction_actual_cluster[:,0])
+max_val = max(prediction_actual_cluster[:,-2])
+min_val = min(prediction_actual_cluster[:,-2])
 spacing = np.linspace(min_val, max_val, bins+1)
 for i in range(bins):
-    index = np.where(np.logical_and(prediction_actual_cluster[:,0] >= spacing[i], prediction_actual_cluster[:,0] < spacing[i+1]))
-    combination = prediction_actual_cluster[index][:,-1]+prediction_actual_cluster[index][:,2]
+    index = np.where(np.logical_and(prediction_actual_cluster[:,-2] >= spacing[i], prediction_actual_cluster[:,-2] < spacing[i+1]))
+    combination = prediction_actual_cluster[index][:,-1]+sigmoid(prediction_actual_cluster[index][:,-3], *popt_sig_clust)
     std_dev[i] = np.std(combination)
     mean[i] = np.mean(combination)
 
-std_dev_total = np.std(prediction_actual_cluster[:,-1]+prediction_actual_cluster[:,2]-prediction_actual_cluster[:,0])
+std_dev_total = np.std(prediction_actual_cluster[:,-1]+sigmoid(prediction_actual_cluster[:,-3], *popt_sig_clust)-prediction_actual_cluster[:,-2])
 
 line = np.linspace(min_val, max_val, bins+1)
 line += (max_val-min_val)/(bins+1)
@@ -164,7 +164,7 @@ plt.xlabel("Actual")
 plt.ylabel("Mean Predicted")
 ax = plt.gca()
 ax.set_box_aspect(1)
-plt.text(0.05, 0.95, "Standard Deviation: {}".format(round(std_dev_total,3)), transform = ax.transAxes, horizontalalignment="left",
+plt.text(0.05, 0.95, "Standard Deviation: {:.3f}".format(std_dev_total,3), transform = ax.transAxes, horizontalalignment="left",
      verticalalignment="top")
 plt.tight_layout()
 plt.savefig("./figures/cluster_net_validation_combination.pdf", bbox_inches="tight")
@@ -178,16 +178,16 @@ plt.close()
 # calculations
 std_dev = np.zeros(bins)
 mean = np.zeros(bins)
-max_val = max(prediction_actual_cluster_perimeter[:,0])
-min_val = min(prediction_actual_cluster_perimeter[:,0])
+max_val = max(prediction_actual_cluster_perimeter[:,-2])
+min_val = min(prediction_actual_cluster_perimeter[:,-2])
 spacing = np.linspace(min_val, max_val, bins+1)
 for i in range(bins):
-    index = np.where(np.logical_and(prediction_actual_cluster_perimeter[:,0] >= spacing[i], prediction_actual_cluster_perimeter[:,0] < spacing[i+1]))
-    combination = prediction_actual_cluster_perimeter[index][:,-1]+prediction_actual_cluster_perimeter[index][:,6]
+    index = np.where(np.logical_and(prediction_actual_cluster_perimeter[:,-2] >= spacing[i], prediction_actual_cluster_perimeter[:,-2] < spacing[i+1]))
+    combination = prediction_actual_cluster_perimeter[index][:,-1]+sigmoid2d([prediction_actual_cluster_perimeter[index][:,-3], prediction_actual_cluster_perimeter[index][:,-4]], *popt_sig2d)
     std_dev[i] = np.std(combination)
     mean[i] = np.mean(combination)
 
-std_dev_total = np.std(prediction_actual_cluster_perimeter[:,-1]+prediction_actual_cluster_perimeter[:,6]-prediction_actual_cluster_perimeter[:,0])
+std_dev_total = np.std(prediction_actual_cluster_perimeter[:,-1]+sigmoid2d([prediction_actual_cluster_perimeter[:,-3], prediction_actual_cluster_perimeter[:,-4]], *popt_sig2d))
 
 line = np.linspace(min_val, max_val, bins+1)
 line += (max_val-min_val)/(bins+1)
@@ -203,7 +203,7 @@ plt.xlabel("Actual")
 plt.ylabel("Mean Predicted")
 ax = plt.gca()
 ax.set_box_aspect(1)
-plt.text(0.05, 0.95, "Standard Deviation: {}".format(round(std_dev_total,3)), transform = ax.transAxes, horizontalalignment="left",
+plt.text(0.05, 0.95, "Standard Deviation: {:.3f}".format(std_dev_total,3), transform = ax.transAxes, horizontalalignment="left",
      verticalalignment="top")
 plt.tight_layout()
 plt.savefig("./figures/cluster_perimeter_net_validation_combination.pdf", bbox_inches="tight")
@@ -217,15 +217,15 @@ plt.close()
 # std dev for largest cluster fit
 std_dev = np.zeros(bins)
 mean = np.zeros(bins)
-max_val = max(prediction_actual_cluster[:,0])
-min_val = min(prediction_actual_cluster[:,0])
+max_val = max(label_data_cluster[:,-1])
+min_val = min(label_data_cluster[:,-1])
 spacing = np.linspace(min_val, max_val, bins+1)
 for i in range(bins):
-    index = np.where(np.logical_and(prediction_actual_base[:,0] >= spacing[i], prediction_actual_base[:,0] < spacing[i+1]))
-    std_dev[i] = np.std(sigmoid(prediction_actual_base[index][:,-2], *popt_sig_clust))
-    mean[i] = np.mean(sigmoid(prediction_actual_base[index][:,-2], *popt_sig_clust))
+    index = np.where(np.logical_and(label_data_cluster[:,-1] >= spacing[i], label_data_cluster[:,-1] < spacing[i+1]))
+    std_dev[i] = np.std(sigmoid(label_data_cluster[index][:,-2], *popt_sig_clust))
+    mean[i] = np.mean(sigmoid(label_data_cluster[index][:,-2], *popt_sig_clust))
 
-std_dev_total = np.std(prediction_actual_base[:,0]-sigmoid(prediction_actual_base[:,-2], *popt_sig_clust))
+std_dev_total = np.std(label_data_cluster[:,-1]-sigmoid(label_data_cluster[:,-2], *popt_sig_clust))
 
 line = np.linspace(min_val, max_val, bins+1)
 line += (max_val-min_val)/(bins+1)
@@ -241,7 +241,7 @@ plt.xlabel("Actual")
 plt.ylabel("Mean Fit")
 ax = plt.gca()
 ax.set_box_aspect(1)
-plt.text(0.05, 0.95, "Standard Deviation: {}".format(round(std_dev_total,3)), transform = ax.transAxes, horizontalalignment="left",
+plt.text(0.05, 0.95, "Standard Deviation: {:.3f}".format(std_dev_total,3), transform = ax.transAxes, horizontalalignment="left",
      verticalalignment="top")
 plt.tight_layout()
 plt.savefig("./figures/cluster_validation.pdf", bbox_inches="tight")
@@ -255,15 +255,15 @@ plt.close()
 # std dev for cluster-perimeter fit
 std_dev = np.zeros(bins)
 mean = np.zeros(bins)
-max_val = max(prediction_actual_cluster_perimeter[:,0])
-min_val = min(prediction_actual_cluster_perimeter[:,0])
+max_val = max(prediction_actual_cluster_perimeter[:,-2])
+min_val = min(prediction_actual_cluster_perimeter[:,-2])
 spacing = np.linspace(min_val, max_val, bins+1)
 for i in range(bins):
-    index = np.where(np.logical_and(prediction_actual_cluster_perimeter[:,0] >= spacing[i], prediction_actual_cluster_perimeter[:,0] < spacing[i+1]))
-    std_dev[i] = np.std(sigmoid2d([prediction_actual_cluster_perimeter[index][:,-2], prediction_actual_cluster_perimeter[index][:,-3]], *popt_sig2d))
-    mean[i] = np.mean(sigmoid2d([prediction_actual_cluster_perimeter[index][:,-2], prediction_actual_cluster_perimeter[index][:,-3]], *popt_sig2d))
+    index = np.where(np.logical_and(prediction_actual_cluster_perimeter[:,-2] >= spacing[i], prediction_actual_cluster_perimeter[:,-2] < spacing[i+1]))
+    std_dev[i] = np.std(sigmoid2d([prediction_actual_cluster_perimeter[index][:,-3], prediction_actual_cluster_perimeter[index][:,-4]], *popt_sig2d))
+    mean[i] = np.mean(sigmoid2d([prediction_actual_cluster_perimeter[index][:,-3], prediction_actual_cluster_perimeter[index][:,-4]], *popt_sig2d))
 
-std_dev_total = np.std(prediction_actual_cluster_perimeter[:,0]-sigmoid2d([prediction_actual_cluster_perimeter[:,-2], prediction_actual_cluster_perimeter[:,-3]], *popt_sig2d))
+std_dev_total = np.std(sigmoid2d([prediction_actual_cluster_perimeter[:,-3], prediction_actual_cluster_perimeter[:,-4]], *popt_sig2d)-prediction_actual_cluster_perimeter[:,-2])
 
 line = np.linspace(min_val, max_val, bins+1)
 line += (max_val-min_val)/(bins+1)
@@ -279,7 +279,7 @@ plt.xlabel("Actual")
 plt.ylabel("Mean Sigmoid Fit")
 ax = plt.gca()
 ax.set_box_aspect(1)
-plt.text(0.05, 0.95, "Standard Deviation: {}".format(round(std_dev_total,3)), transform = ax.transAxes, horizontalalignment="left",
+plt.text(0.05, 0.95, "Standard Deviation: {:.3f}".format(std_dev_total,3), transform = ax.transAxes, horizontalalignment="left",
      verticalalignment="top")
 plt.tight_layout()
 plt.savefig("./figures/sigmoid_2d_validation.pdf", bbox_inches="tight")
@@ -296,7 +296,7 @@ def f(x, A, B):
 #########
 # correlation coefficient
 x = prediction_actual_base[:,0]-prediction_actual_base[:,-1]
-y = prediction_actual_base[:,0]-sigmoid(prediction_actual_base[:,-2], *popt_sig_clust)
+y = prediction_actual_cluster[:,0]-prediction_actual_cluster[:,-1]
 
 corr_coeff = np.corrcoef(x,y)[0,1]
 
@@ -320,11 +320,11 @@ if show_figures:
 plt.close()
 ##########
 
-# residual of network and cluster-perimeter fit
+# residual of lcs network and cluster-perimeter fit
 #########
 # correlation coefficient
-x = prediction_actual_base[:,0]-prediction_actual_base[:,-1]
-y = prediction_actual_base[:,0]-sigmoid2d([prediction_actual_base[:,-2],prediction_actual_base[:,-3]], *popt_sig2d)
+x = prediction_actual_cluster[:,0]-prediction_actual_cluster[:,-1]
+y = prediction_actual_cluster_perimeter[:,0]-prediction_actual_cluster_perimeter[:,-1]
 
 corr_coeff = np.corrcoef(x,y)[0,1]
 
