@@ -105,9 +105,10 @@ net_cpu = conv_net().to(device_cpu)
 
 # Running training loop
 # Array for saving test loss, channels, linear nodes, parameters
-test_loss_arr = np.zeros((100, 2))
+test_loss_num = 1000
+test_loss_arr = np.zeros((test_loss_num, 2))
 
-for num_data in np.linspace(1, len(trainset), 100, dtype=np.int32): # change range based on whether adjusting channels or layers
+for num_data in np.linspace(1, len(trainset), test_loss_num, dtype=np.int32): # change range based on whether adjusting channels or layers
     # Reset network
     net.apply(weights_init)
 
@@ -232,7 +233,7 @@ for num_data in np.linspace(1, len(trainset), 100, dtype=np.int32): # change ran
                     print("Checkpoint loaded. Starting from epoch: ", epoch)
 
     test_batch_size = 1
-    outputs_labels = np.zeros([test_size, 5])
+    outputs_labels = np.zeros([test_size, 7])
     testloader = torch.utils.data.DataLoader(testset, shuffle=False, num_workers=2, batch_size=test_batch_size)
 
     best_model = torch.load(PATH)
