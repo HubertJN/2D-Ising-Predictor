@@ -2,12 +2,17 @@
 #include <stdlib.h>
 #include <cuda.h>
 #include <pthread.h>
+#include <stdlib.h>     /* srand, rand */
+#include <time.h> 
 
 #include "../include/input_reader.h"
 #include "../include/model_wrappers.h"
 #include "../include/shared_data.h"
 
 int main(int argc, char *argv[]) {
+
+    // Low quality randomness only used for file identifiers
+    srand (time(NULL));
 
     // Read the configuration file ===============================================
     char* filename;

@@ -2,9 +2,13 @@
 #define SHARED_DATA_H
 
 #include <curand_kernel.h>
+#include <pthread.h>
+
+static pthread_mutex_t metafile_lock = PTHREAD_MUTEX_INITIALIZER;
 
 const int grid_file_str_len = 256;
 const int set_name_str_len = 256;
+const int FILE_UUID_LEN = 5;
 const int n_dims = 2;
 
 // structure to hold the configuration of the ising model, not all parameters are used in all models
