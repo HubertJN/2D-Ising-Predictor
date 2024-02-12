@@ -14,7 +14,7 @@ void init_model(ising_model_config* launch_struct) {
     return;
 }
 
-void* launch_mc_sweep(void *arg) {
+void launch_mc_sweep(void *arg) {
     /*
       * This launches the original model. Single thread per grid.
       *
@@ -118,7 +118,21 @@ void* launch_mc_sweep(void *arg) {
     cudaMalloc(&d_model_itask, sizeof(int));
     gpuErrchk(cudaMemcpy(d_model_itask, &launch_struct->model_itask, sizeof(int), cudaMemcpyHostToDevice));
 
-
+    // Start output file for this model
+    // One per concurrent copy, with a uid
+    file_handle * theHdl;
+    //theHdl = (file_handle*) malloc(launch_struct->num_concurrent * sizeof(file_handle));
+    theHdl = new file_handle[launch_struct->num_concurrent];
+    std::fstream metafile;
+    char filename[PATH_MAX];
+    fillCompletePath(filename);
+    snprintf(filename+strlen(filename), sizeof(filename)-strlen(filename), "/grid.meta");
+    metafile.open(filename, std::ios::out);
+    for (int i = 0; i < launch_struct->num_concurrent; i++){
+      outputInitialInfo(theHdl[i], launch_struct, stream_ix, i);
+      outputModelId(metafile, theHdl[i], i);
+    }
+    metafile.close();
     // Launch kernel
     for (int i = 0; i < launch_struct->iterations; i+=launch_struct->iter_per_step){
         mc_sweep<<<launch_struct->num_blocks, launch_struct->num_threads, 0, stream>>>(state, launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, device_array, launch_struct->inv_temperature, launch_struct->field, launch_struct->iter_per_step, d_neighbour_list, d_Pacc);
@@ -137,7 +151,10 @@ void* launch_mc_sweep(void *arg) {
         gpuErrchk( cudaPeekAtLastError() );
         // Write to file (CPU)
         //TODO: Need to make this thread safe issue #29
-        outputGridToFile(launch_struct, host_array, h_magnetisation, i, stream_ix);
+        //void writeSingleGrid(file_handle &theHdl, int *host_grid, float *host_mag, int iteration, int stream_ix);
+        for (int ic = 0; ic < launch_struct->num_concurrent; ic++){
+          writeSingleGrid(theHdl[ic], host_array + (ic*theHdl[ic].grid_els) , i, stream_ix);
+        } 
         // Check for full nucleation or resolved fates
         int full_nucleation = 0;
         int fate_down = 0;
@@ -168,5 +185,10 @@ void* launch_mc_sweep(void *arg) {
             break;
         }
     }
-    return;
+
+   for (int i = 0; i < launch_struct->num_concurrent; i++){
+      finaliseFile(theHdl[i]);
+   }
+
+   return;
 }

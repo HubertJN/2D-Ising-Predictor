@@ -25,13 +25,32 @@ const char project_name[30]="2DIsing_Model";
 // this is fine
 const char prefix[30]="grid_binaries/output/";
 
+typedef struct file_hdle{
+  std::fstream file;
+  char filename[PATH_MAX];
+  char uuid[FILE_UUID_LEN+1];
+  size_t next_location; // Allows to check file ptr has not moved since we last saw it
+  size_t size_sz;
+  size_t host_grid_sz;
+  size_t grid_els; 
+} file_handle;
+
 void outputGridToTxtFile(ising_model_config *config, int *host_grid, float *host_mag, int iteration, int stream_ix);
+
+char* getFileUuid();
+void outputModelId(std::fstream & file, file_handle& gridHdl, int i_conc);
+void outputInitialInfo(file_handle &theHdl, ising_model_config *launch_struct, int stream_ix, int iconc);
+void writeSingleGrid(file_handle &theHdl, int *host_grid, int iteration, int stream_ix);
+void finaliseFile(file_handle &theHdl);
+
+
 
 void outputGridToFile(ising_model_config *config, int *host_grid, float *host_mag, int iteration, int stream_ix);
 
 int readGridsFromFile(ising_model_config * config, int *&host_grid);
 
 int path_search(std::filesystem::path pathname_path, char* pathname);
-
+void fillCompletePath(char* filename);
+ 
 #endif // HELPERS_H
 

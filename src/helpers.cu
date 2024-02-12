@@ -1,5 +1,6 @@
 #include "../include/helpers.h"
 
+
 cudaError_t err;  // cudaError_t is a type defined in cuda.h
 
 // Boilerplate error checking code borrowed from stackoverflow
@@ -151,27 +152,31 @@ int path_search(std::filesystem::path pathname_path, char* pathname) {
   return 1;
 }
 
-// \todo Swap mag for committor, remove nucleation info
-// \todo Add extra check info
-void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *host_mag, int iteration, int stream_ix) {
-  /* Output the grid to a file.
-      *
-      * Parameters:
-      * launch_struct: pointer to the ising model configuration
-      * host_array: pointer to the array of spins
-      * i: iteration number
-  */
- 
-  fprintf(stderr, "Outputting grid to file\n");
-  fflush(stderr);
+char* getFileUuid(){
 
-  // Output the grid to a file
-  char filename[PATH_MAX];
-  int grid_size = launch_struct->size[0]*launch_struct->size[1];
+  char lett[27]="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  char * str;
+  str = (char*) malloc((FILE_UUID_LEN+1) * sizeof(char));
+  for (int i = 0; i < FILE_UUID_LEN; i++){
+    str[i] = lett[rand() % 26];
+  }
+  str[FILE_UUID_LEN]='\0';
+  return str;
+}
 
+void outputModelId(std::fstream & file, file_handle& gridHdl, int i_conc){
 
+  char info[100];
+  snprintf(info, 100, "Model number: %d with id %s \n", i_conc, gridHdl.uuid);
+  fprintf(stderr, info);
+  file.write(info, strlen(info));
+}
+
+void fillCompletePath(char* filename){
   // Get current working directory
-  char cwd[PATH_MAX];
+  fprintf(stderr, "Step 0 %s\n", filename); 
+ 
+   char cwd[PATH_MAX];
    if (getcwd(cwd, sizeof(cwd)) != NULL) {
        printf("Current working dir: %s\n", cwd);
    } else {
@@ -181,114 +186,137 @@ void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *
   // test last 3 chars are "bin"
   if (strcmp(cwd+strlen(cwd)-3, "bin") == 0) {
     // filepath is ../prefix
-    snprintf(filename, sizeof(filename), "../%s", prefix);
+    snprintf(filename, PATH_MAX, "../%s", prefix);
   }
   // test last 11 chars are "2DIsing_Model"
   else if (strcmp(cwd+strlen(cwd)-11, "2DIsing_Model") == 0) {
-    snprintf(filename, sizeof(filename), "./%s", prefix);
+    snprintf(filename, PATH_MAX, "./%s", prefix);
   }
   // test if last chars are "GASP"
   else if (strcmp(cwd+strlen(cwd)-4, "GASP") == 0) {
-    snprintf(filename, sizeof(filename), "./%s", prefix); 
+    snprintf(filename, PATH_MAX, "./%s", prefix); 
   }
   // exit if not running from within repo
   else {
     fprintf(stderr, "Error: not running from any expected location, please launch from bin or main repo\n");
     exit(EXIT_FAILURE);
   }
-  
+  fprintf(stderr, "Step 1 %s\n", filename); 
   
   // resolve the path using realpath
   char buffer[PATH_MAX];
   char *res = realpath(filename, buffer);
   if (res) {
-    snprintf(filename, sizeof(filename), buffer);
+    snprintf(filename, PATH_MAX, buffer);
   } else {
     char* errStr = strerror(errno);
     fprintf(stderr, "filepath error: %s\n", errStr);
     perror("realpath");
     exit(EXIT_FAILURE);
   }
-  snprintf(filename+strlen(buffer), sizeof(filename)-strlen(buffer), "/grid_%d_%d_%d.dat", stream_ix, grid_size, iteration);
+  fprintf(stderr, "Step 2 %s\n", filename); 
+ 
+}
+
+// \todo Swap mag for committor, remove nucleation info
+// \todo Add extra check info
+void outputInitialInfo(file_handle &theHdl, ising_model_config *launch_struct, int stream_ix, int i_conc) {
+ 
+//void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *host_mag, int iteration, int stream_ix) {
+  /* Output the grid to a file.
+      *
+      * Parameters:
+      * launch_struct: pointer to the ising model configuration
+      * host_array: pointer to the array of spins
+      * i: iteration number
+  */
+ 
+
+  fprintf(stderr, "Outputting grid to file\n");
+  fflush(stderr);
+
+  // Output the grid to a file
+  char filename[PATH_MAX];
+  int grid_size = launch_struct->size[0]*launch_struct->size[1];
+
+  fillCompletePath(filename);
+  fprintf(stderr, "Step 3 %s\n", filename); 
+ 
+  char * uid = getFileUuid();
+  snprintf(theHdl.uuid, FILE_UUID_LEN+1, uid);
+
+  snprintf(filename+strlen(filename), sizeof(filename)-strlen(filename), "/grid_%s_%d_%d.dat", uid, stream_ix, grid_size);
   fprintf(stderr, "Making File: %s\n", filename);
   fflush(stderr);
 
-  std::fstream file;
-  bool write_err = false;
-  file.open(filename, std::ios::out|std::ios::binary);
+  snprintf(theHdl.filename, sizeof(filename), filename); // Stash filename for later
 
-  const size_t size_sz = sizeof(size_t); //Use size_t type for header data
-  const size_t host_mag_sz = sizeof(host_mag[0]);
-  const size_t host_grid_sz = sizeof(host_grid[0]);
+  bool write_err = false;
+  theHdl.file.open(filename, std::ios::out|std::ios::binary);
+
+  theHdl.size_sz = sizeof(size_t); //Use size_t type for header data
+  theHdl.host_grid_sz = sizeof(int);
 
   const size_t VERSION_SIZE = 10+1; // Add 1 Char for null term
   char version_str[VERSION_SIZE];
   snprintf(version_str, VERSION_SIZE, VERSION);
-  fprintf(stderr, "Version %s\n", version_str);
-  size_t next_location = (size_t) file.tellg() + size_sz*2 + host_mag_sz + VERSION_SIZE*sizeof(char);
-  
+  //fprintf(stderr, "Version %s\n", version_str);
+  theHdl.next_location = (size_t) theHdl.file.tellg() + theHdl.size_sz + sizeof(float) + VERSION_SIZE*sizeof(char);
+
   //Write Size of ints and data, IO verification constant
   const float io_verify = 3.0/32.0;// An identifiable value - use to check type, endianness etc. Note this should probably match host_mag type
-  file.write((char*) & host_mag_sz, size_sz); // Size of mag data
-  file.write((char*) & host_grid_sz, size_sz); // Size of grid data
-  file.write((char*) &io_verify, host_mag_sz);
-  file.write( version_str, VERSION_SIZE); // Version string info
+  theHdl.file.write((char*) & theHdl.host_grid_sz, theHdl.size_sz); // Size of grid data
+  theHdl.file.write((char*) &io_verify, sizeof(float));
+  theHdl.file.write( version_str, VERSION_SIZE); // Version string info
 
   //Check file location matches what we expected
-  if((size_t)file.tellg() != next_location) write_err=1;
+  if((size_t)theHdl.file.tellg() != theHdl.next_location) write_err=1;
 
   //Now write dimension info: n_dims, followed by each dim, and the total number of grids
   size_t tmp;
-  next_location += size_sz*(n_dims+3); // + 3 for location info, n_dims, n_grids
-  file.write((char*) & next_location, size_sz);
-  file.write((char*) & n_dims, size_sz);
+  theHdl.next_location += theHdl.size_sz*(n_dims+3); // + 3 for location info, n_dims, n_grids
+  theHdl.file.write((char*) & theHdl.next_location, theHdl.size_sz);
+  theHdl.file.write((char*) & n_dims, theHdl.size_sz);
   for(int i = 0; i< n_dims; i++){
     tmp = launch_struct->size[i];
-    file.write((char*) & tmp, size_sz);
+    theHdl.file.write((char*) & tmp, theHdl.size_sz);
   }
   tmp = launch_struct->num_concurrent;
-  file.write((char*) & tmp, size_sz);
+  theHdl.file.write((char*) & tmp, theHdl.size_sz);
 
-  //fprintf(stderr, "n_dims %d, dims % d %d, n_conc %d\n", n_dims,  launch_struct->size[0],  launch_struct->size[1], launch_struct->num_concurrent);
   //Check file location matches what we expected
-  if((size_t)file.tellg() != next_location) write_err=1;
+  if((size_t)theHdl.file.tellg() != theHdl.next_location) write_err=1;
+ 
+  // Stash els per grid
+  theHdl.grid_els = grid_size;
 
-  const size_t total_size = launch_struct->size[0] * launch_struct->size[1];
-
-  // First write info on all the grids - index, magnetisation, nucleation state
-  const size_t grid_info_count = (size_sz*2 + host_mag_sz) * launch_struct->num_concurrent;
-  next_location += grid_info_count + size_sz;
-  file.write((char*) & next_location, size_sz);
-
-
-  size_t grid_index;
-  for (grid_index=0; grid_index<launch_struct->num_concurrent;grid_index++){
-    file.write((char*) & grid_index, size_sz);
-    file.write((char*) & host_mag[grid_index], host_mag_sz);
-    size_t nuc = host_mag[grid_index] > launch_struct->nucleation_threshold;
-    file.write((char*) &nuc, size_sz);
-
-   // Also print this info to the screen
-   //fprintf(stderr, "Copy %d, Mag %f, Nucleated %d\n", grid_index+1, host_mag[grid_index], nuc);
+  if(!write_err){
+    fprintf(stderr, "File opened and metadata written successfully\n");
+  }else{
+    fprintf(stderr, "Error opening file or writing metadata\n");
   }
 
+}
+
+void writeSingleGrid(file_handle &theHdl, int *host_grid, int iteration, int stream_ix) {
+
+  // Write a single grid
+  bool write_err = false;
+
+  theHdl.next_location += theHdl.host_grid_sz* theHdl.grid_els + theHdl.size_sz;
+  theHdl.file.write((char*) & theHdl.next_location, theHdl.size_sz);
+  theHdl.file.write((char*) host_grid, theHdl.grid_els*theHdl.host_grid_sz);
+
   //Check file location matches what we expected
-  if((size_t)file.tellg() != next_location) write_err=1;
-
-  // Then write the actual grids
-
-  for(grid_index=0; grid_index<launch_struct->num_concurrent;grid_index++){
-    next_location += host_grid_sz*total_size + size_sz;
-    file.write((char*) & next_location, size_sz);
-    file.write((char*) (host_grid + grid_index*total_size), total_size*host_grid_sz);
-  }
-
-  //Check file location matches what we expected
-  if((size_t)file.tellg() != next_location) write_err=1;
+  if((size_t)theHdl.file.tellg() != theHdl.next_location) write_err=1;
 
   if(write_err) fprintf(stderr, "File Writing error\n");
 
-  file.close();
+}
+
+void finaliseFile(file_handle &theHdl){
+
+  theHdl.file.close();
 }
 
 //\todo Update to match writer

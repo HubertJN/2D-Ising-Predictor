@@ -12,13 +12,11 @@ def read_headers(file, sz_sz=8):
 
     endian = 'little' # ToDo use check to verify this...
 
-    fst = file.read(sz_sz) # Size of magnetization data
-    mag_sz = int.from_bytes(fst, endian)
-
     nxt = file.read(sz_sz) # Size of grid data
     grid_sz = int.from_bytes(nxt, endian)
 
     # Format for float unpacking
+    mag_sz = 4
     fmt = 'f'
     if mag_sz == 8:
         fmt = 'd'
@@ -53,8 +51,6 @@ def read_headers(file, sz_sz=8):
     next_loc = file.tell()
     hdr["metadata_loc"] = next_loc + sz_sz
 
-    next_loc = read_next_location_item(file, sz_sz, endian)
-    hdr["mag_data_loc"] = next_loc + sz_sz
     grid_locs = []
 
     file.seek(0, 2); # Seeks to end
@@ -68,7 +64,7 @@ def read_headers(file, sz_sz=8):
     except Exception as e:
       print(e)
  
-    hdr["grid_locs"] = grid_locs
+    hdr["grid_locs"] = grid_locs[:-1] # Last entry is EOF+sz_sz...
 
     return hdr
 
@@ -133,7 +129,7 @@ def read_grids(file, hdr, meta):
     file.seek(hdr["grid_locs"][0])
 
     grids = []
-    for i in range(meta["n_conc"]):
+    for i in range(len(hdr["grid_locs"])):
         grids.append(read_next_grid(file, hdr, meta))
         file.seek(hdr["sz_sz"], 1) # Seek past the next_loc data
 
@@ -197,7 +193,7 @@ def read_file(filename):
 
     hdr = data["hdr"]
     metadata = data["metadata"]
-    data["magnetisation"] = read_mag_data(file, hdr, metadata)
+    #data["magnetisation"] = read_mag_data(file, hdr, metadata)
 
     data['grids'] = read_grids(file, hdr, metadata)
 
@@ -224,8 +220,8 @@ if __name__=="__main__":
 
     for i in range(data['metadata']['n_conc']):
 
-      print("grid num:{}, magnetisation:{:.6f}, (nucleated?:{})".format(i, data['magnetisation']['magnetisations'][i], data['magnetisation']['nucleations'][i]))
-
+      #print("grid num:{}, magnetisation:{:.6f}, (nucleated?:{})".format(i, data['magnetisation']['magnetisations'][i], data['magnetisation']['nucleations'][i]))
+      print("grid num:{}".format(i))
       print(data["grids"][i])
 
     print("_______________________________________")
