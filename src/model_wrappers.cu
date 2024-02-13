@@ -126,7 +126,7 @@ void* launch_mc_sweep(void *arg) {
     std::fstream metafile;
     char filename[PATH_MAX];
     fillCompletePath(filename);
-    metafile_lock.lock();
+    pthread_mutex_lock(&metafile_lock);
     fprintf(stderr, "Writing model metadata");
     snprintf(filename+strlen(filename), sizeof(filename)-strlen(filename), "/grid.meta");
     metafile.open(filename, std::ios::out | std::ios::app);
@@ -135,7 +135,7 @@ void* launch_mc_sweep(void *arg) {
       outputModelId(metafile, theHdl[i], i, launch_struct);
     }
     metafile.close();
-    metafile_lock.unlock();
+    pthread_mutex_unlock(&metafile_lock);
     // Launch kernel
     for (int i = 0; i < launch_struct->iterations; i+=launch_struct->iter_per_step){
         mc_sweep<<<launch_struct->num_blocks, launch_struct->num_threads, 0, stream>>>(state, launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, device_array, launch_struct->inv_temperature, launch_struct->field, launch_struct->iter_per_step, d_neighbour_list, d_Pacc);

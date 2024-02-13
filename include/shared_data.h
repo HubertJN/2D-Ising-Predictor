@@ -2,9 +2,9 @@
 #define SHARED_DATA_H
 
 #include <curand_kernel.h>
-#include <mutex>
+#include <pthread.h>
 
-static std::mutex metafile_lock;
+static pthread_mutex_t metafile_lock = PTHREAD_MUTEX_INITIALIZER;
 
 const int grid_file_str_len = 256;
 const int set_name_str_len = 256;
