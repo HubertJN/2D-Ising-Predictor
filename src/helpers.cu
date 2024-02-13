@@ -167,14 +167,13 @@ char* getFileUuid(){
 void outputModelId(std::fstream & file, file_handle& gridHdl, int i_conc, ising_model_config * launch_struct){
 
   char info[100];
-  snprintf(info, 100, "Model number: %d with id %s \n", i_conc, gridHdl.uuid);
+  snprintf(info, 100, "Model number: %d with id %s \t %f \t %f \t %d\n", i_conc, gridHdl.uuid, launch_struct->inv_temperature, launch_struct->field, launch_struct->starting_config);
   fprintf(stderr, info);
   file.write(info, strlen(info));
 }
 
 void fillCompletePath(char* filename){
   // Get current working directory
-  fprintf(stderr, "Step 0 %s\n", filename); 
  
    char cwd[PATH_MAX];
    if (getcwd(cwd, sizeof(cwd)) != NULL) {
@@ -201,7 +200,6 @@ void fillCompletePath(char* filename){
     fprintf(stderr, "Error: not running from any expected location, please launch from bin or main repo\n");
     exit(EXIT_FAILURE);
   }
-  fprintf(stderr, "Step 1 %s\n", filename); 
   
   // resolve the path using realpath
   char buffer[PATH_MAX];
@@ -214,7 +212,6 @@ void fillCompletePath(char* filename){
     perror("realpath");
     exit(EXIT_FAILURE);
   }
-  fprintf(stderr, "Step 2 %s\n", filename); 
  
 }
 
@@ -240,7 +237,6 @@ void outputInitialInfo(file_handle &theHdl, ising_model_config *launch_struct, i
   int grid_size = launch_struct->size[0]*launch_struct->size[1];
 
   fillCompletePath(filename);
-  fprintf(stderr, "Step 3 %s\n", filename); 
  
   char * uid = getFileUuid();
   snprintf(theHdl.uuid, FILE_UUID_LEN+1, uid);
