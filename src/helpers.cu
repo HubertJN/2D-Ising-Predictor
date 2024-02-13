@@ -164,7 +164,7 @@ char* getFileUuid(){
   return str;
 }
 
-void outputModelId(std::fstream & file, file_handle& gridHdl, int i_conc){
+void outputModelId(std::fstream & file, file_handle& gridHdl, int i_conc, ising_model_config * launch_struct){
 
   char info[100];
   snprintf(info, 100, "Model number: %d with id %s \n", i_conc, gridHdl.uuid);
