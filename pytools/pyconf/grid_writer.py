@@ -20,13 +20,11 @@ def write_header(file, info):
 
     sz_sz = info["sz_sz"]
     endian = info["endian"]
-    mag_sz = info["mag_sz"]
     int_sz = info["int_sz"]
 
 
     file.write(int_sz.to_bytes(sz_sz, endian))
 
-    file.write(mag_sz.to_bytes(sz_sz, endian))
 
     fmt = info["mag_fmt_string"]
     check_value = 3.0/32.0
@@ -198,14 +196,13 @@ def create_dummy_grids(info, grid_meta):
 
     return grid_data
 
-def write_file(filename, info, grid_meta, mag_data, grid_data):
+def write_file(filename, info, grid_meta, grid_data):
 
     file = open(filename, "wb")
 
     write_header(file, info)
 
     write_grid_meta(file, info, grid_meta)
-    write_mag_data(file, info, grid_meta, mag_data)
     write_grids(file, info, grid_meta, grid_data)
  
 
@@ -223,7 +220,7 @@ def example():
 
     mag_data = extract_mag_data(info, grid_meta, grid_data)
  
-    write_file(filename, info, grid_meta, mag_data, grid_data)
+    write_file(filename, info, grid_meta, grid_data)
 
 # TODO: Implement somthing like example here that reads a config and returns a class that can be used to write grids
 
