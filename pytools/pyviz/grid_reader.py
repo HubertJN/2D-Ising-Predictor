@@ -1,6 +1,7 @@
 import numpy as np
 import struct
 from pathlib import Path
+from os.path import basename
 
 def read_next_location_item(file, sz_sz, endian):
     """Read single value and return it"""
@@ -186,7 +187,25 @@ def read_file_prep(filename, data):
 
     return file
 
-def read_file(filename):
+def read_model_file(filename):
+
+    data = {}
+    file = open(filename, "r")
+    for line in file.readlines():
+        try:
+            tmp = line.strip('\n').split('\t')
+            tmp2 = tmp[0].split()
+            num = int(tmp2[2])
+            m_id = tmp2[5]
+            # Field order should match C writer code...
+            item = {"copy":num, "temp":float(tmp[1]), "field":float(tmp[2]), "start_config":int(tmp[3])}
+            data[m_id] = item
+        except:
+            print("Could not parse model file line {}".format(line))
+
+    return data
+
+def read_file(filename, model_data=None):
 
     data = {}
     file = read_file_prep(filename, data)
@@ -198,6 +217,16 @@ def read_file(filename):
     data['grids'] = read_grids(file, hdr, metadata)
 
     file.close()
+
+    if(model_data):
+        model_id = ""
+        try:
+            #Remove grid_ part, grab 5 digit code
+            model_id = basename(filename)[5:10]
+            model_meta = model_data[model_id]
+            data["model"] = model_meta
+        except:
+            print("Model data not found for {}".format(model_id))
 
     return data
 
@@ -218,9 +247,8 @@ if __name__=="__main__":
 
     data = read_file(input_file)
 
-    for i in range(data['metadata']['n_conc']):
+    for i in range(len(data["grids"])):
 
-      #print("grid num:{}, magnetisation:{:.6f}, (nucleated?:{})".format(i, data['magnetisation']['magnetisations'][i], data['magnetisation']['nucleations'][i]))
       print("grid num:{}".format(i))
       print(data["grids"][i])
 
@@ -234,3 +262,10 @@ if __name__=="__main__":
     grid1 = read_grid_num(file, d_data["hdr"], d_data["metadata"], 1)
     print(grid1)
 
+    # Demo reading model data and then a named file
+    # Use only if said file exists...
+    m_filename = "./grid_binaries/output/grid.meta"
+    model_data = read_model_file(m_filename)
+    filename = "grid_binaries/output/grid_WUXZE_0_10000.dat"
+    data2 = read_file(filename, model_data)
+    # data2 now contains file contents and model information
