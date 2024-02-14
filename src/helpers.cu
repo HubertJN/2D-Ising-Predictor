@@ -164,10 +164,10 @@ char* getFileUuid(){
   return str;
 }
 
-void outputModelId(std::fstream & file, file_handle& gridHdl, int i_conc, ising_model_config * launch_struct){
+void outputModelId(std::fstream & file, file_handle& gridHdl, ising_model_config * launch_struct){
 
   char info[100];
-  snprintf(info, 100, "Model number: %d with id %s \t %f \t %f \t %d\n", i_conc, gridHdl.uuid, launch_struct->inv_temperature, launch_struct->field, launch_struct->starting_config);
+  snprintf(info, 100, "Model with id %s (%d copies) \t %f \t %f \t %d\n", gridHdl.uuid, launch_struct->num_concurrent, launch_struct->inv_temperature, launch_struct->field, launch_struct->starting_config);
   fprintf(stderr, info);
   file.write(info, strlen(info));
 }
@@ -215,24 +215,19 @@ void fillCompletePath(char* filename){
  
 }
 
-// \todo Swap mag for committor, remove nucleation info
-// \todo Add extra check info
-void outputInitialInfo(file_handle &theHdl, ising_model_config *launch_struct, int stream_ix, int i_conc) {
- 
-//void outputGridToFile(ising_model_config *launch_struct, int *host_grid, float *host_mag, int iteration, int stream_ix) {
-  /* Output the grid to a file.
+void outputInitialInfo(file_handle &theHdl, ising_model_config *launch_struct, int stream_ix) {
+  /* Output grid sizes etc to file, ready to add grids later. Also stores information into theHdl for writing steps
       *
       * Parameters:
+      * theHdl: filehandle struct
       * launch_struct: pointer to the ising model configuration
       * host_array: pointer to the array of spins
       * i: iteration number
   */
- 
 
   fprintf(stderr, "Outputting grid to file\n");
   fflush(stderr);
 
-  // Output the grid to a file
   char filename[PATH_MAX];
   int grid_size = launch_struct->size[0]*launch_struct->size[1];
 
@@ -285,6 +280,7 @@ void outputInitialInfo(file_handle &theHdl, ising_model_config *launch_struct, i
  
   // Stash els per grid
   theHdl.grid_els = grid_size;
+  theHdl.num_grids = launch_struct->num_concurrent;
 
   if(!write_err){
     fprintf(stderr, "File opened and metadata written successfully\n");
@@ -295,7 +291,14 @@ void outputInitialInfo(file_handle &theHdl, ising_model_config *launch_struct, i
 }
 
 void writeSingleGrid(file_handle &theHdl, int *host_grid, int iteration, int stream_ix) {
-
+  /* Output single grid to a file.
+      *
+      * Parameters:
+      * theHdl: filehandle struct
+      * host_array: pointer to the array of spins
+      * i: iteration number
+  */
+ 
   // Write a single grid
   bool write_err = false;
 
@@ -309,6 +312,30 @@ void writeSingleGrid(file_handle &theHdl, int *host_grid, int iteration, int str
   if(write_err) fprintf(stderr, "File Writing error\n");
 
 }
+
+void writeAllGrids(file_handle &theHdl, int *host_grid, int iteration, int stream_ix) {
+  /* Output all grid copies to a file.
+      *
+      * Parameters:
+      * theHdl: filehandle struct
+      * host_array: pointer to the array of spins
+      * i: iteration number
+  */
+ 
+  // Write all the grids but with location info between them
+  bool write_err = false;
+  for(int i = 0; i < theHdl.num_grids; i++){
+    theHdl.next_location += theHdl.host_grid_sz* theHdl.grid_els + theHdl.size_sz;
+    theHdl.file.write((char*) & theHdl.next_location, theHdl.size_sz);
+    theHdl.file.write((char*) &(host_grid[i *theHdl.grid_els]) , theHdl.grid_els*theHdl.host_grid_sz);
+  }
+  //Check file location matches what we expected
+  if((size_t)theHdl.file.tellg() != theHdl.next_location) write_err=1;
+
+  if(write_err) fprintf(stderr, "File Writing error\n");
+
+}
+
 
 void finaliseFile(file_handle &theHdl){
 

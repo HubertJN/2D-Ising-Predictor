@@ -119,10 +119,8 @@ void* launch_mc_sweep(void *arg) {
     gpuErrchk(cudaMemcpy(d_model_itask, &launch_struct->model_itask, sizeof(int), cudaMemcpyHostToDevice));
 
     // Start output file for this model
-    // One per concurrent copy, with a uid
-    file_handle * theHdl;
-    //theHdl = (file_handle*) malloc(launch_struct->num_concurrent * sizeof(file_handle));
-    theHdl = new file_handle[launch_struct->num_concurrent];
+    // Uid for model, one file for all concurrent copies
+    file_handle theHdl;
     std::fstream metafile;
     char filename[PATH_MAX];
     fillCompletePath(filename);
@@ -130,10 +128,8 @@ void* launch_mc_sweep(void *arg) {
     fprintf(stderr, "Writing model metadata");
     snprintf(filename+strlen(filename), sizeof(filename)-strlen(filename), "/grid.meta");
     metafile.open(filename, std::ios::out | std::ios::app);
-    for (int i = 0; i < launch_struct->num_concurrent; i++){
-      outputInitialInfo(theHdl[i], launch_struct, stream_ix, i);
-      outputModelId(metafile, theHdl[i], i, launch_struct);
-    }
+    outputInitialInfo(theHdl, launch_struct, stream_ix);
+    outputModelId(metafile, theHdl, launch_struct);
     metafile.close();
     pthread_mutex_unlock(&metafile_lock);
     // Launch kernel
@@ -153,11 +149,7 @@ void* launch_mc_sweep(void *arg) {
         gpuErrchk( cudaMemcpy(h_magnetisation, d_magnetisation, launch_struct->num_concurrent * sizeof(float), cudaMemcpyDeviceToHost));
         gpuErrchk( cudaPeekAtLastError() );
         // Write to file (CPU)
-        //TODO: Need to make this thread safe issue #29
-        //void writeSingleGrid(file_handle &theHdl, int *host_grid, float *host_mag, int iteration, int stream_ix);
-        for (int ic = 0; ic < launch_struct->num_concurrent; ic++){
-          writeSingleGrid(theHdl[ic], host_array + (ic*theHdl[ic].grid_els) , i, stream_ix);
-        } 
+        writeAllGrids(theHdl, host_array, i,  stream_ix);
         // Check for full nucleation or resolved fates
         int full_nucleation = 0;
         int fate_down = 0;
@@ -189,9 +181,7 @@ void* launch_mc_sweep(void *arg) {
         }
     }
 
-   for (int i = 0; i < launch_struct->num_concurrent; i++){
-      finaliseFile(theHdl[i]);
-   }
+    finaliseFile(theHdl);
 
    return;
 }

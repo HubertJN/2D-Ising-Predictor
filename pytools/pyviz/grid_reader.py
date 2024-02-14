@@ -127,12 +127,27 @@ def read_mag_data(file, hdr, meta):
 def read_grids(file, hdr, meta):
     """Read all grids into a list, from current file position using hdr data and meta data"""
 
+    # Wrote n_conc copies, by n_iterations times
+
     file.seek(hdr["grid_locs"][0])
 
     grids = []
-    for i in range(len(hdr["grid_locs"])):
-        grids.append(read_next_grid(file, hdr, meta))
-        file.seek(hdr["sz_sz"], 1) # Seek past the next_loc data
+
+    # Check that have sensible number of copies
+    n_conc = meta["n_conc"]
+    assert(len(hdr["grid_locs"])%n_conc == 0)
+    n_times = int(len(hdr["grid_locs"])/n_conc)
+
+#    for i in range(len(hdr["grid_locs"])):
+#        grids.append(read_next_grid(file, hdr, meta))
+#        file.seek(hdr["sz_sz"], 1) # Seek past the next_loc data
+    for i in range(n_times):
+        grids_c = []
+        for j in range(meta["n_conc"]):
+            g_num = i*n_conc + j
+            grids_c.append(read_next_grid(file, hdr, meta))
+            file.seek(hdr["sz_sz"], 1) # Seek past the next_loc data
+        grids.append(grids_c)
 
     return grids
 
@@ -146,15 +161,22 @@ def read_next_grid(file, hdr, meta):
     raw_data = file.read(total_sz * grid_sz)
     data = np.frombuffer(raw_data, dt, count=total_sz)
     data = np.reshape(data, dims)
-    print("Calculated magnetization: {}:".format(np.sum(data))) # Print mag again to verify read
 
     return data
+
+def read_single_grid(file, filedata, copy, iteration):
+    """ Read one grid, copy number and iteration point given"""
+    if copy < 0 or copy > filedata["metadata"]["n_conc"]:
+        raise IndexError("Copy index not in range")
+
+    num = iteration * filedata["metadata"]["n_conc"] + copy
+    return read_grid_num(file, filedata['hdr'], filedata['metadata'], num)
 
 def read_grid_num(file, hdr, meta, num):
     """ Read grid by number from file"""
     # NB uses hdr info on block locations so can call this on any file state
 
-    if num < 0 or num >= meta["n_conc"]:
+    if num < 0 or num >= len(hdr['grid_locs']):
         raise IndexError("Index not in range")
 
     file.seek(hdr["grid_locs"][num])
@@ -178,7 +200,7 @@ def read_file_prep(filename, data):
     #Sanity checks
     try:
         assert(metadata["n_dims"] <= 3)
-        assert(metadata["n_conc"] <= 1000)
+        assert(metadata["n_conc"] <= 1000000)
     except:
         raise IOError("File data is misread or corrupt")
 
@@ -195,17 +217,18 @@ def read_model_file(filename):
         try:
             tmp = line.strip('\n').split('\t')
             tmp2 = tmp[0].split()
-            num = int(tmp2[2])
-            m_id = tmp2[5]
+            m_id = tmp2[3]
             # Field order should match C writer code...
-            item = {"copy":num, "temp":float(tmp[1]), "field":float(tmp[2]), "start_config":int(tmp[3])}
+            item = {"temp":float(tmp[1]), "field":float(tmp[2]), "start_config":int(tmp[3])}
             data[m_id] = item
         except:
             print("Could not parse model file line {}".format(line))
 
     return data
 
-def read_file(filename, model_data=None):
+def read_file(filename, model_data=None, model_code = None):
+    """ read grids etc from filename, and if model_data is supplied, also read model setup. If filename is not of the form grid_XXXXX_whatever" then also pass the 5-digit model code to lookup"""
+
 
     data = {}
     file = read_file_prep(filename, data)
@@ -219,14 +242,20 @@ def read_file(filename, model_data=None):
     file.close()
 
     if(model_data):
-        model_id = ""
-        try:
-            #Remove grid_ part, grab 5 digit code
-            model_id = basename(filename)[5:10]
-            model_meta = model_data[model_id]
-            data["model"] = model_meta
-        except:
-            print("Model data not found for {}".format(model_id))
+        if(model_code):
+            try:
+                data["model"] = model_data[model_code]
+            except:
+                print("Model data not found for {}".format(model_id))
+        else:
+            model_id = ""
+            try:
+                #Remove grid_ part, grab 5 digit code
+                model_id = basename(filename)[5:10]
+                model_meta = model_data[model_id]
+                data["model"] = model_meta
+            except:
+                print("Model data not found for {}".format(model_id))
 
     return data
 
@@ -248,24 +277,34 @@ if __name__=="__main__":
     data = read_file(input_file)
 
     for i in range(len(data["grids"])):
-
-      print("grid num:{}".format(i))
-      print(data["grids"][i])
-
-    print("_______________________________________")
-    print("Reading grid number 1 manually")
-
-    # Demo non-stream reading, once we've read the header and meta data
-    # I.e call read_file_prep and then can read grid by grid, or grab magnetisation etc data
-    d_data = {}
-    file = read_file_prep(input_file, d_data)
-    grid1 = read_grid_num(file, d_data["hdr"], d_data["metadata"], 1)
-    print(grid1)
+      for j in range(len(data["grids"][i])):
+        print("grid num:{} at time point {}".format(j, i))
+        print(data["grids"][i][j])
 
     # Demo reading model data and then a named file
     # Use only if said file exists...
-    m_filename = "./grid_binaries/output/grid.meta"
+    print("_______________________________________")
+    print("Reading an entire file and metadata")
+
+    m_filename = "./grid_binaries/example_meta.meta"
     model_data = read_model_file(m_filename)
-    filename = "grid_binaries/output/grid_WUXZE_0_10000.dat"
+    filename = "./grid_binaries/grid_LUEYM_example.dat"
     data2 = read_file(filename, model_data)
     # data2 now contains file contents and model information
+    print(data2['model'])
+
+    print("_______________________________________")
+    print("Reading a single grid (does not load entire file into memory!")
+    print("Reading grid number 2 manually")
+
+    # Demo non-stream reading, once we've read the header and meta data
+    # I.e call read_file_prep and then can read grid by grid
+    # Here we read the 3rd copy (of 0,1,2,3... etc ), at time iteration 2
+    d_data = {}
+    file = read_file_prep(filename, d_data)
+
+    # Now we can call the following as much as we like to read one grid at a time
+    grid1 = read_single_grid(file, d_data, 2, 2)
+    print(grid1)
+
+

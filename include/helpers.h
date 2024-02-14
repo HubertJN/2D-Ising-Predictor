@@ -33,14 +33,16 @@ typedef struct file_hdle{
   size_t size_sz;
   size_t host_grid_sz;
   size_t grid_els; 
+  size_t num_grids;
 } file_handle;
 
 void outputGridToTxtFile(ising_model_config *config, int *host_grid, float *host_mag, int iteration, int stream_ix);
 
 char* getFileUuid();
-void outputModelId(std::fstream & file, file_handle& gridHdl, int i_conc, ising_model_config * launch_struct);
-void outputInitialInfo(file_handle &theHdl, ising_model_config *launch_struct, int stream_ix, int iconc);
+void outputModelId(std::fstream & file, file_handle& gridHdl, ising_model_config * launch_struct);
+void outputInitialInfo(file_handle &theHdl, ising_model_config *launch_struct, int stream_ix);
 void writeSingleGrid(file_handle &theHdl, int *host_grid, int iteration, int stream_ix);
+void writeAllGrids(file_handle &theHdl, int *host_grid, int iteration, int stream_ix);
 void finaliseFile(file_handle &theHdl);
 
 
