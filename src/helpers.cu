@@ -176,11 +176,9 @@ void fillCompletePath(char* filename){
   // Get current working directory
  
    char cwd[PATH_MAX];
-   if (getcwd(cwd, sizeof(cwd)) != NULL) {
-       printf("Current working dir: %s\n", cwd);
-   } else {
+   if (getcwd(cwd, sizeof(cwd)) == NULL) {
        perror("getcwd() error");
-   }
+    }
   // compare to expected path from git repo
   // test last 3 chars are "bin"
   if (strcmp(cwd+strlen(cwd)-3, "bin") == 0) {
@@ -197,6 +195,7 @@ void fillCompletePath(char* filename){
   }
   // exit if not running from within repo
   else {
+    printf("Current working dir: %s\n", cwd);
     fprintf(stderr, "Error: not running from any expected location, please launch from bin or main repo\n");
     exit(EXIT_FAILURE);
   }
@@ -225,9 +224,6 @@ void outputInitialInfo(file_handle &theHdl, ising_model_config *launch_struct, i
       * i: iteration number
   */
 
-  fprintf(stderr, "Outputting grid to file\n");
-  fflush(stderr);
-
   char filename[PATH_MAX];
   int grid_size = launch_struct->size[0]*launch_struct->size[1];
 
@@ -251,7 +247,6 @@ void outputInitialInfo(file_handle &theHdl, ising_model_config *launch_struct, i
   const size_t VERSION_SIZE = 10+1; // Add 1 Char for null term
   char version_str[VERSION_SIZE];
   snprintf(version_str, VERSION_SIZE, VERSION);
-  //fprintf(stderr, "Version %s\n", version_str);
   theHdl.next_location = (size_t) theHdl.file.tellg() + theHdl.size_sz + sizeof(float) + VERSION_SIZE*sizeof(char);
 
   //Write Size of ints and data, IO verification constant
@@ -282,9 +277,7 @@ void outputInitialInfo(file_handle &theHdl, ising_model_config *launch_struct, i
   theHdl.grid_els = grid_size;
   theHdl.num_grids = launch_struct->num_concurrent;
 
-  if(!write_err){
-    fprintf(stderr, "File opened and metadata written successfully\n");
-  }else{
+  if(write_err){
     fprintf(stderr, "Error opening file or writing metadata\n");
   }
 

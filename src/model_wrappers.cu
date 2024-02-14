@@ -125,7 +125,6 @@ void* launch_mc_sweep(void *arg) {
     char filename[PATH_MAX];
     fillCompletePath(filename);
     pthread_mutex_lock(&metafile_lock);
-    fprintf(stderr, "Writing model metadata");
     snprintf(filename+strlen(filename), sizeof(filename)-strlen(filename), "/grid.meta");
     metafile.open(filename, std::ios::out | std::ios::app);
     outputInitialInfo(theHdl, launch_struct, stream_ix);
@@ -138,7 +137,7 @@ void* launch_mc_sweep(void *arg) {
         gpuErrchk( cudaPeekAtLastError() );
         gpuErrchk( cudaStreamSynchronize(stream) );
         gpuErrchk( cudaMemcpy(host_array, device_array, launch_struct->mem_size, cudaMemcpyDeviceToHost));
-        fprintf(stderr, "Iterations %d to %d\n", i, i+launch_struct->iter_per_step);
+        fprintf(stderr, "%s: Iterations %d to %d\n", theHdl.uuid, i, i+launch_struct->iter_per_step);
         gpuErrchk( cudaPeekAtLastError() );
         gpuErrchk( cudaDeviceSynchronize() );
         
@@ -155,11 +154,11 @@ void* launch_mc_sweep(void *arg) {
         int fate_down = 0;
         for (int j = 0; j < launch_struct->num_concurrent; j++) {
             if (h_magnetisation[j] > launch_struct->up_threshold) {
-                fprintf(stderr, "Nucleation detected at iteration %d on grid %d\n", i, j+1);
+                fprintf(stderr, "%s: Nucleation detected at iteration %d on grid %d\n", theHdl.uuid, i, j+1);
                 full_nucleation++;
             }
             else if (launch_struct->model_itask == 0 && h_magnetisation[j] < launch_struct->dn_threshold) {
-                fprintf(stderr, "Resolved fate detected at iteration %d on grid %d\n", i, j+1);
+                fprintf(stderr, "%s: Resolved fate detected at iteration %d on grid %d\n", theHdl.uuid, i, j+1);
                 full_nucleation++;
                 fate_down++;
             }
@@ -173,9 +172,9 @@ void* launch_mc_sweep(void *arg) {
 
         if (full_nucleation == launch_struct->num_concurrent) {
             if (launch_struct->model_itask == 0) {
-                fprintf(stderr, "Resolved fate on all grids \n");
+                fprintf(stderr, "%s: Resolved fate on all grids \n", theHdl.uuid);
             } else {
-                fprintf(stderr, "Full nucleation on all grids \n");
+                fprintf(stderr, "%s: Full nucleation on all grids \n", theHdl.uuid);
             }
             break;
         }
