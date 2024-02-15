@@ -1,5 +1,8 @@
 #include "../include/model_wrappers.h"
 
+pthread_mutex_t metafile_lock = PTHREAD_MUTEX_INITIALIZER;
+
+
 //Todo this should go to helpers
 void init_model(ising_model_config* launch_struct) {
     // Add model specific launch parameters
