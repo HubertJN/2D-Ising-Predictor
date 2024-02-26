@@ -1,6 +1,6 @@
-TARGET_EXEC := gpu_arch_test
-DEBUG_EXEC := gpu_arch_test_debug
-TEST_EXEC := gpu_arch_test_test
+TARGET_EXEC := gasp
+DEBUG_EXEC := gasp_debug
+TEST_EXEC := gasp_test
 
 BUILD_DIR = ./bin
 SRC_DIRS := ./src
@@ -13,17 +13,17 @@ ARFLAGS := -rcs
 LD    	:= nvcc
 NVCC   	:= nvcc
 # Targeting Compute 5.X to 9.0, disable as required
-NVFLAGS := -O3 -gencode arch=compute_50,code=sm_50 \
-			  -gencode arch=compute_52,code=sm_52 \
-			  -gencode arch=compute_60,code=sm_60 \
-			  -gencode arch=compute_61,code=sm_61 \
-			  -gencode arch=compute_70,code=sm_70 \
-			  -gencode arch=compute_75,code=sm_75 \
-			  -gencode arch=compute_80,code=sm_80 \
-			  -gencode arch=compute_86,code=sm_86 \
-			  -gencode arch=compute_89,code=sm_89 \
-			  -gencode arch=compute_90,code=sm_90 \
-			  -rdc=true
+NVFLAGS :=  -gencode arch=compute_50,code=sm_50 \
+			-gencode arch=compute_52,code=sm_52 \
+			-gencode arch=compute_60,code=sm_60 \
+			-gencode arch=compute_61,code=sm_61 \
+			-gencode arch=compute_70,code=sm_70 \
+			-gencode arch=compute_75,code=sm_75 \
+			-gencode arch=compute_80,code=sm_80 \
+			-gencode arch=compute_86,code=sm_86 \
+			-gencode arch=compute_89,code=sm_89 \
+			-gencode arch=compute_90,code=sm_90 \
+			-rdc=true
 
 # Find all the C and CU files we want to compile
 # Note the single quotes around the * expressions. The shell will incorrectly expand these otherwise, but we want to send the * directly to the find command.
@@ -53,29 +53,45 @@ all:
 	echo "doing nothing"
 
 .PHONY: clean release debug test
+
+VERSION:
+	@./get_version.sh
+
+# Remember version file be be built if it does not exist, and then Makefile reparsed
+-include VERSION
+DEFINES := -DVERSION=\"$(VERSION)\"
+$(info Version string is ${VERSION})
+
 clean:
-	rm -r $(BUILD_DIR)
+	rm -r $(BUILD_DIR) || true
+	$(RM) VERSION || true
 
 release: $(OBJS)
-	$(LD) $(OBJS) -o $@ $(NVFLAGS) $(DEP_FLAGS) 
+	$(LD) -o $(BUILD_DIR)/$(TARGET_EXEC) $(OBJS) $(NVFLAGS) -s -O0 $(DEPFLAGS) 
 
 debug: $(OBJS)
-	$(LD) -o $(BUILD_DIR)/$(DEBUG_EXEC) $(OBJS) ./src/main.cu $(NVFLAGS) -g -G -O0 -DDEBUG $(DEPFLAGS) 
+	$(LD) -o $(BUILD_DIR)/$(DEBUG_EXEC) $(OBJS) $(NVFLAGS) -g -G -O0 -DDEBUG $(DEPFLAGS) 
 
 test: $(TEST_OBJS)
 	$(LD) -o $(BUILD_DIR)/$(TEST_EXEC) $(TEST_OBJS) ./test/test.cu $(NVFLAGS) -g -G -O0 -DDEBUG $(DEPFLAGS)
+
+# Following target ensures code version is prepped. Could also include anything else to get
+# Python side up and running such as checking graphics capabilities
+py_helpers:
+	@echo "Prepared Python scripts"
+
 
 # Generic build patterns
 
 # Build step for C source
 $(BUILD_DIR)/%.c.o: %.c
 	mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(DEFINES) -c $< -o $@
 
 # Build step for Cuda source
 $(BUILD_DIR)/%.cu.o: %.cu
 	mkdir -p $(dir $@)
-	$(NVCC) $(NVFLAGS) -c $< -o $@ -diag-suppress 2464
+	$(NVCC) $(NVFLAGS) -g -G $(DEFINES) -c $< -o $@ -diag-suppress 2464
 
 
 # Include the .d makefiles. The - at the front suppresses the errors of missing

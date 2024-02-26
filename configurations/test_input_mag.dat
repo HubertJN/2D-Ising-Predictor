@@ -1,0 +1,13 @@
+## New model ##
+model_id=1
+model_itask=1
+num_concurrent=5
+size_x=100
+size_y=100
+iterations=1000
+iter_per_step=5
+seed=1
+inv_temperature=1.5
+field=1.5
+starting_config=3
+nucleation_threshold=1.0
