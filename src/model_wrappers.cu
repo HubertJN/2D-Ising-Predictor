@@ -1,5 +1,8 @@
 #include "../include/model_wrappers.h"
 
+pthread_mutex_t metafile_lock = PTHREAD_MUTEX_INITIALIZER;
+
+
 //Todo this should go to helpers
 void init_model(ising_model_config* launch_struct) {
     // Add model specific launch parameters
@@ -109,14 +112,26 @@ void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config
     cudaMalloc(&d_model_itask, sizeof(int));
     gpuErrchk(cudaMemcpy(d_model_itask, &launch_struct->model_itask, sizeof(int), cudaMemcpyHostToDevice));
 
-
+    // Start output file for this model
+    // Uid for model, one file for all concurrent copies
+    file_handle theHdl;
+    std::fstream metafile;
+    char filename[PATH_MAX];
+    fillCompletePath(filename);
+    pthread_mutex_lock(&metafile_lock);
+    snprintf(filename+strlen(filename), sizeof(filename)-strlen(filename), "/grid.meta");
+    metafile.open(filename, std::ios::out | std::ios::app);
+    outputInitialInfo(theHdl, launch_struct, stream_ix);
+    outputModelId(metafile, theHdl, launch_struct);
+    metafile.close();
+    pthread_mutex_unlock(&metafile_lock);
     // Launch kernel
     for (int i = 0; i < launch_struct->iterations; i+=launch_struct->iter_per_step){
         mc_sweep<<<launch_struct->num_blocks, launch_struct->num_threads, 0, stream>>>(state, launch_struct->size[0], launch_struct->size[1], launch_struct->num_concurrent, device_array, launch_struct->inv_temperature, launch_struct->field, launch_struct->iter_per_step, d_neighbour_list, d_Pacc);
         gpuErrchk( cudaPeekAtLastError() );
         gpuErrchk( cudaStreamSynchronize(stream) );
         gpuErrchk( cudaMemcpy(host_array, device_array, launch_struct->mem_size, cudaMemcpyDeviceToHost));
-        fprintf(stderr, "Iterations %d to %d\n", i, i+launch_struct->iter_per_step);
+        fprintf(stderr, "%s: Iterations %d to %d\n", theHdl.uuid, i, i+launch_struct->iter_per_step);
         gpuErrchk( cudaPeekAtLastError() );
         gpuErrchk( cudaDeviceSynchronize() );
         
@@ -127,17 +142,17 @@ void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config
         gpuErrchk( cudaMemcpy(h_magnetisation, d_magnetisation, launch_struct->num_concurrent * sizeof(float), cudaMemcpyDeviceToHost));
         gpuErrchk( cudaPeekAtLastError() );
         // Write to file (CPU)
-        outputGridToFile(launch_struct, host_array, h_magnetisation, i, stream_ix);
+        writeAllGrids(theHdl, host_array, i,  stream_ix);
         // Check for full nucleation or resolved fates
         int full_nucleation = 0;
         int fate_down = 0;
         for (int j = 0; j < launch_struct->num_concurrent; j++) {
             if (h_magnetisation[j] > launch_struct->up_threshold) {
-                fprintf(stderr, "Nucleation detected at iteration %d on grid %d\n", i, j+1);
+                fprintf(stderr, "%s: Nucleation detected at iteration %d on grid %d\n", theHdl.uuid, i, j+1);
                 full_nucleation++;
             }
             else if (launch_struct->model_itask == 0 && h_magnetisation[j] < launch_struct->dn_threshold) {
-                fprintf(stderr, "Resolved fate detected at iteration %d on grid %d\n", i, j+1);
+                fprintf(stderr, "%s: Resolved fate detected at iteration %d on grid %d\n", theHdl.uuid, i, j+1);
                 full_nucleation++;
                 fate_down++;
             }
@@ -151,12 +166,15 @@ void launch_mc_sweep(cudaStream_t stream, curandState *state, ising_model_config
 
         if (full_nucleation == launch_struct->num_concurrent) {
             if (launch_struct->model_itask == 0) {
-                fprintf(stderr, "Resolved fate on all grids \n");
+                fprintf(stderr, "%s: Resolved fate on all grids \n", theHdl.uuid);
             } else {
-                fprintf(stderr, "Full nucleation on all grids \n");
+                fprintf(stderr, "%s: Full nucleation on all grids \n", theHdl.uuid);
             }
             break;
         }
     }
-    return;
+
+    finaliseFile(theHdl);
+
+   return;
 }
