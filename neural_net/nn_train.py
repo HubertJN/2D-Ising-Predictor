@@ -64,7 +64,6 @@ testloader = torch.utils.data.DataLoader(testset, shuffle=False, num_workers=2, 
 trainset_subset = torch.utils.data.Subset(trainset, np.random.randint(0, len(trainset), 10000))
 trainloader = torch.utils.data.DataLoader(trainset_subset, shuffle=True, num_workers=2, batch_size=train_batch_size)
 
-
 # Initialise weights
 def weights_init(m):
     if isinstance(m, (nn.Linear, nn.Conv2d)):
