@@ -1,59 +1,111 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch_geometric.nn import GCNConv
 
 class graph_net(nn.Module):
-    def __init__(self, k=1, N=10, M=10):
+    def __init__(self, k_edge=2, hidden_n=2, hidden_m=2):
         super(graph_net, self).__init__()
 
-        # Cartesian coordinate transform to high dimensions
-        self.cart1 = nn.Linear(3, N)
-        self.cart2 = nn.Linear(N, N)
+        self.k_edge = k_edge
+        self.hidden_n = hidden_n
+        self.hidden_m = hidden_m
 
-        # Neighbour list transform to high dimensions
-        self.neigh1 = nn.Linear(2, N)
-        self.neigh2 = nn.Linear(N, N)
+        self.silu = nn.SiLU()
+        self.relu = nn.ReLU()
 
-        # Cartesian and Neighbour combination
-        self.comb = nn.Linear(N+M, N)
+        self.drop = nn.Dropout(0.5)
 
-        # Decoding layer
-        self.deco = nn.Linear(N, 1)
+        self.embed = nn.Linear(1, hidden_n)
 
-        # constants
-        self.k = k
-        self.N = N
-        self.M = M
+        for i in range(0, k_edge):
+            self.add_module("gcn_%d" % i, GCNConv(hidden_n, hidden_n))
 
-    def forward(self, cart, neigh_list):
-        cart_size = cart.size(dim=0)
-        final_graph = torch.empty(cart_size, self.N)
+        self.graph_dec = nn.Sequential(
+            nn.Linear(hidden_n, hidden_m),
+            self.drop,
+            self.silu,
+        )
 
-        for i in range(cart_size):
-            # Cartesian coordinate transform to high dimensions
-            cart = self.cart1(cart)
-            cart = self.cart2(cart)
+        self.dec_process = nn.Sequential(
+            nn.Linear(hidden_m, hidden_m),
+            self.drop,
+            self.silu,
+            nn.Linear(hidden_m, hidden_m),
+            self.drop,
+            self.silu,
+            nn.Linear(hidden_m, hidden_m),
+            self.drop,
+            self.silu,
+        )
 
-            # Neighbour list transform to high dimensions
-            neigh_size = neigh_list[0].size(dim=0)
-            rij_store = torch.empty(neigh_size, self.M)
-            for j in range(neigh_size):
-                rij = self.neigh1(neigh_list[j])
-                rij = self.neigh2(rij)
-                rij_store[j] = rij
+        self.output = nn.Sequential(
+            nn.Linear(hidden_m, 2),
+        )
 
-            rij_store = F.interpolate(rij_store, self.N)
 
-            # k edge embedding
-            comb_in = torch.cat((rij_store, cart), 0)
-            for j in range(self.k):
-                comb_out = self.comb(comb_in)
-                comb_in = torch.cat((rij_store, comb_out), 0)
+    def forward(self, features, edge_index, n_nodes):
+        x = self.embed(features)
 
-            final_graph[i] = comb_out
+        # k edge embedding
+        for i in range(0, self.k_edge):
+            x = self.drop(self.silu(self._modules["gcn_%d" % i](x, edge_index)))
 
-        final_graph = torch.sum(final_graph, 1)
-        
-        x = self.deco(final_graph)
+        x = x.view(-1, n_nodes, self.hidden_n)
+        x = torch.mean(x, dim=1)
 
-        return x
+        x = self.graph_dec(x)
+        x = self.dec_process(x)
+        x = self.output(x)
+
+        return abs(x.squeeze(1))
+
+
+#class graph_net(nn.Module):
+#    def __init__(self, k_edge=2, hidden_n=2):
+#        super(graph_net, self).__init__()
+#
+#        self.k_edge = k_edge
+#        self.hidden_n = hidden_n
+#
+#        self.embed = nn.Linear(1, hidden_n)
+#
+#        self.act_fn = nn.SiLU()
+#
+#        for i in range(0, k_edge):
+#            self.add_module("gcn_%d" % i, GCNConv(hidden_n, hidden_n))
+#
+#        self.node_dec = nn.Sequential(
+#            nn.Linear(hidden_n, hidden_n),
+#            self.act_fn,
+#            nn.Linear(hidden_n, hidden_n),
+#        )
+#
+#        self.graph_dec = nn.Sequential(
+#            nn.Linear(hidden_n, hidden_n),
+#            self.act_fn,
+#            nn.Linear(hidden_n, 1),
+#        )
+#
+#        self.drop = nn.Dropout(p=0.1)
+
+#    def forward(self, features, edge_index, n_nodes):
+#        # coordinate embedding
+#        x = self.embed(features)
+#
+#        # k edge embedding
+#        for i in range(0, self.k_edge):
+#            x = self._modules["gcn_%d" % i](x, edge_index)# + x
+#            x = self.act_fn(x)
+#
+#        # node decoding
+#        x = self.node_dec(x)
+#
+#        # sum pooling
+#        x = x.view(-1, n_nodes, self.hidden_n)
+#        x = torch.sum(x, dim=1) 
+#        
+#        # fully connected layer
+#        x = self.graph_dec(x)
+#
+#        return x.squeeze(1)
