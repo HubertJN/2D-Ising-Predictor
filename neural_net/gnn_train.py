@@ -20,6 +20,9 @@ from modules.gnn_training import gnn_training
 # import weight initialization
 from modules.gnn_weight_initialization import weights_init
 
+# import weight initialization
+from modules.gnn_loss_function import loss_func
+
 # 2) setup
 # device configuration
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -36,11 +39,7 @@ learning_rate = 1e-4
 weight_decay = 1e-4
 train_batch_size = 64
 
-# loss, optimizer and scheduler
-def nll(y, alpha, beta): # negative log likelihood (loss function)
-    dist = torch.distributions.beta.Beta(alpha, beta)
-    neg_log_like = torch.mean(torch.clamp(-dist.log_prob(y), max=10))
-    return neg_log_like
+# optimizer and scheduler
 optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate, weight_decay=weight_decay)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=500, gamma=0.75)
 
@@ -59,7 +58,7 @@ total_params = sum(p.numel() for p in net.parameters())
 print("Parameters: ", total_params)
 
 # running training loop
-net, train_loss, val_loss = gnn_training(epochs, net, device, nll, optimizer, scheduler, train_loader, val_loader) 
+net, train_loss, val_loss = gnn_training(epochs, net, device, loss_func, optimizer, scheduler, train_loader, val_loader) 
 
 PATH = "./models/model_gnn.pth"
 torch.save({
