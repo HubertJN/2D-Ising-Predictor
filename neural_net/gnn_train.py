@@ -65,7 +65,7 @@ net, train_loss, val_loss = gnn_training(epochs, net, device, loss_func, optimiz
 
 # 4) saving and plotting data output
 ##################################################
-PATH = "./models/model_gnn.pth"
+PATH = "./models/gnn_model.pth"
 torch.save({
     "model_state_dict": net.state_dict(),
     }, PATH)
@@ -88,6 +88,6 @@ for i, batch in enumerate(test_loader):
     gnn_plot_data[i,1] = outputs[0,0].item()
     gnn_plot_data[i,2] = outputs[0,1].item()
 
-np.save("./plotting_data/prediction_actual_gnn.npy", gnn_plot_data)
-np.save("./plotting_data/train_loss_gnn.npy", train_loss)
-np.save("./plotting_data/val_loss_gnn.npy", val_loss)
+np.save("./plotting_data/gnn_prediction_actual.npy", gnn_plot_data)
+np.save("./plotting_data/gnn_train_loss.npy", train_loss)
+np.save("./plotting_data/gnn_val_loss.npy", val_loss)
