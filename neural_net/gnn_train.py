@@ -34,6 +34,7 @@ k_edge = 8
 hidden_n = 8
 hidden_m = 512
 net = graph_net(k_edge=k_edge, hidden_n=hidden_n, hidden_m=hidden_m).to(device)
+net.apply(weights_init) # initialise weights
 
 # training hyper-parameters
 epochs = 5000 # number of training cycles over data
@@ -52,9 +53,6 @@ trainset, valset, testset, train_size, val_size, test_size = load_data()
 train_loader = DataLoader(trainset, shuffle=True, batch_size=train_batch_size)
 val_loader = DataLoader(valset, shuffle=False)
 test_loader = DataLoader(testset, shuffle=False)
-
-# initialise weights
-net.apply(weights_init)
 
 # 3) training loop
 ##################################################
