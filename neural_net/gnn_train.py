@@ -61,7 +61,7 @@ total_params = sum(p.numel() for p in net.parameters())
 print("Parameters: ", total_params)
 
 # running training loop
-_, train_loss, val_loss = gnn_training(epochs, net, device, loss_func, optimizer, scheduler, train_loader, val_loader) 
+net, train_loss, val_loss = gnn_training(epochs, net, device, loss_func, optimizer, scheduler, train_loader, val_loader) 
 
 # 4) saving and plotting data output
 ##################################################
