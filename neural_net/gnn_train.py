@@ -10,10 +10,10 @@ from torch_geometric.loader import DataLoader
 # 1) loading modules
 ##################################################
 # import data loading function
-from modules.load_data_gnn import load_data
+from modules.gnn_load_data import load_data
 
 # import model architecture
-from modules.graph_net import graph_net
+from modules.gnn_architecture import graph_net
 
 # import training function
 from modules.gnn_training import gnn_training
@@ -22,7 +22,7 @@ from modules.gnn_training import gnn_training
 from modules.gnn_weight_initialization import weights_init
 
 # import weight initialization
-from modules.gnn_loss_function import loss_func
+from modules.nll_loss_function import loss_func
 
 # 2) setup
 ##################################################
