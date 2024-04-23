@@ -82,12 +82,12 @@ for i, batch in enumerate(test_loader):
             
     # index of labels picks what to train on
     labels = labels.to(device)
-    outputs = net(features, edge_index, len(labels))
+    predictions = net(features, edge_index, len(labels))
 
-    gnn_plot_data[i,0] = labels.item()
-    gnn_plot_data[i,1] = outputs[0,0].item()
-    gnn_plot_data[i,2] = outputs[0,1].item()
+    plot_data[i,0] = labels.item()
+    plot_data[i,1] = predictions[0,0].item()
+    plot_data[i,2] = predictions[0,1].item()
 
-np.save("./plotting_data/gnn_prediction_actual.npy", gnn_plot_data)
+np.save("./plotting_data/gnn_prediction_actual.npy", plot_data)
 np.save("./plotting_data/gnn_train_loss.npy", train_loss)
 np.save("./plotting_data/gnn_val_loss.npy", val_loss)
