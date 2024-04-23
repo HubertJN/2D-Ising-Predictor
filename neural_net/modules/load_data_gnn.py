@@ -19,14 +19,14 @@ def load_data():
     edge_data = edge_data[ordering]
     feature_data = feature_data[ordering]
 
-    # map to [0,1]
+    # map features to [0,1]
     feature_data -= feature_data.min()
     feature_data /= feature_data.max()
 
     tmp_idx = np.zeros(50000)
-    select = 20
+    select = 50
     select_count = 0
-    sample_space = np.linspace(0.01, 0.99, 99)
+    sample_space = np.linspace(0.0, 1.0, 101)
     j = 0; k = 0
 
     for i, sample in enumerate(label_data):
@@ -53,9 +53,7 @@ def load_data():
     val_size = len(valset)
     test_size = len(testset)
 
-    print(k, train_size, val_size, test_size)
-
-    return trainset, valset, testset, val_size, test_size
+    return trainset, valset, testset, train_size, val_size, test_size
 
 class ising_dataset(Dataset):
     def __init__(self, features, edge, labels):
@@ -71,5 +69,6 @@ class ising_dataset(Dataset):
         edge = self.edge[idx]
         labels = self.labels[idx]
         
+        # GCN data type
         graph = Data(x=features, edge_index=edge, y=labels)
         return graph
