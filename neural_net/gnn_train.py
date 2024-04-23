@@ -8,6 +8,7 @@ np.set_printoptions(linewidth=np.nan)
 from torch_geometric.loader import DataLoader
 
 # 1) loading modules
+##################################################
 # import data loading function
 from modules.load_data_gnn import load_data
 
@@ -24,6 +25,7 @@ from modules.gnn_weight_initialization import weights_init
 from modules.gnn_loss_function import loss_func
 
 # 2) setup
+##################################################
 # device configuration
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -34,14 +36,16 @@ hidden_m = 512
 net = graph_net(k_edge=k_edge, hidden_n=hidden_n, hidden_m=hidden_m).to(device)
 
 # training hyper-parameters
-epochs = 10
-learning_rate = 1e-4
-weight_decay = 1e-4
+epochs = 5000 # number of training cycles over data
+learning_rate = 5e-4
+weight_decay = 1e-4 # weight parameter for L2 regularization
 train_batch_size = 64
+scheduler_step = 250 # steps before scheduler_gamma is applied to learning rate
+scheduler_gamma = 0.75 # learning rate multiplier every scheduler_step epochs
 
 # optimizer and scheduler
 optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate, weight_decay=weight_decay)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=500, gamma=0.75)
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_step, gamma=scheduler_gamma)
 
 # loading data
 trainset, valset, testset, train_size, val_size, test_size = load_data()
@@ -53,13 +57,16 @@ test_loader = DataLoader(testset, shuffle=False)
 net.apply(weights_init)
 
 # 3) training loop
+##################################################
 # printing number of parameters
 total_params = sum(p.numel() for p in net.parameters())
 print("Parameters: ", total_params)
 
 # running training loop
-net, train_loss, val_loss = gnn_training(epochs, net, device, loss_func, optimizer, scheduler, train_loader, val_loader) 
+_, train_loss, val_loss = gnn_training(epochs, net, device, loss_func, optimizer, scheduler, train_loader, val_loader) 
 
+# 4) saving and plotting data output
+##################################################
 PATH = "./models/model_gnn.pth"
 torch.save({
     "model_state_dict": net.state_dict(),
@@ -77,7 +84,7 @@ for i, batch in enumerate(test_loader):
             
     # index of labels picks what to train on
     labels = labels.to(device)
-    outputs = net(features, edge_index, 4096)
+    outputs = net(features, edge_index, len(labels))
 
     gnn_plot_data[i,0] = labels.item()
     gnn_plot_data[i,1] = outputs[0,0].item()
