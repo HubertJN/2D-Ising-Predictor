@@ -1,9 +1,14 @@
 import torch
 import numpy as np
+import time
 
 def gnn_training(epochs, net, device, loss_func, optimizer, scheduler, train_loader, val_loader):
     train_loss_arr = np.zeros(epochs)
     val_loss_arr = np.zeros(epochs) 
+    time_taken = 0
+
+    initial_time = time.time()
+    begin = initial_time
 
     for epoch in range(1, epochs+1):
         cum_num = 0
@@ -72,7 +77,12 @@ def gnn_training(epochs, net, device, loss_func, optimizer, scheduler, train_loa
         val_loss_arr[epoch-1] = val_loss
         
         if epoch%10 == 0 or epoch == 1:
-            print (f"Epoch [{epoch:05d}/{epochs:05d}], Train Loss: {train_loss:.8f}, Val Loss: {val_loss:.8f}")
+            end = time.time()
+            print (f"Epoch [{epoch:05d}/{epochs:05d}], Train Loss: {train_loss:.8f}, Val Loss: {val_loss:.8f}, Time Taken: {end-begin:.1f} seconds")
+            begin = time.time()
 
-    return net, train_loss_arr, val_loss_arr
+    final_time = time.time()
+    time_taken = final_time - initial_time
+
+    return net, train_loss_arr, val_loss_arr, time_taken
         
