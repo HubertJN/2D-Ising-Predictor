@@ -40,8 +40,8 @@ def load_data():
    
     tmp_idx = tmp_idx[:k]
 
-    feature_train, feature_test, edge_train, edge_test, label_train, label_test = train_test_split(feature_data[tmp_idx], edge_data[tmp_idx], label_data[tmp_idx], test_size=0.2, random_state=1)
-    feature_train, feature_val, edge_train, edge_val, label_train, label_val = train_test_split(feature_train, edge_train, label_train, test_size=0.2, random_state=1)
+    feature_train, feature_test, edge_train, edge_test, label_train, label_test = train_test_split(feature_data[tmp_idx], edge_data[tmp_idx], label_data[tmp_idx], test_size=0.2)
+    feature_train, feature_val, edge_train, edge_val, label_train, label_val = train_test_split(feature_train, edge_train, label_train, test_size=0.2)
 
     trainset = ising_dataset(feature_train, edge_train, label_train)
     valset = ising_dataset(feature_val, edge_val, label_val)
