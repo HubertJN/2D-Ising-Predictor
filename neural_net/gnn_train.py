@@ -31,18 +31,17 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # network hyper-parameter choice and initialization
 k_edge = 8
-hidden_n = 8
-hidden_m = 512
-net = graph_net(k_edge=k_edge, hidden_n=hidden_n, hidden_m=hidden_m).to(device)
+hidden_n = 64
+net = graph_net(k_edge=k_edge, hidden_n=hidden_n).to(device)
 net.apply(weights_init) # initialise weights
 
 # training hyper-parameters
 epochs = 5000 # number of training cycles over data
-learning_rate = 1e-4
-weight_decay = 1e-4 # weight parameter for L2 regularization
-train_batch_size = 512
-scheduler_step = 500 # steps before scheduler_gamma is applied to learning rate
-scheduler_gamma = 0.75 # learning rate multiplier every scheduler_step epochs
+learning_rate = 2e-4
+weight_decay = 1e-5 # weight parameter for L2 regularization
+train_batch_size = 128
+scheduler_step = 250 # steps before scheduler_gamma is applied to learning rate
+scheduler_gamma = 0.5 # learning rate multiplier every scheduler_step epochs
 
 # optimizer and scheduler
 optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate, weight_decay=weight_decay)
@@ -92,8 +91,7 @@ for i, batch in enumerate(test_loader):
 
 # save variables to file
 hyperparameters={'k_edge' : k_edge, 
-         'hidden_n' : hidden_n, 
-         'hidden_m' : hidden_m, 
+         'hidden_n' : hidden_n,
          'epochs' : epochs,
          'learning_rate' : learning_rate,
          'weight_decay' : weight_decay,
