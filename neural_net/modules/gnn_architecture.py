@@ -3,42 +3,39 @@ import torch.nn as nn
 from torch_geometric.nn import GCNConv
 
 class graph_net(nn.Module):
-    def __init__(self, k_edge=2, hidden_n=2, hidden_m=2):
+    def __init__(self, k_edge=2, hidden_n=2, ):
         super(graph_net, self).__init__()
 
         self.k_edge = k_edge
         self.hidden_n = hidden_n
-        self.hidden_m = hidden_m
+        self.hidden_m = 4*((self.hidden_n*(self.hidden_n+1))/2) # coded to be equal to total number of neighbours up to hidden_n away
 
         self.silu = nn.SiLU() # activation function
 
         self.drop = nn.Dropout(0.5) # dropout function
 
-        self.embed = nn.Linear(1, hidden_n) # embedding features into higher dimensional representation
+        self.embed = nn.Linear(1, hidden_m) # embedding features into higher dimensional representation
 
         for i in range(0, k_edge): # loops over k_edge and creates k_edge gcn layers
             self.add_module("gcn_%d" % i, GCNConv(hidden_n, hidden_n))
 
         self.graph_dec = nn.Sequential( # graph decoding
-            nn.Linear(hidden_n, hidden_m),
+            nn.Linear(hidden_m, hidden_n),
             self.drop,
             self.silu,
         )
 
         self.dec_process = nn.Sequential( # processing decoding
-            nn.Linear(hidden_m, hidden_m),
+            nn.Linear(hidden_n, hidden_n),
             self.drop,
             self.silu,
-            nn.Linear(hidden_m, hidden_m),
-            self.drop,
-            self.silu,
-            nn.Linear(hidden_m, hidden_m),
+            nn.Linear(hidden_n, hidden_n),
             self.drop,
             self.silu,
         )
 
         self.output = nn.Sequential( # output layer (alpha and beta of beta distribution)
-            nn.Linear(hidden_m, 2),
+            nn.Linear(hidden_n, 2),
         )
 
     def forward(self, features, edge_index, batch_size):
