@@ -22,11 +22,6 @@ def gnn_training(epochs, net, device, loss_func, optimizer, scheduler, train_loa
             edge_index = batch.edge_index
             labels = batch.y
 
-            # sending data to device
-            features = features.to(device)
-            edge_index = edge_index.to(device)
-            labels = labels.to(device)
-
             # performing forward pass
             predictions = net(features, edge_index, len(batch))
 
@@ -56,11 +51,6 @@ def gnn_training(epochs, net, device, loss_func, optimizer, scheduler, train_loa
                 features = batch.x
                 edge_index = batch.edge_index
                 labels = batch.y
-
-                # sending data to device
-                features = features.to(device)
-                edge_index = edge_index.to(device)
-                labels = labels.to(device)
 
                 # performing forward pass
                 predictions = net(features, edge_index, len(batch))
