@@ -5,7 +5,7 @@ import torchvision.transforms as transforms
 import numpy as np
 from torch_geometric.data import Data
 
-def load_data():  
+def load_data(device):  
     feature_dir = "./training_data/image_coord_gnn"
     edge_dir = "./training_data/image_neigh_gnn"
     label_dir = "./training_data/label_data_gnn"
@@ -24,7 +24,7 @@ def load_data():
     feature_data /= feature_data.max()
 
     tmp_idx = np.zeros(50000)
-    select = 50
+    select = 20
     select_count = 0
     sample_space = np.linspace(0.0, 1.0, 101)
     j = 0; k = 0
@@ -43,9 +43,9 @@ def load_data():
     feature_train, feature_test, edge_train, edge_test, label_train, label_test = train_test_split(feature_data[tmp_idx], edge_data[tmp_idx], label_data[tmp_idx], test_size=0.2)
     feature_train, feature_val, edge_train, edge_val, label_train, label_val = train_test_split(feature_train, edge_train, label_train, test_size=0.2)
 
-    trainset = ising_dataset(feature_train, edge_train, label_train)
-    valset = ising_dataset(feature_val, edge_val, label_val)
-    testset = ising_dataset(feature_test, edge_test, label_test)
+    trainset = ising_dataset(feature_train, edge_train, label_train, device)
+    valset = ising_dataset(feature_val, edge_val, label_val, device)
+    testset = ising_dataset(feature_test, edge_test, label_test, device)
 
     train_size = len(trainset)
     val_size = len(valset)
@@ -54,10 +54,10 @@ def load_data():
     return trainset, valset, testset, train_size, val_size, test_size
 
 class ising_dataset(Dataset):
-    def __init__(self, features, edge, labels):
-        self.labels = labels
-        self.features = features
-        self.edge = edge
+    def __init__(self, features, edge, labels, device="cpu"):
+        self.labels = labels.to(device)
+        self.features = features.to(device)
+        self.edge = edge.to(device)
 
     def __len__(self):
         return len(self.labels)
