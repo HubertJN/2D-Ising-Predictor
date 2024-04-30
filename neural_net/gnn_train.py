@@ -30,7 +30,7 @@ from modules.nll_loss_function import loss_func
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # network hyper-parameter choice and initialization
-k_edge = 8
+k_edge = 2
 hidden_n = 64
 net = graph_net(k_edge=k_edge, hidden_n=hidden_n).to(device)
 net.apply(weights_init) # initialise weights
@@ -39,8 +39,8 @@ net.apply(weights_init) # initialise weights
 epochs = 5000 # number of training cycles over data
 learning_rate = 2e-4
 weight_decay = 1e-5 # weight parameter for L2 regularization
-train_batch_size = 128
-scheduler_step = 250 # steps before scheduler_gamma is applied to learning rate
+train_batch_size = 64
+scheduler_step = 1000 # steps before scheduler_gamma is applied to learning rate
 scheduler_gamma = 0.5 # learning rate multiplier every scheduler_step epochs
 
 # optimizer and scheduler
@@ -48,7 +48,7 @@ optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate, weight_decay=we
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_step, gamma=scheduler_gamma)
 
 # loading data
-trainset, valset, testset, train_size, val_size, test_size = load_data()
+trainset, valset, testset, train_size, val_size, test_size = load_data(device)
 train_loader = DataLoader(trainset, shuffle=True, batch_size=train_batch_size)
 val_loader = DataLoader(valset, shuffle=False, batch_size=train_batch_size)
 test_loader = DataLoader(testset, shuffle=False)
@@ -78,11 +78,7 @@ for i, batch in enumerate(test_loader):
     edge_index = batch.edge_index
     labels = batch.y
 
-    features = features.to(device)
-    edge_index = edge_index.to(device)
-            
     # index of labels picks what to train on
-    labels = labels.to(device)
     predictions = net(features, edge_index, len(labels))
 
     plot_data[i,0] = labels.item()
