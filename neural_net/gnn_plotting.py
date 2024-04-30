@@ -18,9 +18,9 @@ soft_red = "#ed9688"
 soft_blue = "#78b3eb"
 soft_green = "#9befdf"
 
-data = np.load("./plotting_data/prediction_actual_gnn.npy")
-train_loss = np.load("./plotting_data/train_loss_gnn.npy")
-val_loss = np.load("./plotting_data/val_loss_gnn.npy")
+data = np.load("./plotting_data/gnn_prediction_actual.npy")
+train_loss = np.load("./plotting_data/gnn_train_loss.npy")
+val_loss = np.load("./plotting_data/gnn_val_loss.npy")
 
 line = np.linspace(np.min(data[:,0]),np.max(data[:,0]),10)
 
