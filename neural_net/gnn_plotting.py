@@ -4,9 +4,14 @@ import torch
 from scipy.optimize import curve_fit
 import warnings
 import sys
+import subprocess
 warnings.filterwarnings("ignore")
 np.set_printoptions(threshold=sys.maxsize)
 np.set_printoptions(linewidth=np.nan)
+
+show_plot = False
+if len(sys.argv) > 1:
+    show_plot = True
 
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rcParams["font.size"] = 18
@@ -21,8 +26,14 @@ soft_green = "#9befdf"
 data = np.load("./plotting_data/gnn_prediction_actual.npy")
 train_loss = np.load("./plotting_data/gnn_train_loss.npy")
 val_loss = np.load("./plotting_data/gnn_val_loss.npy")
+hyperparameters = open("figures/gnn_tweaking/hyperparameters.txt").read().splitlines()
+run = int(hyperparameters[0].split(" = ")[1])
 
 line = np.linspace(np.min(data[:,0]),np.max(data[:,0]),10)
+
+# average loss for better plot
+train_loss = np.mean(train_loss.reshape(-1, 10), axis=1)
+val_loss = np.mean(val_loss.reshape(-1, 10), axis=1)
 
 # sort data for easier plotting
 data = data[data[:, 0].argsort()]
@@ -54,16 +65,20 @@ ax = plt.gca()
 ax.set_box_aspect(1)
 plt.text(0.05, 0.95, "RMSE: {:.5f}".format(rmse), transform = ax.transAxes, horizontalalignment="left",
      verticalalignment="top")
-plt.savefig("figures/gnn_tweaking/prediction_target.pdf", bbox_inches="tight")
-plt.show()
+plt.savefig("figures/gnn_tweaking/prediction_target_%d.pdf" % run, bbox_inches="tight")
+if show_plot == True:
+    plt.show()
 plt.close()
 
-plt.plot(train_loss, label="Train Loss", color=soft_blue)
-plt.plot(val_loss, label="Validation Loss", color=soft_red)
+plt.plot(10*np.arange(train_loss.size), train_loss, label="Train Loss", color=soft_blue)
+plt.plot(10*np.arange(val_loss.size), val_loss, label="Validation Loss", color=soft_red)
 plt.title("Neural Network Training")
 plt.ylabel("Loss")
 plt.xlabel("Epoch")
 plt.legend()
-plt.savefig("figures/gnn_tweaking/loss.pdf", bbox_inches="tight")
-plt.show()
+plt.savefig("figures/gnn_tweaking/loss_%d.pdf" % run, bbox_inches="tight")
+if show_plot == True:
+    plt.show()
 plt.close()
+
+subprocess.run(["mv", "figures/gnn_tweaking/hyperparameters.txt", "figures/gnn_tweaking/hyperparameters_%d.txt" % run])
