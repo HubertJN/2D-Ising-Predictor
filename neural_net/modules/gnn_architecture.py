@@ -8,7 +8,7 @@ class graph_net(nn.Module):
 
         self.k_edge = k_edge
         self.hidden_n = hidden_n
-        self.global_cv = 4*int((self.k_edge*(self.k_edge+1))/2) # coded to be equal to total number of neighbours up to hidden_n away
+        self.global_cv = 4*int((self.k_edge*(self.k_edge+1))/2) # coded to be equal to total number of neighbours up to k_edge away
         
         self.silu = nn.SiLU() # activation function
 
@@ -51,7 +51,9 @@ class graph_net(nn.Module):
             x = self._modules["fc_%d" % i](x)
             x = x + residual
             residual = x
-
+        
+        x = self.silu(x)
+        x = self.drop(x)
         x = self.output(x)
 
         return abs(x.squeeze(1)) + 0.0001 # mapped to absolute value due to alpha,beta > 0
