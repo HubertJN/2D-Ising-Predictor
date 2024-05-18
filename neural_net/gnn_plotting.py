@@ -81,4 +81,7 @@ if show_plot == True:
     plt.show()
 plt.close()
 
+with open("figures/gnn_tweaking/hyperparameters.txt", 'a') as f:
+    f.write('%s = %s\n' % ('rmse', rmse))
+
 subprocess.run(["mv", "figures/gnn_tweaking/hyperparameters.txt", "figures/gnn_tweaking/hyperparameters_%d.txt" % run])
