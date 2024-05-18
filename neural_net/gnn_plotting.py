@@ -4,14 +4,19 @@ import torch
 from scipy.optimize import curve_fit
 import warnings
 import sys
-import subprocess
 warnings.filterwarnings("ignore")
 np.set_printoptions(threshold=sys.maxsize)
 np.set_printoptions(linewidth=np.nan)
 
 show_plot = False
-if len(sys.argv) > 1:
+if len(sys.argv) > 2:
     show_plot = True
+
+if len(sys.argv) > 1:
+    run = int(sys.argv[1])
+else:
+    print("Error. No run parameter. Exiting.")
+    exit()
 
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rcParams["font.size"] = 18
@@ -23,11 +28,9 @@ soft_red = "#ed9688"
 soft_blue = "#78b3eb"
 soft_green = "#9befdf"
 
-data = np.load("./plotting_data/gnn_prediction_actual.npy")
-train_loss = np.load("./plotting_data/gnn_train_loss.npy")
-val_loss = np.load("./plotting_data/gnn_val_loss.npy")
-hyperparameters = open("figures/gnn_tweaking/hyperparameters.txt").read().splitlines()
-run = int(hyperparameters[0].split(" = ")[1])
+data = np.load("./plotting_data/gnn_prediction_actual_%d.npy" % run)
+train_loss = np.load("./plotting_data/gnn_train_loss_%d.npy" % run)
+val_loss = np.load("./plotting_data/gnn_val_loss_%d.npy" % run)
 
 line = np.linspace(np.min(data[:,0]),np.max(data[:,0]),10)
 
@@ -44,20 +47,8 @@ expectation = alpha/(alpha+beta)
 rmse = np.sqrt(np.mean((data[:,0]-expectation)**2))
 variance = np.sqrt(alpha*beta/((alpha+beta)**2*(alpha+beta+1)))
 
-spacing = np.linspace(np.min(data[:,0]),np.max(data[:,0]), 101)
-std_dev = np.zeros(100)
-mean = np.zeros(100)
-
-for i in range(100):
-    index = np.where(np.logical_and(mean >= spacing[i], mean < spacing[i+1]))
-
-    std_dev[i] = np.std(expectation[index])
-    mean[i] = np.mean(expectation[index])
-
-#spacing = np.delete(spacing, -1)
 plt.plot(line, line, color=soft_red)
 plt.scatter(data[:,0], expectation, s = 1, color=soft_blue)
-#plt.fill_between(spacing, mean+std_dev, mean-std_dev, alpha=0.3, edgecolor=soft_blue, facecolor=soft_blue)
 plt.title("Neural Network Prediction Assessment")
 plt.xlabel("Target")
 plt.ylabel("Prediction")
@@ -81,7 +72,5 @@ if show_plot == True:
     plt.show()
 plt.close()
 
-with open("figures/gnn_tweaking/hyperparameters.txt", 'a') as f:
+with open("figures/gnn_tweaking/hyperparameters_%d.txt" % run, 'a') as f:
     f.write('%s = %s\n' % ('rmse', rmse))
-
-subprocess.run(["mv", "figures/gnn_tweaking/hyperparameters.txt", "figures/gnn_tweaking/hyperparameters_%d.txt" % run])
