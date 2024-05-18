@@ -30,15 +30,32 @@ from modules.nll_loss_function import loss_func
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # network hyper-parameter choice and initialization
-k_edge = 2
-hidden_n = 64
+run = 13
+k_edge = 1
+hidden_n = 3
+
+if len(sys.argv) > 1: # if command line arguments provided
+        run = int(sys.argv[1])
+        k_edge = int(sys.argv[2])
+        hidden_n = int(sys.argv[3])
+
 net = graph_net(k_edge=k_edge, hidden_n=hidden_n).to(device)
 net.apply(weights_init) # initialise weights
 
+try:
+    open("figures/gnn_tweaking/hyperparameters_%d.txt" % run, "r")
+    print("Run already exists. Change run variable. Exiting.")
+    exit_status = True
+except:
+    exit_status = False
+if exit_status == True:
+    sys.exit()
+
+
 # training hyper-parameters
-epochs = 5000 # number of training cycles over data
-learning_rate = 2e-4
-weight_decay = 1e-5 # weight parameter for L2 regularization
+epochs = 2500 # number of training cycles over data
+learning_rate = 1e-3
+weight_decay = 1e-4 # weight parameter for L2 regularization
 train_batch_size = 64
 scheduler_step = 1000 # steps before scheduler_gamma is applied to learning rate
 scheduler_gamma = 0.5 # learning rate multiplier every scheduler_step epochs
@@ -86,8 +103,10 @@ for i, batch in enumerate(test_loader):
     plot_data[i,2] = predictions[0,1].item()
 
 # save variables to file
-hyperparameters={'k_edge' : k_edge, 
+hyperparameters={'run' : run,
+         'k_edge' : k_edge, 
          'hidden_n' : hidden_n,
+         'total parameters' : total_params,
          'epochs' : epochs,
          'learning_rate' : learning_rate,
          'weight_decay' : weight_decay,
