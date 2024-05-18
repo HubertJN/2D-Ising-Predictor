@@ -1,0 +1,14 @@
+run = 1
+k_edge = 2
+hidden_n = 64
+epochs = 5000
+learning_rate = 0.001
+weight_decay = 1e-05
+train_batch_size = 64
+scheduler_step (epochs) = 1000
+scheduler_gamma = 0.5
+time_taken (seconds) = 2048.7337987422943
+dataset = 1971
+train_size = 1260
+val_size = 316
+test_size = 395
