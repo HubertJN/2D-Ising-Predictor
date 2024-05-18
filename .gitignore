@@ -2,5 +2,4 @@ bin/
 neural_net/performance
 neural_net/modules/__init__.py
 neural_net/__pycache__
-neural_net/figures
 
