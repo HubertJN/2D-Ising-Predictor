@@ -19,15 +19,12 @@ class conv_net(nn.Module):
 
         self.pool = nn.MaxPool2d(2,2) # pooling function
 
-        self.flatten = torch.flatten(start_dim=1) # flatten function
-
-        self.add_module("cn_0", nn.Conv2d(1, channels, 3, padding=[1,1], padding_mode="circular"))
+        self.add_module("cn_0", nn.Conv2d(1, self.channels, 3, padding=[1,1], padding_mode="circular"))
         for i in range(1, conv): # loops over conv and creates conv cn layers
-            self.add_module("cn_%d" % i, nn.Conv2d(channels, channels, 3, padding=[1,1], padding_mode="circular"))
+            self.add_module("cn_%d" % i, nn.Conv2d(self.c0hannels, self.channels, 3, padding=[1,1], padding_mode="circular"))
 
-        conv_output_nodes = (self.img_dim/(2**conv))**2 # input is pooled conv times, each time halving
-                                                        # the size of input tensor in both dimensions
-        )
+        conv_output_nodes = int((self.img_dim/(2**conv))**2)    # input is pooled conv times, each time halving
+                                                                # the size of input tensor in both dimensions
 
         for i in range(0, hidden_n): # loops over hidden_n and creates hidden_n fully connected layers
             self.add_module("fc_%d" % i, nn.Linear(conv_output_nodes, conv_output_nodes))
@@ -48,8 +45,8 @@ class conv_net(nn.Module):
             x = x + residual
             x = self.pool(x)
             residual = x
-
-        x = self.flatten(x) # flatten
+        
+        x = torch.flatten(x, start_dim = 1) # flatten
         residual = x
 
         # fully connected layers
