@@ -83,7 +83,7 @@ net, train_loss, val_loss, time_taken = gnn_training(epochs, net, device, loss_f
 
 # 4) saving and plotting data output
 ##################################################
-PATH = "./models/gnn_model.pth"
+PATH = "./models/gnn_model_%d.pth" % run
 torch.save({
     "model_state_dict": net.state_dict(),
     }, PATH)
@@ -119,10 +119,10 @@ hyperparameters={'run' : run,
          'val_size' : val_size,
          'test_size' : test_size} 
   
-with open("figures/gnn_tweaking/hyperparameters.txt", 'w') as f:  
+with open("figures/gnn_tweaking/hyperparameters_%d.txt" % run, 'w') as f:  
     for key, value in hyperparameters.items():  
         f.write('%s = %s\n' % (key, value))
 
-np.save("./plotting_data/gnn_prediction_actual.npy", plot_data)
-np.save("./plotting_data/gnn_train_loss.npy", train_loss)
-np.save("./plotting_data/gnn_val_loss.npy", val_loss)
+np.save("./plotting_data/gnn_prediction_actual_%d.npy" % run, plot_data)
+np.save("./plotting_data/gnn_train_loss_%d.npy" % run, train_loss)
+np.save("./plotting_data/gnn_val_loss_%d.npy" % run, val_loss)
