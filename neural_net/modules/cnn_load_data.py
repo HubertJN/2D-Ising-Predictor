@@ -4,7 +4,7 @@ from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 import numpy as np
 
-def load_data():
+def load_data(device):
     image_dir = "./training_data/image_data_base"
     label_dir = "./training_data/label_data_base"
     image_data = torch.load(image_dir)
@@ -20,7 +20,7 @@ def load_data():
     image_data /= image_data.max()
 
     tmp_idx = np.zeros(50000)
-    select = 50
+    select = 20
     select_count = 0
     sample_space = np.linspace(0.0, 1.0, 101)
     j = 0; k = 0
@@ -50,9 +50,9 @@ def load_data():
     return trainset, valset, testset, train_size, val_size, test_size
 
 class ising_dataset(Dataset):
-    def __init__(self, data, labels, train=False):
-        self.img_labels = labels
-        self.img_data = data
+    def __init__(self, data, labels, device='cpu', train=False):
+        self.img_labels = labels.to(device)
+        self.img_data = data.to(device)
         self.train = train
 
     def __len__(self):
