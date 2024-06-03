@@ -53,7 +53,8 @@ if exit_status == True:
 
 
 # training hyper-parameters
-epochs = 2500 # number of training cycles over data
+epochs = 5000 # number of training cycles over data
+models = 3 # number of models to train and then select best (lowest loss based on mean of last 50 epochs from validation set)
 learning_rate = 1e-3
 weight_decay = 1e-4 # weight parameter for L2 regularization
 train_batch_size = 64
@@ -79,7 +80,30 @@ total_params = sum(p.numel() for p in net.parameters())
 print("Parameters: ", total_params)
 
 # running training loop
-net, train_loss, val_loss, time_taken = gnn_training(epochs, net, device, loss_func, optimizer, scheduler, train_loader, val_loader) 
+gnn_dict = {}
+for mod in range(models):
+    net, train_loss, val_loss, time_taken = gnn_training(epochs, net, device, loss_func, optimizer, scheduler, train_loader, val_loader) 
+
+    gnn_dict["net_%d" % mod] = net
+    gnn_dict["train_loss_%d" % mod] = train_loss
+    gnn_dict["val_loss_%d" % mod] = val_loss
+    gnn_dict["time_taken_%d" % mod] = time_taken
+    
+    net.apply(weights_init) # initialise weights
+    optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate, weight_decay=weight_decay)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_step, gamma=scheduler_gamma)
+
+min_mod = np.inf
+for mod in range(models):
+    min_tmp = np.mean(gnn_dict["val_loss_%d" % mod][-50:])
+    if min_tmp < min_mod:
+        min_mod = min_tmp
+        mod_choice = mod
+
+net = gnn_dict["net_%d" % mod_choice]
+train_loss = gnn_dict["train_loss_%d" % mod_choice]
+val_loss = gnn_dict["val_loss_%d" % mod_choice]
+time_taken = gnn_dict["val_loss_%d" % mod_choice]
 
 # 4) saving and plotting data output
 ##################################################
