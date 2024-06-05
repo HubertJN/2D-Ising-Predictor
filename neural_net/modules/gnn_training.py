@@ -16,7 +16,7 @@ def gnn_training(epochs, net, device, loss_func, optimizer, scheduler, train_loa
 
         # training loop
         net.train()
-        for i, batch in enumerate(train_loader):
+        for i, (batch, _) in enumerate(train_loader):
             # splitting batch
             features = batch.x
             edge_index = batch.edge_index
@@ -46,7 +46,7 @@ def gnn_training(epochs, net, device, loss_func, optimizer, scheduler, train_loa
         # validation loop
         net.eval()
         with torch.no_grad():
-            for i, batch in enumerate(val_loader):
+            for i, (batch, _) in enumerate(val_loader):
                 # splitting batch
                 features = batch.x
                 edge_index = batch.edge_index
