@@ -53,8 +53,8 @@ if exit_status == True:
 
 
 # training hyper-parameters
-epochs = 5000 # number of training cycles over data
-models = 3 # number of models to train and then select best (lowest loss based on mean of last 50 epochs from validation set)
+epochs = 3750 # number of training cycles over data
+models = 2 # number of models to train and then select best (lowest loss based on mean of last 50 epochs from validation set)
 learning_rate = 1e-3
 weight_decay = 1e-4 # weight parameter for L2 regularization
 train_batch_size = 64
