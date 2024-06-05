@@ -103,7 +103,7 @@ for mod in range(models):
 net = gnn_dict["net_%d" % mod_choice]
 train_loss = gnn_dict["train_loss_%d" % mod_choice]
 val_loss = gnn_dict["val_loss_%d" % mod_choice]
-time_taken = gnn_dict["val_loss_%d" % mod_choice]
+time_taken = gnn_dict["time_taken_%d" % mod_choice]
 
 # 4) saving and plotting data output
 ##################################################
@@ -112,9 +112,9 @@ torch.save({
     "model_state_dict": net.state_dict(),
     }, PATH)
 
-plot_data = np.zeros([test_size, 3])
+plot_data = np.zeros([test_size, 4])
 net.eval()
-for i, batch in enumerate(test_loader):
+for i, (batch, index) in enumerate(test_loader):
     features = batch.x
     edge_index = batch.edge_index
     labels = batch.y
@@ -125,6 +125,7 @@ for i, batch in enumerate(test_loader):
     plot_data[i,0] = labels.item()
     plot_data[i,1] = predictions[0,0].item()
     plot_data[i,2] = predictions[0,1].item()
+    plot_data[i,3] = index.item()
 
 # save variables to file
 hyperparameters={'run' : run,
