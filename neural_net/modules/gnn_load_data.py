@@ -6,46 +6,22 @@ import numpy as np
 from torch_geometric.data import Data
 
 def load_data(device):  
-    feature_dir = "./training_data/image_coord_gnn"
-    edge_dir = "./training_data/image_neigh_gnn"
-    label_dir = "./training_data/label_data_gnn"
+    image_dir = "./training/data/image_data_subset"
+    feature_dir = "./training_data/feature_data_subset"
+    edge_dir = "./training_data/edge_data_subset"
+    label_dir = "./training_data/label_data_subset"
+
     feature_data = torch.load(feature_dir)
-    edge_data = torch.load(edge_dir); edge_data = edge_data.type(torch.int64) 
-    label_data = torch.load(label_dir)[:,0]
-    
-    # sort data
-    ordering = label_data.argsort()
-    label_data = label_data[ordering]
-    edge_data = edge_data[ordering]
-    feature_data = feature_data[ordering]
+    edge_data = torch.load(edge_dir) 
+    label_data = torch.load(label_dir)
+    id_data = torch.arange(len(feature_data))
 
-    # map features to [0,1]
-    feature_data -= feature_data.min()
-    feature_data /= feature_data.max()
+    feature_train, feature_test, edge_train, edge_test, label_train, label_test, id_train, id_test = train_test_split(feature_data, edge_data, label_data, id_data, test_size=0.2)
+    feature_train, feature_val, edge_train, edge_val, label_train, label_val, id_train, id_val = train_test_split(feature_train, edge_train, label_train, id_train, test_size=0.1)
 
-    tmp_idx = np.zeros(50000)
-    select = 20
-    select_count = 0
-    sample_space = np.linspace(0.0, 1.0, 101)
-    j = 0; k = 0
-
-    for i, sample in enumerate(label_data):
-        value = sample_space[j]
-        if abs(sample.item() - value) < 0.001 and select_count < select:
-            select_count += 1
-            tmp_idx[k] = i; k += 1
-        elif abs(sample.item() - value) > 0.001:
-            select_count = 0
-            j += 1
-   
-    tmp_idx = tmp_idx[:k]
-
-    feature_train, feature_test, edge_train, edge_test, label_train, label_test = train_test_split(feature_data[tmp_idx], edge_data[tmp_idx], label_data[tmp_idx], test_size=0.2)
-    feature_train, feature_val, edge_train, edge_val, label_train, label_val = train_test_split(feature_train, edge_train, label_train, test_size=0.2)
-
-    trainset = ising_dataset(feature_train, edge_train, label_train, device)
-    valset = ising_dataset(feature_val, edge_val, label_val, device)
-    testset = ising_dataset(feature_test, edge_test, label_test, device)
+    trainset = ising_dataset(feature_train, edge_train, label_train, id_train, device)
+    valset = ising_dataset(feature_val, edge_val, label_val, id_val, device)
+    testset = ising_dataset(feature_test, edge_test, label_test, id_test, device)
 
     train_size = len(trainset)
     val_size = len(valset)
@@ -54,10 +30,11 @@ def load_data(device):
     return trainset, valset, testset, train_size, val_size, test_size
 
 class ising_dataset(Dataset):
-    def __init__(self, features, edge, labels, device="cpu"):
+    def __init__(self, features, edge, labels, index, device="cpu"):
         self.labels = labels.to(device)
         self.features = features.to(device)
         self.edge = edge.to(device)
+        self.index = index
 
     def __len__(self):
         return len(self.labels)
@@ -66,7 +43,8 @@ class ising_dataset(Dataset):
         features = self.features[idx]
         edge = self.edge[idx]
         labels = self.labels[idx]
+        index = self.index[idx]
         
         # GCN data type
         graph = Data(x=features, edge_index=edge, y=labels)
-        return graph
+        return graph, index
