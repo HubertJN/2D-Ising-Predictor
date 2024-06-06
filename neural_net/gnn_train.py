@@ -79,6 +79,7 @@ print(f"Training size: {train_size}, Validation size: {val_size}, Test size: {te
 total_params = sum(p.numel() for p in net.parameters())
 print("Parameters: ", total_params)
 
+
 # running training loop
 gnn_dict = {}
 for mod in range(models):
@@ -108,9 +109,10 @@ time_taken = gnn_dict["time_taken_%d" % mod_choice]
 # 4) saving and plotting data output
 ##################################################
 PATH = "./models/gnn_model_%d.pth" % run
+#net.load_state_dict(torch.load(PATH)['model_state_dict'])
 torch.save({
     "model_state_dict": net.state_dict(),
-    }, PATH)
+   }, PATH)
 
 plot_data = np.zeros([test_size, 4])
 net.eval()
