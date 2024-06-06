@@ -14,7 +14,7 @@ label_data = torch.load(label_dir)[:,0]
 
 # sort data based on committor
 ordering = label_data.argsort()
-image_data = label_data[ordering]
+image_data = image_data[ordering]
 label_data = label_data[ordering]
 edge_data = edge_data[ordering]
 feature_data = feature_data[ordering]
