@@ -28,9 +28,9 @@ soft_red = "#ed9688"
 soft_blue = "#78b3eb"
 soft_green = "#9befdf"
 
-data = np.load("./plotting_data/gnn_prediction_actual_%d.npy" % run)
-train_loss = np.load("./plotting_data/gnn_train_loss_%d.npy" % run)
-val_loss = np.load("./plotting_data/gnn_val_loss_%d.npy" % run)
+data = np.load("./plotting_data/gnn/gnn_prediction_actual_%d.npy" % run)
+train_loss = np.load("./plotting_data/gnn/gnn_train_loss_%d.npy" % run)
+val_loss = np.load("./plotting_data/gnn/gnn_val_loss_%d.npy" % run)
 
 line = np.linspace(np.min(data[:,0]),np.max(data[:,0]),10)
 
@@ -65,7 +65,7 @@ for i, index in enumerate(top_max):
 ax.set_box_aspect(1)
 plt.text(0.05, 0.95, "RMSE: {:.5f}".format(rmse), transform = ax.transAxes, horizontalalignment="left",
      verticalalignment="top")
-plt.savefig("figures/gnn_tweaking/prediction_target_%d.pdf" % run, bbox_inches="tight")
+plt.savefig("figures/gnn/prediction_target_%d.pdf" % run, bbox_inches="tight")
 if show_plot == True:
     plt.show()
 plt.close()
@@ -76,10 +76,10 @@ plt.title("Neural Network Training")
 plt.ylabel("Loss")
 plt.xlabel("Epoch")
 plt.legend()
-plt.savefig("figures/gnn_tweaking/loss_%d.pdf" % run, bbox_inches="tight")
+plt.savefig("figures/gnn/loss_%d.pdf" % run, bbox_inches="tight")
 if show_plot == True:
     plt.show()
 plt.close()
 
-with open("figures/gnn_tweaking/hyperparameters_%d.txt" % run, 'a') as f:
+with open("plotting_data/gnn/hyperparameters_%d.txt" % run, 'a') as f:
     f.write('%s = %s\n' % ('rmse', rmse))
