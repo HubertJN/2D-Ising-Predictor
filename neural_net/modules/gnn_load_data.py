@@ -16,8 +16,8 @@ def load_data(device):
     label_data = torch.load(label_dir)
     id_data = torch.arange(len(feature_data))
 
-    feature_train, feature_test, edge_train, edge_test, label_train, label_test, id_train, id_test = train_test_split(feature_data, edge_data, label_data, id_data, test_size=0.2)
-    feature_train, feature_val, edge_train, edge_val, label_train, label_val, id_train, id_val = train_test_split(feature_train, edge_train, label_train, id_train, test_size=0.1)
+    feature_train, feature_test, edge_train, edge_test, label_train, label_test, id_train, id_test = train_test_split(feature_data, edge_data, label_data, id_data, test_size=0.2, random_state=1)
+    feature_train, feature_val, edge_train, edge_val, label_train, label_val, id_train, id_val = train_test_split(feature_train, edge_train, label_train, id_train, test_size=0.1, random_state=1)
 
     trainset = ising_dataset(feature_train, edge_train, label_train, id_train, device)
     valset = ising_dataset(feature_val, edge_val, label_val, id_val, device)
@@ -32,6 +32,15 @@ def load_data(device):
 class ising_dataset(Dataset):
     def __init__(self, features, edge, labels, index, device="cpu"):
         self.labels = labels.to(device)
+        # normal dist blurring of features
+        """features = torch.normal(mean=features, std=0.005)"""
+        # random translation of features
+        """
+        shape = features.shape
+        features = torch.reshape(features, (-1,64,64)); test = features
+        features = torch.roll(features, shifts=(np.random.randint(features.shape[-1]),features.shape[-2]), dims=(-1, -2))
+        features = torch.reshape(features, shape)
+        """
         self.features = features.to(device)
         self.edge = edge.to(device)
         self.index = index
