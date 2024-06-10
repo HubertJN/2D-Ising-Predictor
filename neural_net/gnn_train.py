@@ -9,12 +9,7 @@ from torch_geometric.loader import DataLoader
 import importlib
 
 if len(sys.argv) == 5: # if command line arguments provided
-        if int(sys.argv[1]) == 0:
-            net_type = 'cnn'
-        elif int(sys.argv[1]) == 1:
-            net_type = 'gnn'
-        else:
-            net_type = sys.arv[1].lower()
+        net_type = sys.argv[1].lower()
         run = int(sys.argv[2])
         k_edge = int(sys.argv[3])
         hidden_n = int(sys.argv[4])
@@ -31,13 +26,13 @@ load_data = getattr(importlib.import_module('modules.%s_load_data' % net_type), 
 net_init = getattr(importlib.import_module('modules.%s_architecture' % net_type), 'net_init')
 
 # import training function
-training = getattr(importlib.import_module('modules.%s_training' % net_type), 'training')
+net_training = getattr(importlib.import_module('modules.%s_training' % net_type), 'net_training')
 
 # import weight initialization
 weight_init = getattr(importlib.import_module('modules.%s_weight_init' % net_type), 'weight_init')
 
 # import loss function
-loss_func = getattr(importlib.import_module('modules.nll_loss_function', 'loss_func')
+loss_func = getattr(importlib.import_module('modules.nll_loss_function'), 'loss_func')
 
 # 2) setup
 ##################################################
@@ -87,7 +82,7 @@ print("Parameters: ", total_params)
 # running training loop
 nn_dict = {}
 for mod in range(models):
-    net, train_loss, val_loss, time_taken = training(epochs, net, device, loss_func, optimizer, scheduler, train_loader, val_loader) 
+    net, train_loss, val_loss, time_taken = net_training(epochs, net, device, loss_func, optimizer, scheduler, train_loader, val_loader) 
 
     nn_dict["net_%d" % mod] = net
     nn_dict["train_loss_%d" % mod] = train_loss
@@ -100,7 +95,7 @@ for mod in range(models):
 
 min_mod = np.inf
 for mod in range(models):
-    min_tmp = np.mean(gnn_dict["val_loss_%d" % mod][-50:])
+    min_tmp = np.mean(nn_dict["val_loss_%d" % mod][-50:])
     if min_tmp < min_mod:
         min_mod = min_tmp
         mod_choice = mod
@@ -112,7 +107,7 @@ time_taken = nn_dict["time_taken_%d" % mod_choice]
 
 # 4) saving and plotting data output
 ##################################################
-PATH = "./models/%s_model_%d.pth" % net_type, run
+PATH = "./models/%s_model_%d.pth" % (net_type, run)
 torch.save({
     "model_state_dict": net.state_dict(),
    }, PATH)
@@ -158,10 +153,10 @@ hyperparameters={'run' : run,
          'rmse': rmse
          }
   
-with open("plotting_data/%s/hyperparameters_%d.txt" % net_type, run, 'w') as f:  
+with open("plotting_data/%s/hyperparameters_%d.txt" % (net_type, run), 'w') as f:  
     for key, value in hyperparameters.items():  
         f.write('%s = %s\n' % (key, value))
 
-np.save("./plotting_data/%s/%s_prediction_actual_%d.npy" % net_type, net_type, run, plot_data)
-np.save("./plotting_data/%s/%s_train_loss_%d.npy" % net_type, net_type, run, train_loss)
-np.save("./plotting_data/%s/%s_val_loss_%d.npy" % net_type, net_type, run, val_loss)
+np.save("./plotting_data/%s/%s_prediction_actual_%d.npy" % (net_type, net_type, run), plot_data)
+np.save("./plotting_data/%s/%s_train_loss_%d.npy" % (net_type, net_type, run), train_loss)
+np.save("./plotting_data/%s/%s_val_loss_%d.npy" % (net_type, net_type, run), val_loss)
