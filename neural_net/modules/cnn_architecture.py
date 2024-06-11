@@ -2,9 +2,9 @@ import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
 
-class conv_net(nn.Module):
-    def __init__(self, conv=1, hidden_n=1, img_dim=64):
-        super(conv_net, self).__init__()
+class net_init(nn.Module):
+    def __init__(self, conv, hidden_n, img_dim=64):
+        super(net_init, self).__init__()
 
         self.conv = conv
         self.hidden_n = hidden_n
@@ -21,7 +21,7 @@ class conv_net(nn.Module):
 
         self.add_module("cn_0", nn.Conv2d(1, self.channels, 3, padding=[1,1], padding_mode="circular"))
         for i in range(1, conv): # loops over conv and creates conv cn layers
-            self.add_module("cn_%d" % i, nn.Conv2d(self.c0hannels, self.channels, 3, padding=[1,1], padding_mode="circular"))
+            self.add_module("cn_%d" % i, nn.Conv2d(self.channels, self.channels, 3, padding=[1,1], padding_mode="circular"))
 
         conv_output_nodes = int((self.img_dim/(2**conv))**2)    # input is pooled conv times, each time halving
                                                                 # the size of input tensor in both dimensions
