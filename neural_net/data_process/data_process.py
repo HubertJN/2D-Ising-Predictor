@@ -34,7 +34,7 @@ index_file.seek(0, os.SEEK_SET)
 
 bytes_per_slice = byte_prefix+ngrids*(lx*ly/8)
 # initialised to -1.0 for use later
-image_data = np.zeros((i,lx,ly), dtype=np.float32)
+image_data = np.zeros((i,1,lx,ly), dtype=np.float32)
 feature_coords = np.full((i, lx*ly, 4), -1.0, dtype=np.float32)
 edge_data = np.full((i, 2, 4*lx*ly), -1.0, dtype=np.float32)
 label_data = np.zeros((i, ld_arr_size), dtype=np.float32)
