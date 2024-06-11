@@ -1,9 +1,8 @@
 bin/
-neural_net/models/*
-neural_net/figures/cnn/*
-neural_net/figures/gnn/*
-neural_net/plotting_data/*
-neural_net/training_data/*
+neural_net/models
+neural_net/figures
+neural_net/plotting_data
+neural_net/training_data
 neural_net/modules/__init__.py
 neural_net/__pycache__
 
