@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 
-def cnn_training(epochs, net, device, loss_func, optimizer, scheduler, train_loader, val_loader):
+def net_training(epochs, net, device, loss_func, optimizer, scheduler, train_loader, val_loader):
     train_loss_arr = np.zeros(epochs)
     val_loss_arr = np.zeros(epochs) 
 
@@ -11,7 +11,7 @@ def cnn_training(epochs, net, device, loss_func, optimizer, scheduler, train_loa
 
         # training loop
         net.train()
-        for i, (features, labels) in enumerate(train_loader):
+        for i, (features, labels, _) in enumerate(train_loader):
             # sending data to device
             features = features.to(device)
             labels = labels.to(device)
@@ -41,7 +41,7 @@ def cnn_training(epochs, net, device, loss_func, optimizer, scheduler, train_loa
 
         # validation loop
         net.eval()
-        for i, (features, labels) in enumerate(val_loader):
+        for i, (features, labels, _) in enumerate(val_loader):
             # sending data to device
             features = features.to(device)
             labels = labels.to(device)

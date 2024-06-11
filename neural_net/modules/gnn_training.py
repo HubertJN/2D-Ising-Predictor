@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import time
 
-def gnn_training(epochs, net, device, loss_func, optimizer, scheduler, train_loader, val_loader):
+def net_training(epochs, net, device, loss_func, optimizer, scheduler, train_loader, val_loader):
     train_loss_arr = np.zeros(epochs)
     val_loss_arr = np.zeros(epochs)
     time_taken = 0

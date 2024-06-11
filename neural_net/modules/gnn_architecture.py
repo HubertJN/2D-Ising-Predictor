@@ -2,9 +2,9 @@ import torch
 import torch.nn as nn
 from torch_geometric.nn import GCNConv
 
-class graph_net(nn.Module):
-    def __init__(self, k_edge=2, hidden_n=2):
-        super(graph_net, self).__init__()
+class net_init(nn.Module):
+    def __init__(self, k_edge, hidden_n):
+        super(net_init, self).__init__()
 
         self.k_edge = k_edge
         self.hidden_n = hidden_n
