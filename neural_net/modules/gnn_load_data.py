@@ -1,3 +1,14 @@
+"""
+============================================================================================
+                                 gnn_load_data.py
+
+Python file containing functions for initializing and populating graph neural network data
+arrays. Loads data in from external files and splits them for training, validation and
+testing.
+ ===========================================================================================
+// H. Naguszewski. University of Warwick
+"""
+
 import torch
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset
@@ -5,7 +16,21 @@ import torchvision.transforms as transforms
 import numpy as np
 from torch_geometric.data import Data
 
-def load_data(device):  
+def load_data(device):
+    """load_data
+    Loads data from files then splits them for training, validation and testing.
+
+    Parameters:
+    device: device to which pytorch tensors are loaded
+
+    Returns:
+    trainset: training data set
+    valset: validation data set
+    testset: testing data set
+    train_size: size of training data set
+    val_size: size of validation data set
+    test_size: size of testing data set
+    """
     image_dir = "./training/data/image_data_subset"
     feature_dir = "./training_data/feature_data_subset"
     edge_dir = "./training_data/edge_data_subset"
@@ -32,23 +57,55 @@ def load_data(device):
 class ising_dataset(Dataset):
     def __init__(self, features, edge, labels, index, device="cpu"):
         self.labels = labels.to(device)
+        """__init__
+        Initializes Dataset object for Ising data
+
+        Parameters:
+        features: feature data of ising grid
+        edge: edge data of graph
+        labels: committor values for each graph
+        index: index of graph within whole data set
+        device: device to which pytorch tensors are loaded (default is cpu)
+
+        Returns:
+        None
+        """
         # normal dist blurring of features
-        """features = torch.normal(mean=features, std=0.005)"""
+        #features = torch.normal(mean=features, std=0.005)
+        
         # random translation of features
-        """
-        shape = features.shape
-        features = torch.reshape(features, (-1,64,64)); test = features
-        features = torch.roll(features, shifts=(np.random.randint(features.shape[-1]),features.shape[-2]), dims=(-1, -2))
-        features = torch.reshape(features, shape)
-        """
+        #shape = features.shape
+        #features = torch.reshape(features, (-1,64,64)); test = features
+        #features = torch.roll(features, shifts=(np.random.randint(features.shape[-1]),features.shape[-2]), dims=(-1, -2))
+        #features = torch.reshape(features, shape)
+
         self.features = features.to(device)
         self.edge = edge.to(device)
         self.index = index
 
     def __len__(self):
+        """__len__
+        Returns length of data set
+
+        Parameters:
+        None
+
+        Returns:
+        len(self.labels): length of data set
+        """
         return len(self.labels)
 
     def __getitem__(self, idx):
+        """__getitem__
+        Gets individual item from data set
+
+        Parameters:
+        idx: id of item to be extracted from data set
+
+        Returns:
+        graph: graph output as a torch_geometric object
+        index: index of item within whole data set
+        """
         features = self.features[idx]
         edge = self.edge[idx]
         labels = self.labels[idx]

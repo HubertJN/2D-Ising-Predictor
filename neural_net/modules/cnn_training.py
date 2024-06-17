@@ -1,8 +1,36 @@
+"""
+============================================================================================
+                                 cnn_training.py
+
+Python file containing convolutional neural network training loop.
+ ===========================================================================================
+// H. Naguszewski. University of Warwick
+"""
+
 import torch
 import numpy as np
 import time
 
 def net_training(epochs, net, device, loss_func, optimizer, scheduler, train_loader, val_loader):
+    """net_training
+    Training loops for graph neural network
+
+    Parameters:
+    epochs: number of training epochs
+    net: neural network object
+    device: device to which pytorch tensors are loaded
+    loss_func: loss function
+    optimizer: PyTorch optimizer object
+    scheduler: PyTroch scheduler object
+    train_loader: training data dataloader
+    val_loader: validation data dataloader
+
+    Returns:
+    net: trained neural network object
+    train_loss_arr: training loss array
+    val_loss_arr: validation loss array
+    time_taken: time taken for training loop
+    """
     train_loss_arr = np.zeros(epochs)
     val_loss_arr = np.zeros(epochs)
     time_taken = 0

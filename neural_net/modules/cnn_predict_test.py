@@ -1,8 +1,28 @@
+"""
+============================================================================================
+                                 cnn_predict_test.py
+
+Python file containing loss function for testing convolutional neural network performance.
+ ===========================================================================================
+// H. Naguszewski. University of Warwick
+"""
+
 import torch
 import torch.nn as nn
 
-def predict_test(net, test_loader, plot_data):
-    for i, (features, labels, index) in enumerate(test_loader):
+def predict_test(net, data_loader, plot_data):
+    """predict_test
+    Given network and data_loader populates array with data required for plotting
+
+    Parameters:
+    net: neural network object
+    data_loader: pytorch data_loader
+    plot_data: array for data storage
+
+    Returns:
+    plot_data: filled array (label, alpha, beta, index)
+    """
+    for i, (features, labels, index) in enumerate(data_loader):
         features = features
         labels = labels
 

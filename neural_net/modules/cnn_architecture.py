@@ -1,9 +1,31 @@
+"""
+============================================================================================
+                                 cnn_architecture.py
+
+Python file containing convolutional neural network architecture written using PyTorch.
+File includes initialization function for creating the cnn as well as a forward pass
+function.
+ ===========================================================================================
+// H. Naguszewski. University of Warwick
+"""
+
 import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
 
 class net_init(nn.Module):
     def __init__(self, conv, hidden_n, img_dim=64):
+    """__init__
+    Convolutional neural network initialization.
+
+    Parameters:
+    conv: number of convolutions to be performed
+    hidden_n: number of fully connected linear layers after convolution layer(s)
+    img_dim: size of x and y dimension for image rescaling (optional, default is 64)
+
+    Returns:
+    None
+    """
         super(net_init, self).__init__()
 
         self.conv = conv
@@ -35,8 +57,17 @@ class net_init(nn.Module):
             nn.Linear(conv_output_nodes, 2),
         )
 
-    def forward(self, x):
-        x = self.resize(x) # resize input image to img_dim x img_dim
+    def forward(self, image):
+    """forward
+    Forward pass of convolutional neural network.
+
+    Parameters:
+    image: input image
+
+    Returns:
+    (alpha, beta): alpha and beta parameters of beta distribution in 1D array
+    """
+        x = self.resize(image) # resize input image to img_dim x img_dim
         residual = x
 
         # convolutions
