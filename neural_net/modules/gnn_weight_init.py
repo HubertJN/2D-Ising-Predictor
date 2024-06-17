@@ -13,8 +13,8 @@ from torch_geometric.nn import GCNConv
 
 def weight_init(m):
     """weight_init
-    Weight initialization for graph neural network. Function is applied to neural network object
-    like so "net.apply(weight_init)" where net is the neural network object.
+    Weight initialization for graph neural network. Function is applied to neural network 
+    object like so "net.apply(weight_init)" where net is the neural network object.
 
     Parameters:
     m: neural network layer
