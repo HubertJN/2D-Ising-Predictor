@@ -9,7 +9,8 @@ class net_init(nn.Module):
         self.conv = conv
         self.hidden_n = hidden_n
         self.img_dim = img_dim
-        self.channels = 8*int((self.conv*(self.conv+1))/2) # coded to be equal to total number of neighbours 
+        self.channels = 4*int((self.conv*(self.conv+1))/2) # coded to be equal to total number of neighbours 
+        
 
         self.resize = transforms.Resize((self.img_dim, self.img_dim), antialias=False) # resize input tensor
 
@@ -20,10 +21,11 @@ class net_init(nn.Module):
         self.pool = nn.MaxPool2d(2,2) # pooling function
 
         self.add_module("cn_0", nn.Conv2d(1, self.channels, 3, padding=[1,1], padding_mode="circular"))
+
         for i in range(1, conv): # loops over conv and creates conv cn layers
             self.add_module("cn_%d" % i, nn.Conv2d(self.channels, self.channels, 3, padding=[1,1], padding_mode="circular"))
 
-        conv_output_nodes = int((self.img_dim/(2**conv))**2)    # input is pooled conv times, each time halving
+        conv_output_nodes = int((self.img_dim/(2**conv))**2)*self.channels    # input is pooled conv times, each time halving
                                                                 # the size of input tensor in both dimensions
 
         for i in range(0, hidden_n): # loops over hidden_n and creates hidden_n fully connected layers
@@ -45,7 +47,7 @@ class net_init(nn.Module):
             x = x + residual
             x = self.pool(x)
             residual = x
-        
+
         x = torch.flatten(x, start_dim = 1) # flatten
         residual = x
 
