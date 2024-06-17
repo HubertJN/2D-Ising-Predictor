@@ -46,7 +46,6 @@ predict_test = getattr(importlib.import_module('modules.%s_predict_test' %net_ty
 ##################################################
 # device configuration
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 net = net_init(k_edge, hidden_n).to(device)
 net.apply(weight_init) # initialise weights
 
