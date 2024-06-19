@@ -20,10 +20,10 @@ label_dir = "../training_data/label_data"
 image_data = torch.load(image_dir)
 feature_data = torch.load(feature_dir)
 edge_data = torch.load(edge_dir)
-label_data = torch.load(label_dir)[:,0]
+label_data = torch.load(label_dir)
 
 # sort data based on committor
-ordering = label_data.argsort()
+ordering = label_data[:,0].argsort()
 image_data = image_data[ordering]
 label_data = label_data[ordering]
 edge_data = edge_data[ordering]
@@ -39,7 +39,7 @@ select_count = 0
 sample_space = np.linspace(0.0, 1.0, 101)
 j = 0; k = 0
 
-for i, sample in enumerate(label_data):
+for i, sample in enumerate(label_data[:,0]):
     value = sample_space[j]
     if abs(sample.item() - value) < 0.001 and select_count < select:
         select_count += 1

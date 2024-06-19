@@ -13,6 +13,7 @@ import os
 import numpy as np
 import torch
 from torch.utils.data import Dataset
+import scipy.ndimage as ndimage
 
 import sys
 np.set_printoptions(threshold=sys.maxsize)
@@ -25,7 +26,7 @@ byte_prefix = 4*(3)
 ngrids = 8192
 lx = 64
 ly = 64
-ld_arr_size = 6
+ld_arr_size = 2
 
 # count how many samples
 i = 0
@@ -110,12 +111,11 @@ while(1):
             edge_data[j, 1, neigh_idx] = neighbours[neighbour, 3]
             neigh_idx += 1
 
+    num_clust, _ = ndimage.label(ising_grids)
+    geo_clust = int(max(ndimage.sum(ising_grids, num_clust, index=np.arange(num_clust.max() + 1))))
+
     label_data[j, 0] = committor # label
-    label_data[j, 1] = 0.54 # inverse temperature $$(tmp)$$
-    label_data[j, 2] = 0.07 # field strength $$(tmp)$$
-    label_data[j, 3] = 0.0 # special cluster size $$(tmp)$$
-    label_data[j, 4] = float(index[2]) # geo cluster size
-    label_data[j, 5] = committor # committor
+    label_data[j, 1] = geo_clust
 
     j += 1
 
@@ -128,7 +128,7 @@ feature_data = feature_coords[:, :, 0]
 feature_data = np.reshape(feature_data, [feature_data.shape[0], feature_data.shape[1], 1]) 
 
 # remove commitors of 0 and 1
-fix_index = (label_data[:, -1] > 0) & (label_data[:, -1] <= 0.99)
+fix_index = (label_data[:, 0] > 0) & (label_data[:, 0] <= 0.99)
 image_data = image_data[fix_index]
 feature_data = feature_data[fix_index]
 edge_data = edge_data[fix_index]
