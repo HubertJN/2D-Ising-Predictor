@@ -16,16 +16,16 @@ from torch_geometric.nn import GCNConv
 class net_init(nn.Module):
     def __init__(self, k_edge, hidden_n):
         super(net_init, self).__init__()
-    """__init__
-    Graph neural network initialization.
+        """__init__
+        Graph neural network initialization.
 
-    Parameters:
-    k_edge: number of edge embeddings (i.e. how many graph connections the network "sees")
-    hidden_n: number of fully connected linear layers after graph layer(s)
+        Parameters:
+        k_edge: number of edge embeddings (i.e. how many graph connections the network "sees")
+        hidden_n: number of fully connected linear layers after graph layer(s)
 
-    Returns:
-    None
-    """
+        Returns:
+        None
+        """
         self.k_edge = k_edge
         self.hidden_n = hidden_n
         self.global_cv = 4*int((self.k_edge*(self.k_edge+1))/2) # coded to be equal to total number of neighbours up to k_edge away
@@ -49,17 +49,17 @@ class net_init(nn.Module):
         )
 
     def forward(self, features, edge_index, batch_size):
-    """forward
-    Forward pass of graph neural network.
+        """forward
+        Forward pass of graph neural network.
 
-    Parameters:
-    features: input features of graph
-    edge_index: input edge indices of graph
-    batch_size: input batch size
+        Parameters:
+        features: input features of graph
+        edge_index: input edge indices of graph
+        batch_size: input batch size
 
-    Returns:
-    (alpha, beta): alpha and beta parameters of beta distribution in 1D array
-    """
+        Returns:
+        (alpha, beta): alpha and beta parameters of beta distribution in 1D array
+        """
         x = self.embed(features)
         residual = x
 
