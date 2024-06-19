@@ -77,10 +77,10 @@ try:
 except:
     exit_status = False
 if exit_status == True:
-    """sys.exit()""" ########################## CHANGE LATER ###########################
+    sys.exit()
 
 # training hyper-parameters
-epochs = 10 # number of training cycles over data
+epochs = 3750 # number of training cycles over data
 models = 2 # number of models to train and then select best (lowest loss based on mean of last 50 epochs from validation set)
 learning_rate = 1e-3
 weight_decay = 1e-4 # weight parameter for L2 regularization
