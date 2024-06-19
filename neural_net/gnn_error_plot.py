@@ -49,5 +49,5 @@ for grid in range(num_top):
     plt.gca().set_aspect('equal', adjustable='box')
     plt.xticks([])
     plt.yticks([])
-    plt.show()
+    plt.savefig("figures/gnn/error_%d_%d.pdf" % (grid, run), bbox_inches="tight") 
     plt.close()
