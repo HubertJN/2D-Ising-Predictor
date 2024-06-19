@@ -1,3 +1,14 @@
+"""
+============================================================================================
+                                 data_process.py
+
+Python file that processes binary data into data usable by PyTorch. The program loads data
+then loops over the binary file populating numpy arrays then the data is saved in the
+PyTorch tensor format.
+ ===========================================================================================
+// H. Naguszewski. University of Warwick
+"""
+
 import os
 import numpy as np
 import torch
@@ -45,6 +56,7 @@ ibyte=0
 one = np.uint32(1)
 blookup = [0, 1]
 
+# Main loop
 while(1):
     index = np.fromfile(index_file, dtype=np.int32, count=3, sep="")
     if index.size < 3:
@@ -75,10 +87,11 @@ while(1):
                 coord_index += 1
 
     neigh_idx = 0
-    inc_dist = 1.001
+    inc_dist = 1.001 # Distance for spins to count as neighbours
     lx_inv = 1/lx
     ly_inv = 1/ly
 
+    # Finds neighbours by distance
     for i in feature_coords[j]:
         x = i[1]
         y = i[2]

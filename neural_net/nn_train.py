@@ -1,3 +1,17 @@
+"""
+============================================================================================
+                                 nn_train.py
+
+Python file that controls neural network training. Requires 4 command line arguments to run:
+net_type, run, k_edge, hidden_n.
+net_type = "cnn" or "gnn", used for choosing which network type to train
+run = int > 0, used as a label for training run and subsequent data processing
+k_edge = int > 0, used for number of edge embeddings for gnn and number of convolutions for
+cnn
+hidden_n = int > 0, used for number of fully connected layers in the network.
+ ===========================================================================================
+// H. Naguszewski. University of Warwick
+"""
 import torch
 import torch.nn as nn
 from torch_geometric.nn import GCNConv
@@ -9,13 +23,20 @@ from torch_geometric.loader import DataLoader
 import importlib
 
 if len(sys.argv) == 5: # if command line arguments provided
-        net_type = sys.argv[1].lower()
+        try:
+            net_type = sys.argv[1].lower()
+        except:
+            print('Error. net_type must be string. Either "cnn" or "gnn"')
+            exit()
         run = int(sys.argv[2])
         k_edge = int(sys.argv[3])
         hidden_n = int(sys.argv[4])
 else:
     print('Error. Incorrect input parameters.\nnn_train.py net_type run k_edge hidden_n\nnet_type = "cnn" or "gnn"\nrun, k_edge, hidden_n = int > 0')
     exit()
+
+if (run <=0 or k_edge <= 0 or hidden_n <= 0):
+    print('Error. Incorrect input parameters.Ensure run, k_edge and hidden_n are int > 0.')
 
 # 1) loading modules
 ##################################################

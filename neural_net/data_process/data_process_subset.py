@@ -1,3 +1,13 @@
+"""
+============================================================================================
+                                 data_process_subset.py
+
+Python file that creates a subset of the whole dataset with relatively even committor
+distribution.
+ ===========================================================================================
+// H. Naguszewski. University of Warwick
+"""
+
 import torch
 import numpy as np
 
