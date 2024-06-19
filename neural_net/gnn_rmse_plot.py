@@ -6,7 +6,7 @@ warnings.filterwarnings("ignore")
 np.set_printoptions(threshold=sys.maxsize)
 np.set_printoptions(linewidth=np.nan)
 
-rmse = np.load("figures/gnn_tweaking/rmse.npy")
+rmse = np.load("figures/gnn/rmse.npy")
 rmse_new = np.zeros([int(np.max(rmse[:,0])*np.max(rmse[:,1])),3])
 
 # loops through rmse finding entries for same parameters and takes minimum loss
@@ -35,5 +35,5 @@ plt.scatter(x_list,y_list,400,facecolors='none')
 plt.xlabel("k_edge")
 plt.ylabel("hidden_n")
 plt.colorbar()
-plt.show()
+plt.savefig("figures/gnn/rmse_hyperparameters.pdf", bbox_inches="tight")
 
