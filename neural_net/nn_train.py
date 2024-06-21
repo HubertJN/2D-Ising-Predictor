@@ -86,7 +86,7 @@ models = 2 # number of models to train and then select best (lowest loss based o
 learning_rate = 4e-3
 weight_decay = 1e-4 # weight parameter for L2 regularization
 train_batch_size = 64
-scheduler_step = 200 # steps before scheduler_gamma is applied to learning rate
+scheduler_step = 400 # steps before scheduler_gamma is applied to learning rate
 scheduler_gamma = 0.5 # learning rate multiplier every scheduler_step epochs
 
 # optimizer and scheduler
