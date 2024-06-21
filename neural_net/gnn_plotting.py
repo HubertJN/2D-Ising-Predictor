@@ -80,6 +80,3 @@ plt.savefig("figures/gnn/loss_%d.pdf" % run, bbox_inches="tight")
 if show_plot == True:
     plt.show()
 plt.close()
-
-with open("plotting_data/gnn/hyperparameters_%d.txt" % run, 'a') as f:
-    f.write('%s = %s\n' % ('rmse', rmse))
