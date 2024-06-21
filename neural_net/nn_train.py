@@ -37,6 +37,7 @@ else:
 
 if (run <=0 or k_edge <= 0 or hidden_n <= 0):
     print('Error. Incorrect input parameters.Ensure run, k_edge and hidden_n are int > 0.')
+    exit()
 
 # 1) loading modules
 ##################################################
@@ -80,12 +81,12 @@ if exit_status == True:
     sys.exit()
 
 # training hyper-parameters
-epochs = 3750  # number of training cycles over data
+epochs = 2000  # number of training cycles over data
 models = 2 # number of models to train and then select best (lowest loss based on mean of last 50 epochs from validation set)
-learning_rate = 1e-3
+learning_rate = 4e-3
 weight_decay = 1e-4 # weight parameter for L2 regularization
 train_batch_size = 64
-scheduler_step = 1000 # steps before scheduler_gamma is applied to learning rate
+scheduler_step = 200 # steps before scheduler_gamma is applied to learning rate
 scheduler_gamma = 0.5 # learning rate multiplier every scheduler_step epochs
 
 # optimizer and scheduler
@@ -106,32 +107,65 @@ print(f"Training size: {train_size}, Validation size: {val_size}, Test size: {te
 total_params = sum(p.numel() for p in net.parameters())
 print("Parameters: ", total_params)
 
-
 # running training loop
 nn_dict = {}
-for mod in range(models):
-    net, train_loss, val_loss, time_taken = net_training(epochs, net, device, loss_func, optimizer, scheduler, train_loader, val_loader) 
+model_dict = {}
+epoch_array = np.arange(1, epochs, scheduler_step, dtype=int)
 
-    nn_dict["net_%d" % mod] = net.state_dict()
-    nn_dict["train_loss_%d" % mod] = train_loss
-    nn_dict["val_loss_%d" % mod] = val_loss
-    nn_dict["time_taken_%d" % mod] = time_taken
+for start_epoch in epoch_array:
+    if start_epoch == 1:
+        for mod in range(models):
+            print("Model %d" % mod)
+            train_loss_arr = np.zeros(epochs)
+            val_loss_arr = np.zeros(epochs)
+            time_taken = 0
+            net = net_init(k_edge, hidden_n).to(device)
+            net.apply(weight_init)
+            optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate, weight_decay=weight_decay)
+            scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_step, gamma=scheduler_gamma)
+
+            net, train_loss, val_loss, time_taken = net_training(start_epoch, scheduler_step, epochs, net, device, loss_func, optimizer, scheduler, train_loader, val_loader, train_loss_arr, val_loss_arr, time_taken) 
+
+            nn_dict["net_%d" % mod] = net.state_dict()
+            nn_dict["optimizer_%d" % mod] = optimizer.state_dict()
+            nn_dict["train_loss_%d" % mod] = train_loss
+            nn_dict["val_loss_%d" % mod] = val_loss
+            nn_dict["time_taken_%d" % mod] = time_taken
+    else:
+        for mod in range(models):
+            print("Model %d" % mod)
+            net.load_state_dict(model_dict["net"])
+            optimizer.load_state_dict(model_dict["optimizer"])
+            net, train_loss, val_loss, time_taken = net_training(start_epoch, scheduler_step, epochs, net, device, loss_func, optimizer, scheduler, train_loader, val_loader, train_loss_arr, val_loss_arr, time_taken) 
+
+            nn_dict["net_%d" % mod] = net.state_dict()
+            nn_dict["optimizer_%d" % mod] = optimizer.state_dict()
+            nn_dict["train_loss_%d" % mod] = train_loss
+            nn_dict["val_loss_%d" % mod] = val_loss
+            nn_dict["time_taken_%d" % mod] = time_taken
     
-    net.apply(weight_init) # initialise weights
-    optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate, weight_decay=weight_decay)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_step, gamma=scheduler_gamma)
+    min_mod = np.inf
+    for mod in range(models):
+        min_tmp = np.mean(nn_dict["val_loss_%d" % mod][:start_epoch-1+scheduler_step][-5:])
+        if min_tmp < min_mod:
+            min_mod = min_tmp
+            mod_choice = mod
 
-min_mod = np.inf
-for mod in range(models):
-    min_tmp = np.mean(nn_dict["val_loss_%d" % mod][-50:])
-    if min_tmp < min_mod:
-        min_mod = min_tmp
-        mod_choice = mod
+    net.load_state_dict(nn_dict["net_%d" % mod_choice])
+    optimizer.load_state_dict(nn_dict["optimizer_%d" % mod_choice])
+    train_loss = nn_dict["train_loss_%d" % mod_choice]
+    val_loss = nn_dict["val_loss_%d" % mod_choice]
+    time_taken = nn_dict["time_taken_%d" % mod_choice]
 
-net.load_state_dict(nn_dict["net_%d" % mod_choice])
-train_loss = nn_dict["train_loss_%d" % mod_choice]
-val_loss = nn_dict["val_loss_%d" % mod_choice]
-time_taken = nn_dict["time_taken_%d" % mod_choice]
+    for mod in range(models):
+        nn_dict["net_%d" % mod] = net.state_dict()
+        nn_dict["optimizer_%d" % mod] = optimizer.state_dict()
+        nn_dict["train_loss_%d" % mod] = train_loss
+        nn_dict["val_loss_%d" % mod] = val_loss
+        nn_dict["time_taken_%d" % mod] = time_taken
+    
+    model_dict["net"] = net.state_dict()
+    model_dict["optimizer"] = optimizer.state_dict()
 
 # 4) saving and plotting data output
 ##################################################
