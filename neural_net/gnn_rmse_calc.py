@@ -23,12 +23,11 @@ for run in range(1,num_runs+1):
     rmse[run-1, 0] = int(hyper_dict["k_edge"])
     rmse[run-1, 1] = int(hyper_dict["hidden_n"])
     rmse[run-1, 2] = np.sqrt(np.mean((data[:,0]-expectation)**2))
-    # TEMPORARY FOR ADDING RMSE TO HYPERPARAMETER FILES
+    
     hyper_dict['rmse'] = rmse[run-1, 2]
     with open("./plotting_data/gnn/hyperparameters_%d.txt" % run, 'w') as f:  
-        for key, value in hyperparameters.items():  
+        for key, value in hyper_dict.items():  
             f.write('%s = %s\n' % (key, value))
-    ##################################################
 
 np.save("figures/gnn/rmse.npy", rmse)
 
