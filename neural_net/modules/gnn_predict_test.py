@@ -29,9 +29,9 @@ def predict_test(net, data_loader, plot_data):
 
         predictions = net(features, edge_index, len(labels))
 
-    plot_data[i,0] = labels.item()
-    plot_data[i,1] = predictions[0,0].item()
-    plot_data[i,2] = predictions[0,1].item()
-    plot_data[i,3] = index.item()
+        plot_data[i,0] = labels.item()
+        plot_data[i,1] = predictions[0,0].item()
+        plot_data[i,2] = predictions[0,1].item()
+        plot_data[i,3] = index.item()
 
     return plot_data

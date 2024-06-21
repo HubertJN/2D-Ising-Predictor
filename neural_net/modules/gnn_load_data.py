@@ -38,7 +38,7 @@ def load_data(device):
 
     feature_data = torch.load(feature_dir)
     edge_data = torch.load(edge_dir) 
-    label_data = torch.load(label_dir)
+    label_data = torch.load(label_dir)[:,0]
     id_data = torch.arange(len(feature_data))
 
     feature_train, feature_test, edge_train, edge_test, label_train, label_test, id_train, id_test = train_test_split(feature_data, edge_data, label_data, id_data, test_size=0.2, random_state=1)

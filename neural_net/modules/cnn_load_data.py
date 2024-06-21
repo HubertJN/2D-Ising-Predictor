@@ -33,7 +33,7 @@ def load_data(device):
     image_dir = "./training_data/image_data_subset"
     label_dir = "./training_data/label_data_subset"
     image_data = torch.load(image_dir)
-    label_data = torch.load(label_dir)
+    label_data = torch.load(label_dir)[:,0]
     id_data = torch.arange(len(image_data))
 
     image_train, image_test, label_train, label_test, id_train, id_test = train_test_split(image_data, label_data, id_data, test_size=0.2)
