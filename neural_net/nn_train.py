@@ -80,7 +80,7 @@ if exit_status == True:
     sys.exit()
 
 # training hyper-parameters
-epochs = 3750 # number of training cycles over data
+epochs = 3750  # number of training cycles over data
 models = 2 # number of models to train and then select best (lowest loss based on mean of last 50 epochs from validation set)
 learning_rate = 1e-3
 weight_decay = 1e-4 # weight parameter for L2 regularization
@@ -112,7 +112,7 @@ nn_dict = {}
 for mod in range(models):
     net, train_loss, val_loss, time_taken = net_training(epochs, net, device, loss_func, optimizer, scheduler, train_loader, val_loader) 
 
-    nn_dict["net_%d" % mod] = net
+    nn_dict["net_%d" % mod] = net.state_dict()
     nn_dict["train_loss_%d" % mod] = train_loss
     nn_dict["val_loss_%d" % mod] = val_loss
     nn_dict["time_taken_%d" % mod] = time_taken
@@ -128,7 +128,7 @@ for mod in range(models):
         min_mod = min_tmp
         mod_choice = mod
 
-net = nn_dict["net_%d" % mod_choice]
+net.load_state_dict(nn_dict["net_%d" % mod_choice])
 train_loss = nn_dict["train_loss_%d" % mod_choice]
 val_loss = nn_dict["val_loss_%d" % mod_choice]
 time_taken = nn_dict["time_taken_%d" % mod_choice]
