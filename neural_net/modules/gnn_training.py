@@ -11,7 +11,7 @@ import torch
 import numpy as np
 import time
 
-def net_training(epochs, net, device, loss_func, optimizer, scheduler, train_loader, val_loader):
+def net_training(start_epoch, epochs, total_epochs, net, device, loss_func, optimizer, scheduler, train_loader, val_loader, train_loss_arr, val_loss_arr, time_taken):
     """net_training
     Training loops for graph neural network
 
@@ -31,14 +31,11 @@ def net_training(epochs, net, device, loss_func, optimizer, scheduler, train_loa
     val_loss_arr: validation loss array
     time_taken: time taken for training loop
     """
-    train_loss_arr = np.zeros(epochs)
-    val_loss_arr = np.zeros(epochs)
-    time_taken = 0
 
     initial_time = time.time()
     begin = initial_time
 
-    for epoch in range(1, epochs+1):
+    for epoch in range(start_epoch, start_epoch+epochs):
         cum_num = 0
         cum_loss = 0
 
@@ -93,16 +90,16 @@ def net_training(epochs, net, device, loss_func, optimizer, scheduler, train_loa
         val_loss = cum_loss/cum_num
         val_loss_arr[epoch-1] = val_loss
         
-        scheduler.step()
-
         if epoch%10 == 0 or epoch == 1:
             end = time.time()
-            print (f"Epoch [{epoch:05d}/{epochs:05d}], Train Loss: {train_loss:+.8f}, Val Loss: {val_loss:+.8f}, Time Taken: {end-begin:.1f} seconds, Learning Rate: {scheduler.get_last_lr()[0]:.2E}")
+            print (f"Epoch [{epoch:05d}/{total_epochs:05d}], Train Loss: {train_loss:+.8f}, Val Loss: {val_loss:+.8f}, Time Taken: {end-begin:.1f} seconds, Learning Rate: {scheduler.get_last_lr()[0]:.2E}")
             begin = time.time()
+
+        scheduler.step()
 
     
     final_time = time.time()
-    time_taken = final_time - initial_time
+    time_taken += final_time - initial_time
 
     return net, train_loss_arr, val_loss_arr, time_taken
         
