@@ -11,7 +11,7 @@ import torch
 import numpy as np
 import time
 
-def net_training(start_epoch, epochs, total_epochs, net, device, loss_func, optimizer, scheduler, train_loader, val_loader, train_loss_arr, val_loss_arr, time_taken):
+def net_training(start_epoch, epochs, total_epochs, net, device, loss_func, optimizer, scheduler, train_loader, val_loader, train_loss_arr, val_loss_arr):
     """net_training
     Training loops for graph neural network
 
@@ -32,8 +32,7 @@ def net_training(start_epoch, epochs, total_epochs, net, device, loss_func, opti
     time_taken: time taken for training loop
     """
 
-    initial_time = time.time()
-    begin = initial_time
+    begin = time.time()
 
     for epoch in range(start_epoch, start_epoch+epochs):
         cum_num = 0
@@ -97,9 +96,5 @@ def net_training(start_epoch, epochs, total_epochs, net, device, loss_func, opti
 
         scheduler.step()
 
-    
-    final_time = time.time()
-    time_taken += final_time - initial_time
-
-    return net, train_loss_arr, val_loss_arr, time_taken
+    return net, train_loss_arr, val_loss_arr
         
