@@ -74,7 +74,7 @@ net = net_init(k_edge, hidden_n).to(device)
 net.apply(weight_init) # initialise weights
 
 try:
-    open("plotting_data/gnn/hyperparameters_%d.txt" % run, "r")
+    open("plotting_data/%s/hyperparameters_%d.txt" % (net_type, run), "r")
     print("Run already exists. Change run variable. Exiting.")
     exit_status = True
 except:
@@ -170,7 +170,7 @@ time_taken = final_time - start_time
 
 # 4) saving and plotting data output
 ##################################################
-PATH = "./models/%s_model_%d.pth" % (net_type, run)
+PATH = "./models/%s/%s_model_%d.pth" % (net_type, net_type, run)
 torch.save({
     "model_state_dict": net.state_dict(),
    }, PATH)
