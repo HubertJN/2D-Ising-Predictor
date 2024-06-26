@@ -32,7 +32,7 @@ class net_init(nn.Module):
         
         self.silu = nn.SiLU() # activation function
 
-        self.drop = nn.Dropout(0.5) # dropout function
+        self.drop = nn.Dropout(0.25) # dropout function
 
         self.embed = nn.Sequential( # embedding features into higher dimensional representation
             nn.Linear(1, self.global_cv),

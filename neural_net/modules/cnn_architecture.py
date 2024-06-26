@@ -31,14 +31,13 @@ class net_init(nn.Module):
         self.conv = conv
         self.hidden_n = hidden_n
         self.img_dim = img_dim
-        self.channels = 4*int((self.conv*(self.conv+1))/2) # coded to be equal to total number of neighbours 
+        self.channels = int((self.conv*(self.conv+1))/2) # coded to be equal to total number of neighbours 
         
-
         self.resize = transforms.Resize((self.img_dim, self.img_dim), antialias=False) # resize input tensor
 
         self.silu = nn.SiLU() # activation function
 
-        self.drop = nn.Dropout(0.5) # dropout function
+        self.drop = nn.Dropout(0.25) # dropout function
 
         self.pool = nn.MaxPool2d(2,2) # pooling function
 
@@ -49,13 +48,16 @@ class net_init(nn.Module):
 
         conv_output_nodes = int((self.img_dim/(2**conv))**2)*self.channels    # input is pooled conv times, each time halving
                                                                 # the size of input tensor in both dimensions
-
+        
         for i in range(0, hidden_n): # loops over hidden_n and creates hidden_n fully connected layers
             self.add_module("fc_%d" % i, nn.Linear(conv_output_nodes, conv_output_nodes))
 
         self.output = nn.Sequential( # output layer (alpha and beta of beta distribution)
             nn.Linear(conv_output_nodes, 2),
         )
+
+        print("channels: %d" % self.channels)
+        print("conv_output_nodes: %d" % conv_output_nodes)
 
     def forward(self, image):
         """forward
