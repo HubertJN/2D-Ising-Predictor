@@ -83,7 +83,7 @@ if exit_status == True:
     sys.exit()
 
 # training hyper-parameters
-epochs = 1600  # number of training cycles over data
+epochs = 1000  # number of training cycles over data
 models = 3 # number of models to train concurrently
 learning_rate = 4e-3
 weight_decay = 1e-4 # weight parameter for L2 regularization
