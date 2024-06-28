@@ -12,7 +12,7 @@ else:
     print("Error. No network type. Exiting.")
     exit()
 
-num_runs = 32
+num_runs = 48
 rmse = np.zeros([num_runs,3])
 for run in range(1,num_runs+1):
     hyper_dict = {}
@@ -34,6 +34,9 @@ for run in range(1,num_runs+1):
     with open("./plotting_data/%s/hyperparameters_%d.txt" % (net_type, run), 'w') as f:  
         for key, value in hyper_dict.items():  
             f.write('%s = %s\n' % (key, value))
+
+print("rmse array shape: [%d, %d]" % (rmse.shape[0], rmse.shape[1]))
+print("Network with minimum rmse: %d" % int(np.argmin(rmse[:,2])+1))
 
 np.save("figures/%s/rmse.npy" % net_type, rmse)
 
