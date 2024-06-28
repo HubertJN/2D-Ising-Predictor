@@ -55,13 +55,12 @@ top_max = np.argpartition(error, -num_top)[-num_top:]
 plt.plot(line, line, color=soft_red)
 plt.scatter(data[:,0], expectation, s=1, color=soft_blue)
 plt.scatter(data[:,0][top_max], expectation[top_max], s=60, facecolors='none', edgecolors=soft_red)
-plt.title("Neural Network Prediction Assessment")
 plt.xlabel("Target")
 plt.ylabel("Prediction")
 ax = plt.gca()
 
 for i, index in enumerate(top_max):
-    ax.annotate("%d" % (i+1), (data[:,0][index], expectation[index]), (data[:,0][index]+0.01, expectation[index]+0.01), fontsize=10)
+    ax.annotate("%d" % (i+1), (data[:,0][index], expectation[index]), (data[:,0][index]-0.02, expectation[index]+0.01), fontsize=10)
 
 ax.set_box_aspect(1)
 plt.text(0.05, 0.95, "RMSE: {:.5f}".format(rmse), transform = ax.transAxes, horizontalalignment="left",
@@ -73,7 +72,6 @@ plt.close()
 
 plt.plot(10*np.arange(train_loss.size), train_loss, label="Train Loss", color=soft_blue)
 plt.plot(10*np.arange(val_loss.size), val_loss, label="Validation Loss", color=soft_red)
-plt.title("Neural Network Training")
 plt.ylabel("Loss")
 plt.xlabel("Epoch")
 plt.legend()
