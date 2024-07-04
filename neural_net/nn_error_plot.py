@@ -5,7 +5,7 @@ import sys
 np.set_printoptions(threshold=sys.maxsize)
 np.set_printoptions(linewidth=np.nan)
 
-plt.rcParams["text.usetex"] = True
+#plt.rcParams["text.usetex"] = True
 plt.rcParams["font.size"] = 30
 plt.rcParams["figure.figsize"] = (8,8)
 plt.rcParams["figure.dpi"] = 512
@@ -26,8 +26,8 @@ alpha = data[:,1]
 beta = data[:,2]
 expectation = alpha/(alpha+beta)
 error = data[:,0]-expectation
-over_index = np.argpartition(error, -num_select)[-num_select:]
-under_index = np.argpartition(error, num_select)[:num_select]
+over_index = np.argpartition(error, num_select)[:num_select]
+under_index = np.argpartition(error, -num_select)[-num_select:]
 ideal_index = np.argpartition(abs(error), num_select)[:num_select]
 
 grid_index = data[over_index][:,3].astype(np.int32)
