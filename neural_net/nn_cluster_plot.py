@@ -9,7 +9,7 @@ np.set_printoptions(threshold=sys.maxsize)
 np.set_printoptions(linewidth=np.nan)
 
 plt.rcParams["font.family"] = "Times New Roman"
-plt.rcParams["font.size"] = 18
+plt.rcParams["font.size"] = 30
 plt.rcParams["figure.figsize"] = (8,8)
 plt.rcParams["figure.dpi"] = 120
 
