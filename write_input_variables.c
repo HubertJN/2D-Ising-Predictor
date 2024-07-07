@@ -25,7 +25,7 @@ int main () {
     */
     /**************Change Variables Here****************/
     int L=64;
-    int nreplicas=5;
+    int nreplicas=100;
     int nsweeps=50000;
     int mag_output_int=100;
     int grid_output_int=100;
@@ -38,26 +38,26 @@ int main () {
     // After variables are changed save file and run write_input_variables.sh (input into cmd: bash write_input_variables.sh)
     /***************************************************/
     // Set filenames
-    const char *filename1 = "input_variables.bin";
-    FILE *ptr1 = fopen(filename1,"wb"); // open for write if not available for append 
-    if (ptr1==NULL){
-        fprintf(stderr,"Error opening %s for write!\n",filename1);
+    const char *filename = "input_variables.bin";
+    FILE *ptr = fopen(filename,"wb"); // open for write if not available for append 
+    if (ptr==NULL){
+        fprintf(stderr,"Error opening %s for write!\n",filename);
         exit(EXIT_FAILURE);
     }
 
     /**************************************************/
-    fwrite(&L, sizeof(int), 1, ptr1);
-    fwrite(&nreplicas, sizeof(int), 1, ptr1);
-    fwrite(&nsweeps, sizeof(int), 1, ptr1);
-    fwrite(&mag_output_int, sizeof(int), 1, ptr1);
-    fwrite(&grid_output_int, sizeof(int), 1, ptr1);
-    fwrite(&threadsPerBlock, sizeof(int), 1, ptr1);
-    fwrite(&gpu_device, sizeof(int), 1, ptr1);
-    fwrite(&gpu_method, sizeof(int), 1, ptr1);
-    fwrite(&beta, sizeof(double), 1, ptr1);
-    fwrite(&h, sizeof(double), 1, ptr1);
+    fwrite(&L, sizeof(int), 1, ptr);
+    fwrite(&nreplicas, sizeof(int), 1, ptr);
+    fwrite(&nsweeps, sizeof(int), 1, ptr);
+    fwrite(&mag_output_int, sizeof(int), 1, ptr);
+    fwrite(&grid_output_int, sizeof(int), 1, ptr);
+    fwrite(&threadsPerBlock, sizeof(int), 1, ptr);
+    fwrite(&gpu_device, sizeof(int), 1, ptr);
+    fwrite(&gpu_method, sizeof(int), 1, ptr);
+    fwrite(&beta, sizeof(double), 1, ptr);
+    fwrite(&h, sizeof(double), 1, ptr);
 
-    fclose(ptr1);
+    fclose(ptr);
 
     return EXIT_SUCCESS;
 }
