@@ -69,18 +69,18 @@ int main (int argc, char *argv[]) {
     int mag = 0;
 
     // Create arrays for storing for ngrid, islice, cluster and spare for committor        
-    int *store_ngrid = (int *)malloc(nreplicas*nsweeps/100*sizeof(int));
+    int *store_ngrid = (int *)malloc(nreplicas*nsweeps/grid_ouput_int*sizeof(int));
     if (store_ngrid==NULL){fprintf(stderr,"Error allocating memory for store_ngrid array!\n"); exit(EXIT_FAILURE);} 
-    int *store_slice = (int *)malloc(nreplicas*nsweeps/100*sizeof(int));
+    int *store_slice = (int *)malloc(nreplicas*nsweeps/grid_ouput_int*sizeof(int));
     if (store_slice==NULL){fprintf(stderr,"Error allocating memory for store_slice array!\n"); exit(EXIT_FAILURE);} 
-    int *store_mag = (int *)malloc(nreplicas*nsweeps/100*sizeof(int));
+    int *store_mag = (int *)malloc(nreplicas*nsweeps/grid_ouput_int*sizeof(int));
     if (store_mag==NULL){fprintf(stderr,"Error allocating memory for store_mag array!\n"); exit(EXIT_FAILURE);} 
-    double *store_committor = (double *)malloc(nreplicas*nsweeps/100*sizeof(double));
+    double *store_committor = (double *)malloc(nreplicas*nsweeps/grid_ouput_int*sizeof(double));
     if (store_committor==NULL){fprintf(stderr,"Error allocating memory for store_committor array!\n"); exit(EXIT_FAILURE);} 
 
     // Read and sotre data from index file
     // Loops over slices
-    for (islice=0;islice<nsweeps/100;islice++) {
+    for (islice=0;islice<nsweeps/grid_ouput_int;islice++) {
         // Loops over grids of each sweep snapshot  
         for (igrid=0;igrid<nreplicas;igrid++) {
             fread(&store_slice[igrid+nreplicas*islice], sizeof(int), 1, index_file);
@@ -92,19 +92,19 @@ int main (int argc, char *argv[]) {
     }
 
     // Sort the loaded arrays based on the cluster size
-    int **p_store_mag = malloc(nreplicas*nsweeps/100*sizeof(long));
+    int **p_store_mag = malloc(nreplicas*nsweeps/grid_ouput_int*sizeof(long));
     int ta, tb, tc, td;
 
     // create array of pointers to store_cluster
-    for (i = 0; i < nreplicas*nsweeps/100; i++) {
+    for (i = 0; i < nreplicas*nsweeps/grid_ouput_int; i++) {
         p_store_mag[i] = &store_mag[i];
     }
 
     // sort array of pointers
-    qsort(p_store_mag, nreplicas*nsweeps/100, sizeof(long), compare);
+    qsort(p_store_mag, nreplicas*nsweeps/grid_ouput_int, sizeof(long), compare);
     
     // reorder loaded arrays according to the array of pointers
-    for(i=0;i<nreplicas*nsweeps/100;i++){
+    for(i=0;i<nreplicas*nsweeps/grid_ouput_int;i++){
         if(i != p_store_mag[i]-store_mag){
             ta = store_ngrid[i];
             tb = store_slice[i];
@@ -134,7 +134,7 @@ int main (int argc, char *argv[]) {
 
     int mag_check = 0;
     mag = 0;
-    for (i=0;i<nreplicas*nsweeps/100;i++) {
+    for (i=0;i<nreplicas*nsweeps/grid_ouput_int;i++) {
         mag = store_mag[i]+L*L;
         if ( mag > mag_check) {
             mag_check = mag;
@@ -265,7 +265,7 @@ int main (int argc, char *argv[]) {
             fwrite(&store_committor[random_selection], sizeof(double), 1, committor_file); // Write to create space for standard deviation
             counter += 1;
         }
-        //printf("\rPercentage of samples selected: %d%%", (int)(100.0*(double)counter/(double)(samples-rand_array_start))); // Print progress
+        printf("\rPercentage of samples selected: %d%%", (int)(100.0*(double)counter/(double)(samples-rand_array_start))); // Print progress
         fflush(stdout);
     } 
 
