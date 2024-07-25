@@ -88,8 +88,8 @@ int main() {
     // Main loop which finds magnetization and writes it to file
     // Loops over slices i.e. sweep snapshots
 
-    for (islice=0;islice<nsweeps/grid_ouput_int;islice++) {
-        printf("\rPercentage of magnetizations calculated: %d%%", (int)((double)(islice+1)/(double)(nsweeps/grid_ouput_int)*100)); // Print progress
+    for (islice=0;islice<nsweeps/grid_output_int;islice++) {
+        printf("\rPercentage of magnetizations calculated: %d%%", (int)((double)(islice+1)/(double)(nsweeps/grid_output_int)*100)); // Print progress
         fflush(stdout);
         // Loops over grids of each sweep snapshot  
         for (igrid=0;igrid<nreplicas;igrid++) {
@@ -97,7 +97,7 @@ int main() {
             // Saves grid number, slice, cluster size and spare data entry for commitor
             temp_mag = calculate_magnetization(L, ising_grids);
             output_ngrid[igrid] = igrid;
-            output_slice[igrid] = islice*grid_ouput_int;
+            output_slice[igrid] = islice*grid_output_int;
             output_mag[igrid] = temp_mag;
             output_commitor[igrid] = (double)-1;
         } // igrid
