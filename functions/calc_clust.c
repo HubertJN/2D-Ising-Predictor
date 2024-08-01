@@ -1,8 +1,8 @@
-#include "find_cluster_size.h" // Includes all function definitions
+#include "calc_clust.h" // Includes all function definitions
 
 #define MOD(a,b) ((((a)%(b))+(b))%(b)) // Custom definition of modulus function so that it works correctly for negative values.
 
-int find_cluster_size(int L, int Maxcon, int *grid, int* Lcon, int* Ncon) {
+int calculate_cluster(int L, int Maxcon, int *grid, int* Lcon, int* Ncon) {
 
     /* Size of largest cluster, and number of clusters */
     int lclus,avlclus;
@@ -61,7 +61,7 @@ int find_cluster_size(int L, int Maxcon, int *grid, int* Lcon, int* Ncon) {
     }
 
     if (con_exist == 1) {
-        lclus = find_clusters_recursive(Nvert, Maxcon, Ncon, Lcon);
+        lclus = calculate_clusters_recursive(Nvert, Maxcon, Ncon, Lcon);
         //lclus = find_clusters_eqclass(Nvert, Maxcon, Ncon, Lcon); // Currently does not work
         avlclus = lclus; 
     }
@@ -72,7 +72,7 @@ int find_cluster_size(int L, int Maxcon, int *grid, int* Lcon, int* Ncon) {
 }
 
 // Function to find the largest cluster size and number of clusters
-int find_clusters_recursive(int Nvert, int Maxcon, int *Ncon, int *Lcon) {
+int calculate_clusters_recursive(int Nvert, int Maxcon, int *Ncon, int *Lcon) {
 
     int *lvisited = (int *)malloc(Nvert*sizeof(int)); // Logical array indicating if vertex has been counted
     int *cluster_size = (int *)malloc(Nvert*sizeof(int)); // Array holding size of each cluster
@@ -136,56 +136,4 @@ void vertex_search(int i, int icluster, int Maxcon, int *Ncon, int *Lcon, int *l
             vertex_search(j, icluster, Maxcon, Ncon, Lcon, lvisited, cluster_size);
         }
     }
-}
-
-// Function to build a list of connected vertex clusters, and
-// report the size of the largest cluster. Identifies connected
-// vertices as equivalent and assigns each to an equivalence class
-// See Numerical Recipes by Press et al for details.
-
-int find_clusters_eqclass(int Nvert, int Maxcon, int *Ncon, int *Lcon) {
-    /* Define indices */
-    int iv, jv, ic;
-
-    int nvcluster = 0; int lmax = 0;
-
-    int *lcl = (int *)malloc(Nvert*sizeof(int));
-    int *cluster_size = (int *)malloc(Nvert*sizeof(int));
-
-    for (iv=0;iv<Nvert;iv++) {lcl[iv] = -1;}
-    for (iv=0;iv<Nvert;iv++) {cluster_size[iv] = 0;}
-
-    for (iv=0;iv<Nvert;iv++) {
-        lcl[iv] = iv;
-        for (jv=0;jv<iv-1;jv++) {
-            lcl[jv] = lcl[lcl[jv]];
-            for (ic=0;ic<Ncon[iv];ic++) {
-                if (Lcon[iv*Maxcon+ic]==jv) {
-                    lcl[lcl[lcl[jv]]] = iv;
-                }
-            }
-        }
-    }
-
-    for (iv=0;iv<Nvert;iv++) {
-        if (lcl[iv] != -1) {
-            if (lcl[iv] == lcl[lcl[iv]]) {
-                cluster_size[lcl[iv]] += 1;
-            }
-        }
-    }
-
-    for (iv=0;iv<Nvert;iv++) {
-        if (cluster_size[iv]>0) {
-            nvcluster += 1;
-        }
-    }
-
-    // Analysis complete. Output number of cluster and size of cluster
-    // Compare elements of array with max
-    for (iv=0;iv<Nvert;iv++) {if(cluster_size[iv]>lmax) {lmax=cluster_size[iv];}}
-
-    // Free memory
-    free(lcl); free(cluster_size);
-    return lmax;
 }
