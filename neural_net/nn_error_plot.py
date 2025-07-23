@@ -72,7 +72,7 @@ for type_string in ["over", "ideal", "under"]:
                     plt.plot([j + 1 - cross_size/2, j + cross_size/2], [i + cross_size/2, i + 1 - cross_size/2], 'k', linewidth=0.5) 
         
         plt.title("Grid %d" % (l+1))
-        plt.xlabel("rmse: %f" % error[index_sub])
+        plt.xlabel("error: %f" % error[index_sub])
         plt.xlim(0, cols)
         plt.ylim(0, rows)
         plt.gca().set_aspect('equal', adjustable='box')

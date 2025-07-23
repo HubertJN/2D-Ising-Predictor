@@ -19,7 +19,7 @@ else:
     print("Error. No run parameter. Exiting.")
     exit()
 
-plt.rcParams["font.family"] = "Times New Roman"
+#plt.rcParams["font.family"] = "Times New Roman"
 plt.rcParams["font.size"] = 25
 plt.rcParams["figure.figsize"] = (12,8)
 plt.rcParams["figure.dpi"] = 120
@@ -63,9 +63,9 @@ index_dict = {
 
 plt.plot(line, line, color=soft_red)
 plt.scatter(data[:,0], expectation, s=1, color=soft_blue)
-plt.scatter(data[:,0][combined_index], expectation[combined_index], s=60, facecolors='none', edgecolors=soft_red)
-plt.xlabel("Target")
-plt.ylabel("Prediction")
+#plt.scatter(data[:,0][combined_index], expectation[combined_index], s=60, facecolors='none', edgecolors=soft_red)
+plt.xlabel("Committor Target")
+plt.ylabel("Committor Prediction")
 ax = plt.gca()
 
 i = 0
@@ -73,7 +73,7 @@ index_type = ["over", "ideal", "under"]
 for index_string in index_type:
     index_array = index_dict[index_string]
     for index in index_array:
-        ax.annotate("%d" % (i+1), (data[:,0][index], expectation[index]), (data[:,0][index]-0.02, expectation[index]+0.01), fontsize=10)
+#        ax.annotate("%d" % (i+1), (data[:,0][index], expectation[index]), (data[:,0][index]-0.02, expectation[index]+0.01), fontsize=10)
         i += 1
 
 ax.set_box_aspect(1)
