@@ -10,6 +10,7 @@
 #include "functions/read_input_variables.h" 
 #include "functions/read_input_grid.h"
 #include "functions/calc_mag.h" 
+#include "functions/calc_clust.h"
 
 #define MOD(a,b) ((((a)%(b))+(b))%(b))
 
@@ -28,6 +29,7 @@ int main() {
     read_input_variables(&L, &nreplicas, &nsweeps, &mag_output_int, &grid_output_int, &threadsPerBlock, &gpu_device, &gpu_method, &beta, &h);
 
     // Define maximum connetions per grid point. 4 in this case since 2D nearest neighbour Ising model is being used
+    int Maxcon = 4;
     int Nvert=L*L;
 
     // Set filenames
@@ -67,9 +69,20 @@ int main() {
     int *output_slice = (int *)malloc(nreplicas*sizeof(int));
     if (output_slice==NULL){fprintf(stderr,"Error allocating memory for output_slice array!\n"); exit(EXIT_FAILURE);} 
     int *output_mag = (int *)malloc(nreplicas*sizeof(int));
+    if (output_mag==NULL){fprintf(stderr,"Error allocating memory for output_mag array!\n"); exit(EXIT_FAILURE);} 
+    int *output_cluster = (int *)malloc(nreplicas*sizeof(int));
     if (output_mag==NULL){fprintf(stderr,"Error allocating memory for output_cluster array!\n"); exit(EXIT_FAILURE);} 
     double *output_commitor = (double *)malloc(nreplicas*sizeof(double));
     if (output_commitor==NULL){fprintf(stderr,"Error allocating memory for output_commitor array!\n"); exit(EXIT_FAILURE);} 
+
+    /*--------------------------------------------/
+    / Allocate memory to hold graph connectivity  /
+    /--------------------------------------------*/
+    int *Ncon = (int *)malloc(Nvert*sizeof(int));
+    if (Ncon==NULL) { printf("Error allocating Ncon array\n") ; exit(EXIT_FAILURE); }
+
+    int *Lcon = (int *)malloc(Nvert*Maxcon*sizeof(int));
+    if (Lcon==NULL) { printf("Error allocating Lcon array\n") ; exit(EXIT_FAILURE); }
 
     // Allocate space to read a single grid as bits
     int nbytes = L*L/8;
@@ -80,31 +93,27 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    /*--------------------------------------------/
-    / Allocate memory to hold graph connectivity  /
-    /--------------------------------------------*/
-    int temp_mag = 0;
-
     // Main loop which finds magnetization and writes it to file
     // Loops over slices i.e. sweep snapshots
 
-    for (islice=0;islice<nsweeps/100;islice++) {
-        printf("\rPercentage of magnetizations calculated: %d%%", (int)((double)(islice+1)/(double)(nsweeps/100)*100)); // Print progress
+    for (islice=0;islice<nsweeps/grid_output_int;islice++) {
+        printf("\rPercentage of magnetizations calculated: %d%%", (int)((double)(islice+1)/(double)(nsweeps/grid_output_int)*100)); // Print progress
         fflush(stdout);
         // Loops over grids of each sweep snapshot  
         for (igrid=0;igrid<nreplicas;igrid++) {
             read_input_grid(read_file, bitgrid, L, ising_grids, nreplicas, islice, igrid);
-            // Saves grid number, slice, cluster size and spare data entry for commitor
-            temp_mag = calculate_magnetization(L, ising_grids);
+            // Saves grid number, slice, magnetization, cluster size and spare data entry for commitor
             output_ngrid[igrid] = igrid;
-            output_slice[igrid] = islice*100;
-            output_mag[igrid] = temp_mag;
+            output_slice[igrid] = islice*grid_output_int;
+            output_mag[igrid] = calculate_magnetization(L, ising_grids);
+            output_cluster[igrid] = calculate_cluster(L, Maxcon, ising_grids, Lcon, Ncon);
             output_commitor[igrid] = (double)-1;
         } // igrid
         for (igrid=0;igrid<nreplicas;igrid++) {
             fwrite(&output_slice[igrid], sizeof(int), 1, write_file);
             fwrite(&output_ngrid[igrid], sizeof(int), 1, write_file);
             fwrite(&output_mag[igrid], sizeof(int), 1, write_file);
+            fwrite(&output_cluster[igrid], sizeof(int), 1, write_file);
             fwrite(&output_commitor[igrid], sizeof(double), 1, write_file);
             fwrite(&output_commitor[igrid], sizeof(double), 1, write_file); // Additional write to store standard deviation on commitor
         }
@@ -121,7 +130,7 @@ int main() {
     // New line
     printf("\n");
 
-    printf("Magnetization calculation successfully completed. \n");
+    printf("Index calculation successfully completed. \n");
 
     // Print time taken for program to execute
     end = clock();

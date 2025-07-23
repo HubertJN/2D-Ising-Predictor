@@ -25,15 +25,15 @@ int main () {
     */
     /**************Change Variables Here****************/
     int L=64;
-    int nreplicas=100;
+    int nreplicas=10000;
     int nsweeps=50000;
     int mag_output_int=100;
-    int grid_output_int=100;
+    int grid_output_int=10;
     int threadsPerBlock=32;
     int gpu_device=0;
     int gpu_method=0;
-    double beta=0.54;
-    double h=0.07;
+    double beta=0.67;
+    double h=0.13;
     /***************************************************/
     // After variables are changed save file and run write_input_variables.sh (input into cmd: bash write_input_variables.sh)
     /***************************************************/

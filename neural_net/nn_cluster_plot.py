@@ -8,9 +8,9 @@ warnings.filterwarnings("ignore")
 np.set_printoptions(threshold=sys.maxsize)
 np.set_printoptions(linewidth=np.nan)
 
-plt.rcParams["font.family"] = "Times New Roman"
-plt.rcParams["font.size"] = 30
-plt.rcParams["figure.figsize"] = (8,8)
+#plt.rcParams["font.family"] = "Times New Roman"
+plt.rcParams["font.size"] = 25
+plt.rcParams["figure.figsize"] = (12,8)
 plt.rcParams["figure.dpi"] = 120
 
 # colors
@@ -36,8 +36,8 @@ popt, pcov = curve_fit(sigmoid, geo_clust, committor, p0=p0)
 plt.plot(geo_clust, sigmoid(geo_clust, *popt), c=soft_red)
 plt.scatter(geo_clust, committor, c=soft_blue, s=0.5)
 plt.ylabel('Committor')
-plt.xlabel('Geometric Cluster Size')
-plt.tight_layout()
+plt.xlabel('Largest Geometric Cluster Size')
+plt.gca().set_box_aspect(1)
 plt.savefig("./figures/cluster_fit.pdf", bbox_inches="tight")
 plt.close()
 
@@ -46,11 +46,12 @@ rmse = np.sqrt(np.mean((committor-sigmoid(geo_clust, *popt))**2))
 
 plt.plot(line, line, color=soft_red)
 plt.scatter(committor, sigmoid(geo_clust, *popt), s=1, color=soft_blue)
-plt.xlabel("Target")
-plt.ylabel("Prediction")
+plt.xlabel("Committor Target")
+plt.xticks([0, 0.25, 0.5, 0.75, 1])
+plt.ylabel("Committor Prediction")
 ax = plt.gca()
 plt.text(0.05, 0.95, "RMSE: {:.5f}".format(rmse), transform = ax.transAxes, horizontalalignment="left",
      verticalalignment="top")
-plt.tight_layout()
+plt.gca().set_box_aspect(1)
 plt.savefig("./figures/prediction_actual_cluster.pdf", bbox_inches="tight")
 plt.close()

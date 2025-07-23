@@ -28,7 +28,7 @@ all : calculate_committor
 
 calculate_committor:  $(OBJECTS) calculate_committor.cu
 
-	$(LD) -o $(bindir)/calculate_committor $(OBJECTS) calculate_committor.cu  $(NVFLAGS) 
+	$(LD) -g -o $(bindir)/calculate_committor $(OBJECTS) calculate_committor.cu  $(NVFLAGS) 
 
 clean : 
 
